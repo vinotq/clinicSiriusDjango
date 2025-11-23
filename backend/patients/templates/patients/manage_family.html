@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Manage Family (test)</title>
+  </head>
+  <body>
+    <h1>Manage Family (test)</h1>
+
+    <section>
+      <h2>Your profile & family</h2>
+      <div id="profile">Loading...</div>
+    </section>
+
+    <section>
+      <h2>Create child and attach to you</h2>
+      <form id="create-child-form" method="post">
+        {% csrf_token %}
+        <label>Child First name: <input name="fname" required></label><br>
+        <label>Child Last name: <input name="lname" required></label><br>
+        <label>Child Birth date: <input type="date" name="bdate" required></label><br>
+        <label>Child SNILS: <input name="snils" required></label><br>
+        <label>Child OMS: <input name="oms" required></label><br>
+        <button type="submit">Create child</button>
+      </form>
+    </section>
+
+    <section>
+      <h2>Actions / Output</h2>
+      <pre id="result"></pre>
+    </section>
+
+    <script>
+      const result = document.getElementById('result');
+      const profileEl = document.getElementById('profile');
+      let currentProfile = null;
+
+      async function apiFetch(path, opts={}){
+        const headers = opts.headers || {'Content-Type':'application/json'};
+        const csrfInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
+        const csrfToken = csrfInput ? csrfInput.value : null;
+        if (csrfToken) headers['X-CSRFToken'] = csrfToken;
+        const res = await fetch(path, Object.assign({credentials:'same-origin', headers}, opts));
+        let data = null;
+        try { data = await res.json(); } catch(e) { data = null; }
+        return {res, data};
+      }
+
+      function renderProfile(data){
+        currentProfile = data;
+        profileEl.innerHTML = '';
+
+        const header = document.createElement('div');
+        header.className = 'profile-header';
+        header.innerHTML = `<strong>Profile:</strong> ${data.fname} ${data.lname} <small>(id=${data.id})</small>`;
+        profileEl.appendChild(header);
+
+        const parentsSection = document.createElement('div');
+        parentsSection.className = 'family-section';
+        const parentsTitle = document.createElement('h3');
+        parentsTitle.textContent = 'Parents';
+        parentsSection.appendChild(parentsTitle);
+        const parentsList = document.createElement('ul');
+        if (data.parents && data.parents.length){
+          data.parents.forEach(p => {
+            const li = document.createElement('li');
+            li.textContent = `${p.fname} ${p.lname} `;
+            const span = document.createElement('small');
+            span.textContent = `(id=${p.id})`;
+            li.appendChild(span);
+            parentsList.appendChild(li);
+          });
+        } else {
+          const li = document.createElement('li'); li.textContent = '(none)'; parentsList.appendChild(li);
+        }
+        parentsSection.appendChild(parentsList);
+        profileEl.appendChild(parentsSection);
+
+        const childrenSection = document.createElement('div');
+        childrenSection.className = 'family-section';
+        const childrenTitle = document.createElement('h3');
+        childrenTitle.textContent = 'Children';
+        childrenSection.appendChild(childrenTitle);
+        const childrenList = document.createElement('ul');
+        if (data.children && data.children.length){
+          data.children.forEach(c => {
+            const li = document.createElement('li');
+            li.innerHTML = `<strong>${c.fname} ${c.lname}</strong> <small>(id=${c.id})</small>`;
+            const btnEdit = document.createElement('button');
+            btnEdit.textContent = 'Edit';
+            btnEdit.className = 'edit';
+            btnEdit.dataset.id = c.id;
+            btnEdit.style.marginLeft = '8px';
+            const btnUnlink = document.createElement('button');
+            btnUnlink.textContent = 'Unlink';
+            btnUnlink.className = 'unlink';
+            btnUnlink.dataset.id = c.id;
+            btnUnlink.style.marginLeft = '4px';
+            li.appendChild(btnEdit);
+            li.appendChild(btnUnlink);
+            childrenList.appendChild(li);
+          });
+        } else {
+          const li = document.createElement('li'); li.textContent = '(none)'; childrenList.appendChild(li);
+        }
+        childrenSection.appendChild(childrenList);
+        profileEl.appendChild(childrenSection);
+        profileEl.querySelectorAll('button.edit').forEach(a => a.addEventListener('click', onEditClick));
+        profileEl.querySelectorAll('button.unlink').forEach(a => a.addEventListener('click', onUnlinkClick));
+      }
+
+      async function loadFamily(){
+        profileEl.textContent = 'Loading...';
+        const {res, data} = await apiFetch('/api/patients/me/', {method:'GET'});
+        if (!res.ok){ result.textContent = JSON.stringify({status: res.status, data}, null, 2); return; }
+        renderProfile(data);
+      }
+
+      async function onEditClick(e){
+        e.preventDefault();
+        const id = e.currentTarget.dataset.id;
+        const {res, data} = await apiFetch(`/api/patients/${id}/`, {method:'GET'});
+        if (!res.ok){ result.textContent = JSON.stringify({status: res.status, data}, null,2); return; }
+        const fname = prompt('First name', data.fname) || data.fname;
+        const lname = prompt('Last name', data.lname) || data.lname;
+        const bdate = prompt('Birth date (YYYY-MM-DD)', data.bdate) || data.bdate;
+        const snils = prompt('SNILS', data.snils) || data.snils;
+        const oms = prompt('OMS', data.oms) || data.oms;
+        const payload = { fname, lname, bdate, snils, oms };
+        const {res: r2, data: d2} = await apiFetch(`/api/patients/${id}/`, {method:'PATCH', body: JSON.stringify(payload)});
+        if (!r2.ok){ result.textContent = JSON.stringify({status: r2.status, data: d2}, null,2); return; }
+        result.textContent = `Updated child ${id}`;
+        await loadFamily();
+      }
+
+      async function onUnlinkClick(e){
+        e.preventDefault();
+        const childId = e.currentTarget.dataset.id;
+        if (!currentProfile) { result.textContent = 'Profile not loaded'; return; }
+        const parentId = currentProfile.id;
+        const {res, data} = await apiFetch(`/api/patients/${childId}/remove-parent/`, {method:'POST', body: JSON.stringify({parent_id: parentId})});
+        if (!res.ok){ result.textContent = JSON.stringify({status: res.status, data}, null,2); return; }
+        result.textContent = `Unlinked child ${childId} from parent ${parentId}`;
+        await loadFamily();
+      }
+
+      const form = document.getElementById('create-child-form');
+      form.addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        const fd = new FormData(form);
+        const payload = {
+          fname: fd.get('fname'),
+          lname: fd.get('lname'),
+          bdate: fd.get('bdate'),
+          snils: fd.get('snils'),
+          oms: fd.get('oms')
+        };
+        const {res, data} = await apiFetch('/api/patients/create-family-member/', {method:'POST', body: JSON.stringify(payload)});
+        if (!res.ok){ result.textContent = JSON.stringify({status: res.status, data}, null,2); return; }
+        result.textContent = `Created child id=${data.id}`;
+        form.reset();
+        await loadFamily();
+      });
+
+      loadFamily();
+    </script>
+  </body>
+</html>

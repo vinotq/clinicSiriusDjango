@@ -1,0 +1,57 @@
+services:
+  db:
+    image: postgres:16
+    container_name: clinicSirius-db
+    restart: always
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - PGPORT=${DB_PG_PORT}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PWD}
+      - POSTGRES_PORT=${DB_PORT}
+    ports:
+      - "5613:5613"
+    expose:
+      - 5613
+
+  # backend:
+  #   container_name: todost-backend-1
+  #   build:
+  #     context: ./backend
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "5252:5252"
+  #   volumes:
+  #     - ./backend:/app
+  #   env_file:
+  #     - .env
+  #   depends_on:
+  #     - db
+  #   links:
+  #     - db:db
+  #   environment:
+  #     - POSTGRES_DB=${POSTGRES_DB}
+  #     - POSTGRES_USER=${POSTGRES_USER}
+  #     - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+  #     - POSTGRES_HOST=db
+  #     - BACKEND_SIGNING_KEY=${BACKEND_SIGNING_KEY}
+
+  # frontend:
+  #   container_name: todost-frontend-1
+  #   build:
+  #     context: ./frontend
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "4747:4747"
+  #   volumes:
+  #     - ./frontend:/app
+  #     - /app/node_modules
+  #   depends_on:
+  #     - backend
+  #   environment:
+  #     - VITE_API_URL=http://localhost:5252/api
+  #     - WATCHPACK_POLLING=true
+volumes:
+  pgdata: null

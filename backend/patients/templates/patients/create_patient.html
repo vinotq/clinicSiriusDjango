@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Create Patient (test)</title>
+  </head>
+  <body>
+    <h1>Create Patient (test)</h1>
+    <form id="create-form" method="post">
+      {% csrf_token %}
+      <label>First name: <input name="fname" required></label><br>
+      <label>Last name: <input name="lname" required></label><br>
+      <label>Middle name: <input name="tname"></label><br>
+      <label>Birth date: <input type="date" name="bdate" required></label><br>
+      <label>Phone: <input name="phone_number"></label><br>
+      <label>Email: <input type="email" name="email"></label><br>
+      <label>SNILS: <input name="snils" required></label><br>
+      <label>OMS: <input name="oms" required></label><br>
+      <button type="submit">Create</button>
+    </form>
+
+    <pre id="result"></pre>
+
+    <script>
+      const form = document.getElementById('create-form');
+      const result = document.getElementById('result');
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const fd = new FormData(form);
+        const payload = {
+          fname: fd.get('fname'),
+          lname: fd.get('lname'),
+          tname: fd.get('tname'),
+          bdate: fd.get('bdate'),
+          phone_number: fd.get('phone_number'),
+          email: fd.get('email'),
+          snils: fd.get('snils'),
+          oms: fd.get('oms')
+        };
+
+        const csrfInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
+        const csrfToken = csrfInput ? csrfInput.value : null;
+        const headers = { 'Content-Type': 'application/json' };
+        if (csrfToken) headers['X-CSRFToken'] = csrfToken;
+
+        const res = await fetch('/api/patients/', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(payload),
+          credentials: 'same-origin'
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          result.textContent = `Created patient id=${data.id} \n` + JSON.stringify(data, null, 2);
+        } else {
+          result.textContent = JSON.stringify({status: res.status, data}, null, 2);
+        }
+      });
+    </script>
+  </body>
+</html>
