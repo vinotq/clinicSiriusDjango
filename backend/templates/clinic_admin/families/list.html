@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block title %}Семьи | Clinic Sirius{% endblock %}
+
+{% block content %}
+<section class="container py-5">
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+    <div>
+      <h2 class="fw-bold mb-0">Семьи</h2>
+      <p class="text-muted mb-0">Управление семейными связями пациентов</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a class="btn btn-primary" href="{% url 'clinic_admin:family_create' %}">
+        <i class="bi bi-plus-circle"></i> Создать семью
+      </a>
+      <a class="btn btn-outline-secondary" href="{% url 'clinic_admin:patient_list' %}">
+        <i class="bi bi-people"></i> Все пациенты
+      </a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      {% if families_page and families_page.object_list %}
+        <div class="table-responsive">
+          <table class="table align-middle">
+            <thead>
+              <tr>
+                <th>Представитель семьи</th>
+                <th>Члены семьи</th>
+                <th class="text-end">Действия</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for family in families_page.object_list %}
+                <tr>
+                  <td>
+                    <strong>{{ family.representative.lname }} {{ family.representative.fname }}</strong><br>
+                    <small class="text-muted">{{ family.representative.email|default:"—" }}</small><br>
+                    <small class="text-muted">Всего в семье: {{ family.members_count }}</small>
+                  </td>
+                  <td>
+                    <div class="d-flex flex-wrap gap-1">
+                      {% for member in family.members %}
+                        {% if member.pk != family.representative.pk %}
+                          <a href="{% url 'clinic_admin:patient_detail' member.pk %}" class="badge bg-secondary text-decoration-none">
+                            {{ member.lname }} {{ member.fname }}
+                          </a>
+                        {% endif %}
+                      {% endfor %}
+                      {% if family.members_count == 1 %}
+                        <span class="text-muted">Нет других членов семьи</span>
+                      {% endif %}
+                    </div>
+                  </td>
+                  <td class="text-end">
+                    <a class="btn btn-sm btn-outline-primary" href="{% url 'clinic_admin:family_detail' family.representative.pk %}">
+                      <i class="bi bi-eye"></i> Детали
+                    </a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        {% if families_page.has_other_pages %}
+        <nav>
+          <ul class="pagination justify-content-end mt-3 mb-0">
+            {% if families_page.has_previous %}
+              <li class="page-item"><a class="page-link" href="?page={{ families_page.previous_page_number }}">Назад</a></li>
+            {% endif %}
+            <li class="page-item disabled"><span class="page-link">Стр. {{ families_page.number }} из {{ families_page.paginator.num_pages }}</span></li>
+            {% if families_page.has_next %}
+              <li class="page-item"><a class="page-link" href="?page={{ families_page.next_page_number }}">Вперёд</a></li>
+            {% endif %}
+          </ul>
+        </nav>
+        {% endif %}
+      {% else %}
+        <p class="text-muted mb-0">Семьи не найдены.</p>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}
+

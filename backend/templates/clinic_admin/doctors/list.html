@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+
+{% block title %}Врачи | Clinic Sirius{% endblock %}
+
+{% block content %}
+<section class="container py-5">
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+    <div>
+      <h2 class="fw-bold mb-0">Врачи</h2>
+      <p class="text-muted mb-0">Управление врачами клиники</p>
+    </div>
+    <a class="btn btn-primary" href="{% url 'clinic_admin:doctor_create' %}">
+      <i class="bi bi-person-plus"></i> Добавить врача
+    </a>
+  </div>
+
+  <form method="get" class="card mb-3" id="searchForm">
+    <div class="card-body d-flex flex-wrap gap-3 align-items-center">
+      <input type="text" name="q" id="searchInput" class="form-control" placeholder="Поиск по ФИО или email" value="{{ q }}" autocomplete="off">
+      <select class="form-select" name="specialization" id="specializationSelect" style="max-width: 250px;">
+        <option value="">Все специализации</option>
+        {% for spec in specializations %}
+          <option value="{{ spec.pk }}" {% if specialization_id == spec.pk|stringformat:"s" %}selected{% endif %}>
+            {{ spec.name }}
+          </option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-primary" type="submit">
+        <i class="bi bi-search"></i> Найти
+      </button>
+      {% if q or specialization_id %}
+        <a class="btn btn-outline-secondary" href="{% url 'clinic_admin:doctor_list' %}">Сбросить</a>
+      {% endif %}
+    </div>
+  </form>
+  
+  <script>
+  (function() {
+    const searchInput = document.getElementById('searchInput');
+    const specializationSelect = document.getElementById('specializationSelect');
+    const searchForm = document.getElementById('searchForm');
+    let searchTimeout;
+    
+    function submitSearch() {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(function() {
+        if (searchInput) {
+          const cursorPos = searchInput.selectionStart || searchInput.value.length;
+          sessionStorage.setItem('searchCursorPos', cursorPos.toString());
+        }
+        searchForm.submit();
+      }, 300);
+    }
+    
+    if (searchInput) {
+      searchInput.addEventListener('input', submitSearch);
+      
+      // Восстанавливаем фокус и позицию курсора после загрузки
+      window.addEventListener('load', function() {
+        if (searchInput.value) {
+          searchInput.focus();
+          const savedPos = sessionStorage.getItem('searchCursorPos');
+          if (savedPos) {
+            const pos = parseInt(savedPos, 10);
+            if (pos >= 0 && pos <= searchInput.value.length) {
+              searchInput.setSelectionRange(pos, pos);
+            }
+            sessionStorage.removeItem('searchCursorPos');
+          } else {
+            searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
+          }
+        }
+      });
+    }
+    
+    if (specializationSelect) {
+      specializationSelect.addEventListener('change', function() {
+        searchForm.submit();
+      });
+    }
+  })();
+  </script>
+
+  <div class="card">
+    <div class="card-body">
+      {% if doctors_page and doctors_page.object_list %}
+        <div class="table-responsive">
+          <table class="table align-middle">
+            <thead>
+              <tr>
+                <th>ФИО</th>
+                <th>Специализация</th>
+                <th>Email</th>
+                <th>Телефон</th>
+                <th class="text-end">Действия</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for doctor in doctors_page.object_list %}
+                <tr>
+                  <td>{{ doctor.lname }} {{ doctor.fname }} {{ doctor.tname|default:"" }}</td>
+                  <td>{{ doctor.specialization.name }}</td>
+                  <td>{{ doctor.email }}</td>
+                  <td>{{ doctor.phone_number|default:"—" }}</td>
+                  <td class="text-end">
+                    <div class="btn-group btn-group-sm">
+                      <a class="btn btn-outline-primary" href="{% url 'clinic_admin:doctor_detail' doctor.pk %}">
+                        <i class="bi bi-eye"></i>
+                      </a>
+                      <a class="btn btn-outline-secondary" href="{% url 'clinic_admin:doctor_edit' doctor.pk %}">
+                        <i class="bi bi-pencil"></i>
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        {% if doctors_page.has_other_pages %}
+        <nav>
+          <ul class="pagination justify-content-end mt-3 mb-0">
+            {% if doctors_page.has_previous %}
+              <li class="page-item"><a class="page-link" href="?q={{ q }}&specialization={{ specialization_id }}&page={{ doctors_page.previous_page_number }}">Назад</a></li>
+            {% endif %}
+            <li class="page-item disabled"><span class="page-link">Стр. {{ doctors_page.number }} из {{ doctors_page.paginator.num_pages }}</span></li>
+            {% if doctors_page.has_next %}
+              <li class="page-item"><a class="page-link" href="?q={{ q }}&specialization={{ specialization_id }}&page={{ doctors_page.next_page_number }}">Вперёд</a></li>
+            {% endif %}
+          </ul>
+        </nav>
+        {% endif %}
+      {% else %}
+        <p class="text-muted mb-0">Врачи не найдены.</p>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}
+

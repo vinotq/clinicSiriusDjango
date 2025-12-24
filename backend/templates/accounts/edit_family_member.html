@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}Редактирование члена семьи | Clinic Sirius{% endblock %}
+
+{% block content %}
+<section class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+          <h2 class="fw-bold mb-2">Редактирование члена семьи</h2>
+          <p class="text-muted mb-0">Обновите данные члена семьи</p>
+        </div>
+        <a class="btn btn-outline-secondary" href="{% url 'accounts:settings' %}">
+          <i class="bi bi-arrow-left"></i> Назад к настройкам
+        </a>
+      </div>
+
+      <div class="card shadow-sm">
+        <div class="card-body p-4 p-md-5">
+          {% if error %}
+            <div class="alert alert-danger alert-dismissible fade show mb-4">
+              {{ error }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endif %}
+
+          <form method="post" class="d-grid gap-3">
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Имя <span class="text-danger">*</span></label>
+                <input type="text" name="fname" class="form-control" value="{{ member.fname }}" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Фамилия <span class="text-danger">*</span></label>
+                <input type="text" name="lname" class="form-control" value="{{ member.lname }}" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Отчество</label>
+                <input type="text" name="tname" class="form-control" value="{{ member.tname|default:'' }}">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Дата рождения <span class="text-danger">*</span></label>
+                <input type="date" name="bdate" class="form-control" value="{{ member.bdate|date:'Y-m-d' }}" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Телефон</label>
+                <input type="text" name="phone_number" class="form-control" value="{{ member.phone_number|default:'' }}" placeholder="+7">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Email</label>
+                <input type="email" name="patient_email" class="form-control" value="{{ member.email|default:'' }}">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">СНИЛС <span class="text-danger">*</span></label>
+                <input type="text" name="snils" class="form-control" value="{{ member.snils }}" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Полис ОМС <span class="text-danger">*</span></label>
+                <input type="text" name="oms" class="form-control" value="{{ member.oms }}" required>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-between gap-3 mt-4 pt-3 border-top">
+              <a href="{% url 'accounts:settings' %}" class="btn btn-outline-secondary px-4">
+                Отмена
+              </a>
+              <button type="submit" class="btn btn-primary px-4">
+                <i class="bi bi-check-circle"></i> Сохранить изменения
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+

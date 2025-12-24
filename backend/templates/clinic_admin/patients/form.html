@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if action == 'edit' %}Редактирование пациента{% else %}Создание пациента{% endif %} | Clinic Sirius{% endblock %}
+
+{% block content %}
+<section class="container py-5">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+    <div>
+      <h2 class="fw-bold mb-0">
+        {% if action == 'edit' %}
+          Редактирование пациента
+        {% else %}
+          Создание пациента
+        {% endif %}
+      </h2>
+      <p class="text-muted mb-0">
+        {% if action == 'edit' %}
+          Изменение данных пациента
+        {% else %}
+          Регистрация нового пациента в системе
+        {% endif %}
+      </p>
+    </div>
+    <a class="btn btn-outline-secondary" href="{% if action == 'edit' %}{% url 'clinic_admin:patient_detail' patient.pk %}{% else %}{% url 'clinic_admin:patient_list' %}{% endif %}">
+      <i class="bi bi-arrow-left"></i> Назад
+    </a>
+  </div>
+
+  {% if error %}
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      {{ error }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  {% endif %}
+
+  <div class="card shadow-sm">
+    <div class="card-body p-4">
+      <form method="post">
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">Фамилия <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="lname" value="{{ patient.lname|default:'' }}" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Имя <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="fname" value="{{ patient.fname|default:'' }}" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Отчество</label>
+            <input type="text" class="form-control" name="tname" value="{{ patient.tname|default:'' }}">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Дата рождения <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="bdate" value="{% if patient.bdate %}{{ patient.bdate|date:'d.m.Y' }}{% endif %}" placeholder="ДД.ММ.ГГГГ" pattern="\d{2}\.\d{2}\.\d{4}" required>
+            <small class="text-muted">Формат: ДД.ММ.ГГГГ (например, 25.12.1990)</small>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Телефон</label>
+            <input type="text" class="form-control" name="phone_number" value="{{ patient.phone_number|default:'' }}" placeholder="+7 (XXX) XXX-XX-XX">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" name="email" value="{{ patient.email|default:'' }}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">СНИЛС <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="snils" value="{{ patient.snils|default:'' }}" maxlength="11" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Полис ОМС <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="oms" value="{{ patient.oms|default:'' }}" maxlength="16" required>
+          </div>
+        </div>
+        <div class="mt-4 d-flex gap-2">
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check"></i> Сохранить
+          </button>
+          <a class="btn btn-outline-secondary" href="{% if action == 'edit' %}{% url 'clinic_admin:patient_detail' patient.pk %}{% else %}{% url 'clinic_admin:patient_list' %}{% endif %}">
+            Отмена
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}
+

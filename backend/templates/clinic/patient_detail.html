@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+
+{% block title %}Карточка пациента | Clinic Sirius{% endblock %}
+
+{% block content %}
+<section class="container py-5">
+  {% if not patient_obj %}
+    <div class="alert alert-danger">Пациент не найден.</div>
+  {% else %}
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+      <div>
+        <h2 class="fw-bold mb-0">{{ patient_obj.lname }} {{ patient_obj.fname }} {{ patient_obj.tname|default:"" }}</h2>
+      </div>
+      <a class="btn btn-outline-primary" href="{% url 'clinic_admin:patient_list' %}">Назад к списку</a>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-4">
+        <div class="card h-100">
+          <div class="card-body d-grid gap-2">
+            <div>
+              <div class="fw-semibold">Дата рождения</div>
+              <small class="text-muted">{{ patient_obj.bdate|date:"d.m.Y" }}</small>
+            </div>
+            <div>
+              <div class="fw-semibold">СНИЛС</div>
+              <small class="text-muted">{{ patient_obj.snils }}</small>
+            </div>
+            <div>
+              <div class="fw-semibold">ОМС</div>
+              <small class="text-muted">{{ patient_obj.oms }}</small>
+            </div>
+            <div>
+              <div class="fw-semibold">Телефон</div>
+              <small class="text-muted">{{ patient_obj.phone_number|default:"—" }}</small>
+            </div>
+            <div>
+              <div class="fw-semibold">Email</div>
+              <small class="text-muted">{{ patient_obj.email|default:"—" }}</small>
+            </div>
+            {% if patient_obj.blood_type %}
+            <div>
+              <div class="fw-semibold">Группа крови</div>
+              <small class="text-muted">{{ patient_obj.blood_type }}</small>
+            </div>
+            {% endif %}
+            {% if patient_obj.allergies %}
+            <div>
+              <div class="fw-semibold">Аллергии</div>
+              <small class="text-muted">{{ patient_obj.allergies }}</small>
+            </div>
+            {% endif %}
+            {% if patient_obj.chronic_diseases %}
+            <div>
+              <div class="fw-semibold">Хронические заболевания</div>
+              <small class="text-muted">{{ patient_obj.chronic_diseases }}</small>
+            </div>
+            {% endif %}
+            {% if patient_obj.medications %}
+            <div>
+              <div class="fw-semibold">Медикаменты</div>
+              <small class="text-muted">{{ patient_obj.medications }}</small>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-8">
+        <div class="card mb-4">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h5 class="fw-semibold mb-0">Семья</h5>
+              {% if user.role != 'doctor' %}
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'patients:patient_manage_html' %}">Управлять</a>
+              {% endif %}
+            </div>
+            {% if family_members %}
+              <ul class="list-group list-group-flush">
+                {% for member in family_members %}
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <a href="{% url 'clinic_admin:patient_detail' member.id %}" class="text-decoration-none">
+                      {{ member.lname }} {{ member.fname }}
+                    </a>
+                    <small class="text-muted">{{ member.bdate|date:"d.m.Y" }}</small>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="text-muted mb-0">Члены семьи не добавлены.</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h5 class="fw-semibold mb-0">История визитов</h5>
+              <small class="text-muted">Всего: {{ appointments|length }}</small>
+            </div>
+            {% if appointments %}
+              <div class="table-responsive">
+                <table class="table align-middle">
+                  <thead>
+                    <tr>
+                      <th>Дата</th>
+                      <th>Время</th>
+                      <th>Врач</th>
+                      <th>Специализация</th>
+                      <th>Статус</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for appt in appointments %}
+                      <tr>
+                        <td>{{ appt.date|date:"d.m.Y" }}</td>
+                        <td>{{ appt.date|time:"H:i" }}</td>
+                        <td>
+                          {{ appt.doctor.lname }} 
+                          {% if appt.doctor.fname %}{{ appt.doctor.fname|first }}.{% endif %}
+                          {% if appt.doctor.tname %}{{ appt.doctor.tname|first }}.{% endif %}
+                        </td>
+                        <td>{{ appt.doctor.specialization.name }}</td>
+                        <td>
+                          {% if appt.status == 'booked' %}
+                            <span class="badge bg-primary-subtle text-primary">Записан</span>
+                          {% elif appt.status == 'in_progress' %}
+                            <span class="badge bg-warning-subtle text-warning">В процессе</span>
+                          {% elif appt.status == 'completed' %}
+                            <span class="badge bg-success-subtle text-success">Завершён</span>
+                          {% else %}
+                            <span class="badge bg-secondary-subtle text-secondary">{{ appt.status|default:"Визит" }}</span>
+                          {% endif %}
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <p class="text-muted mb-0">Записи о визитах отсутствуют.</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+</section>
+{% endblock %}
+

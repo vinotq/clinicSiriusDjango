@@ -1,0 +1,666 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Добавить окна — {{ doctor.lname }} {{ doctor.fname }} | Clinic Sirius{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/timepicker/1.13.18/jquery.timepicker.min.css">
+<style>
+  /* Стили для flatpickr календаря - компактнее */
+  .flatpickr-calendar {
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border: 1px solid #dee2e6;
+    padding: 8px;
+    font-size: 13px;
+    width: 100%;
+    min-width: 320px;
+    max-width: 340px;
+    z-index: 1050 !important;
+  }
+  
+  .flatpickr-months {
+    margin-bottom: 6px;
+    padding: 0;
+  }
+  
+  .flatpickr-month {
+    padding: 6px 4px;
+    font-size: 14px;
+    font-weight: 600;
+    height: 32px;
+    line-height: 32px;
+    margin-bottom: 0;
+    position: relative;
+  }
+  
+  .flatpickr-current-month {
+    font-size: 14px;
+    font-weight: 600;
+    padding: 0;
+    height: auto;
+    line-height: 1.2;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 50%;
+    margin-top: -0.6em;
+  }
+  
+  .flatpickr-weekdays {
+    padding: 6px 0;
+    margin-bottom: 2px;
+    margin-top: 0;
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+  }
+  
+  .flatpickr-weekday {
+    font-size: 11px;
+    font-weight: 600;
+    color: #495057;
+    padding: 4px 2px;
+    line-height: 1.2;
+    display: table-cell;
+    text-align: center;
+    width: 14.28%;
+    overflow: visible;
+    white-space: nowrap;
+  }
+  
+  .flatpickr-days {
+    padding: 2px 0;
+    margin-top: 0;
+  }
+  
+  .flatpickr-calendar .flatpickr-innerContainer {
+    padding: 0;
+  }
+  
+  .flatpickr-day {
+    height: 32px;
+    line-height: 32px;
+    font-size: 13px;
+    margin: 1px;
+    border-radius: 6px;
+    width: calc(14.28% - 2px);
+    max-width: 42px;
+  }
+  
+  .flatpickr-day:hover {
+    background: #e7f1ff;
+    border-color: #e7f1ff;
+    cursor: pointer;
+  }
+  
+  .flatpickr-day.selected {
+    background: #0d6efd !important;
+    border-color: #0d6efd !important;
+    color: white !important;
+    font-weight: 600;
+  }
+  
+  .flatpickr-day.selected:hover {
+    background: #0a58ca !important;
+    border-color: #0a58ca !important;
+  }
+  
+  .flatpickr-day.today {
+    border: 2px solid #ffc107;
+    color: #000;
+    font-weight: 600;
+  }
+  
+  .flatpickr-day.today:hover {
+    background: #fff3cd;
+    border-color: #ffc107;
+  }
+  
+  .flatpickr-day.flatpickr-disabled,
+  .flatpickr-day.prevMonthDay,
+  .flatpickr-day.nextMonthDay {
+    color: #adb5bd;
+    opacity: 0.5;
+  }
+  
+  .flatpickr-prev-month,
+  .flatpickr-next-month {
+    padding: 4px 8px;
+    top: 6px;
+    height: 24px;
+    width: 24px;
+    border-radius: 4px;
+  }
+  
+  .flatpickr-prev-month:hover,
+  .flatpickr-next-month:hover {
+    background: #f8f9fa;
+  }
+  
+  .flatpickr-prev-month svg,
+  .flatpickr-next-month svg {
+    width: 12px;
+    height: 12px;
+  }
+  
+  .flatpickr-calendar.open {
+    display: block;
+    opacity: 1;
+    visibility: visible;
+  }
+  
+  /* Стили для timepicker (в стиле ant-design) */
+  .ui-timepicker-wrapper {
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border: 1px solid #d9d9d9;
+    background: white;
+    z-index: 1050;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  
+  .ui-timepicker-list li {
+    padding: 8px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .ui-timepicker-list li:hover {
+    background: #f5f5f5;
+  }
+  
+  .ui-timepicker-list li.ui-timepicker-selected {
+    background: #e6f7ff;
+    color: #1890ff;
+    font-weight: 600;
+  }
+  
+  /* Стили для полей времени */
+  .time-input-wrapper {
+    position: relative;
+  }
+  
+  .time-input-wrapper input {
+    font-family: monospace;
+    font-size: 16px;
+    padding: 10px;
+    cursor: pointer;
+  }
+  
+  /* Курсор указателя на иконке календаря */
+  .input-group-text {
+    cursor: pointer;
+    user-select: none;
+  }
+  
+  .input-group-text:hover {
+    background-color: #e9ecef;
+  }
+  
+  .input-group-text i {
+    color: #6c757d;
+  }
+  
+  .input-group-text:hover i {
+    color: #0d6efd;
+  }
+
+
+  /* Autocomplete стили */
+  .autocomplete-suggestions {
+    position: absolute;
+    z-index: 1000;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    margin-top: 2px;
+    width: 100%;
+  }
+
+  .autocomplete-suggestion {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    border-bottom: 1px solid #f8f9fa;
+  }
+
+  .autocomplete-suggestion:hover,
+  .autocomplete-suggestion.selected {
+    background-color: #e7f1ff;
+  }
+
+  .autocomplete-suggestion:last-child {
+    border-bottom: none;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="container py-5" style="max-width: 720px;">
+  <div class="mb-4">
+    <h2 class="fw-bold mb-1">Добавить окна приёма</h2>
+    <p class="text-muted mb-0">{{ doctor.lname }} {{ doctor.fname }} · {{ doctor.specialization.name }}</p>
+  </div>
+
+  {% if error %}
+    <div class="alert alert-danger mb-4">{{ error }}</div>
+  {% endif %}
+
+  {% if success %}
+    <div class="alert alert-success mb-4">{{ success }}</div>
+  {% endif %}
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="d-flex gap-2 mb-4">
+        <button type="button" class="btn btn-primary flex-fill mode-btn" data-mode="day">
+          Расписание на день
+        </button>
+        <button type="button" class="btn btn-outline-primary flex-fill mode-btn" data-mode="single">
+          Одиночное окно
+        </button>
+      </div>
+
+      <form method="post" id="timeslot-form">
+        {% csrf_token %}
+        <input type="hidden" name="mode" id="mode-input" value="day">
+
+        <!-- Общие поля -->
+        <div class="mb-3">
+          <label class="form-label">Дата</label>
+          <div class="input-group">
+            <input type="text" name="date" id="datepicker" class="form-control" 
+                   autocomplete="off" placeholder="дд.мм.гггг" 
+                   value="{{ selected_date }}" required readonly>
+            <span class="input-group-text" id="calendar-icon" style="cursor: pointer;"><i class="bi bi-calendar3"></i></span>
+          </div>
+          <small class="text-muted">Формат: дд.мм.гггг (например, 25.12.2024)</small>
+        </div>
+
+        <div class="mb-3">
+          <label for="id_room_number" class="form-label">Кабинет</label>
+          <div class="position-relative">
+          <input type="text" name="room_number" id="id_room_number" class="form-control" 
+                   value="{{ doctor.office|default:'' }}" placeholder="Введите номер кабинета" 
+                   autocomplete="off" required>
+            <div id="room-autocomplete" class="autocomplete-suggestions" style="display: none;"></div>
+          </div>
+        </div>
+
+        <!-- Режим "Расписание на день" -->
+        <div id="day-mode-fields">
+          <div class="row g-3 mb-3">
+            <div class="col-6">
+              <label class="form-label">Начало рабочего дня</label>
+              <div class="time-input-wrapper">
+                <input type="text" name="day_start" id="day_start" class="form-control timepicker" value="09:00" required>
+              </div>
+            </div>
+            <div class="col-6">
+              <label class="form-label">Конец рабочего дня</label>
+              <div class="time-input-wrapper">
+                <input type="text" name="day_end" id="day_end" class="form-control timepicker" value="18:00" required>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Длительность приёма (минуты)</label>
+            <input type="number" name="slot_duration" id="slot_duration" class="form-control" 
+                   value="20" required>
+            <small class="text-muted">Введите длительность приёма в минутах (15, 30, 45, 60 и т.д.)</small>
+          </div>
+
+          <div class="card bg-light border-0 mb-3">
+            <div class="card-body py-2">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="has_break" id="has_break">
+                <label class="form-check-label" for="has_break">Добавить перерыв</label>
+              </div>
+            </div>
+          </div>
+
+          <div id="break-fields" class="row g-3 mb-3" style="display: none;">
+            <div class="col-6">
+              <label class="form-label">Начало перерыва</label>
+              <div class="time-input-wrapper">
+                <input type="text" name="break_start" id="break_start" class="form-control timepicker" value="13:00">
+              </div>
+            </div>
+            <div class="col-6">
+              <label class="form-label">Конец перерыва</label>
+              <div class="time-input-wrapper">
+                <input type="text" name="break_end" id="break_end" class="form-control timepicker" value="14:00">
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Режим "Одиночное окно" -->
+        <div id="single-mode-fields" style="display: none;">
+          <div class="row g-3 mb-3">
+            <div class="col-6">
+              <label class="form-label">Время начала</label>
+              <div class="time-input-wrapper">
+                <input type="text" name="single_time" id="single_time" class="form-control timepicker" value="09:00" required>
+              </div>
+            </div>
+            <div class="col-6">
+              <label class="form-label">Длительность (минуты)</label>
+              <input type="number" name="single_duration" class="form-control" 
+                     value="20" required>
+            </div>
+          </div>
+        </div>
+
+        {% if form_errors %}
+          <div class="alert alert-danger mb-3">{{ form_errors }}</div>
+        {% endif %}
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary">Создать</button>
+          <a href="{% url 'scheduling:doctor_schedule' doctor.id %}" class="btn btn-outline-secondary">Отмена</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/timepicker/1.13.18/jquery.timepicker.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('Инициализация формы создания расписания...');
+  
+  // Список существующих кабинетов для автодополнения
+  var existingRooms = [];
+  try {
+    existingRooms = {{ existing_rooms_json|safe|default:"[]" }};
+  } catch (e) {
+    console.error('Ошибка при загрузке списка кабинетов:', e);
+    existingRooms = [];
+  }
+  
+  // Инициализация календаря с flatpickr
+  var datepickerInput = document.getElementById('datepicker');
+  var calendarIcon = document.getElementById('calendar-icon');
+  
+  if (!datepickerInput) {
+    console.error('Поле datepicker не найдено!');
+    return;
+  }
+  
+  // Преобразуем формат даты из yyyy-mm-dd в dd.mm.yyyy для отображения
+  function formatDateForDisplay(dateStr) {
+    if (!dateStr) return '';
+    var parts = dateStr.split('-');
+    if (parts.length === 3) {
+      return parts[2] + '.' + parts[1] + '.' + parts[0];
+    }
+    return dateStr;
+  }
+  
+  // Преобразуем формат даты из dd.mm.yyyy в yyyy-mm-dd для отправки
+  function formatDateForSubmit(dateStr) {
+    if (!dateStr) return '';
+    var parts = dateStr.split('.');
+    if (parts.length === 3) {
+      return parts[2] + '-' + parts[1] + '-' + parts[0];
+    }
+    return dateStr;
+  }
+  
+  // Устанавливаем начальное значение в русском формате
+  var initialValue = datepickerInput.value;
+  if (initialValue && initialValue.includes('-')) {
+    datepickerInput.value = formatDateForDisplay(initialValue);
+  }
+  
+  // Инициализация flatpickr
+  var flatpickrInstance = null;
+  try {
+    flatpickrInstance = flatpickr(datepickerInput, {
+      dateFormat: 'd.m.Y',
+      locale: 'ru',
+      minDate: 'today',
+      defaultDate: initialValue && initialValue.includes('.') ? initialValue : null,
+      allowInput: false,
+      clickOpens: true,
+      animate: true,
+      monthSelectorType: 'static',
+      static: true,
+      onClose: function(selectedDates, dateStr, instance) {
+        // Убираем фокус после выбора даты
+        datepickerInput.blur();
+      }
+    });
+    console.log('Flatpickr инициализирован');
+  } catch (e) {
+    console.error('Ошибка при инициализации flatpickr:', e);
+  }
+  
+  // Преобразуем дату перед отправкой формы
+  var timeslotForm = document.getElementById('timeslot-form');
+  if (timeslotForm) {
+    timeslotForm.addEventListener('submit', function(e) {
+      var dateValue = datepickerInput.value;
+      if (dateValue && dateValue.includes('.')) {
+        datepickerInput.value = formatDateForSubmit(dateValue);
+      }
+    });
+  }
+  
+  // Обработчик клика на иконку календаря
+  if (calendarIcon && flatpickrInstance) {
+    calendarIcon.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('Клик на иконку календаря');
+      flatpickrInstance.open();
+      return false;
+    });
+  }
+  
+  // Обработчик клика на поле даты
+  if (flatpickrInstance) {
+    datepickerInput.addEventListener('click', function(e) {
+      console.log('Клик на поле даты');
+      flatpickrInstance.open();
+    });
+    
+    // После выбора даты убираем фокус
+    datepickerInput.addEventListener('change', function() {
+      console.log('Дата изменена, убираем фокус');
+      setTimeout(function() {
+        datepickerInput.blur();
+      }, 100);
+    });
+  }
+  
+  // Инициализация timepicker для всех полей времени (используем jQuery ready)
+  if (typeof jQuery !== 'undefined') {
+    jQuery(document).ready(function($) {
+      if (typeof $.fn.timepicker !== 'undefined') {
+        $('.timepicker').timepicker({
+          timeFormat: 'HH:mm',
+          interval: 15,
+          minTime: '00:00',
+          maxTime: '23:59',
+          defaultTime: false,
+          startTime: '00:00',
+          dynamic: false,
+          dropdown: true,
+          scrollbar: true,
+          change: function(time) {
+            // Убираем фокус после выбора времени
+            $(this).blur();
+          }
+        });
+        console.log('Timepickers инициализированы');
+      } else {
+        console.error('jQuery timepicker плагин не загружен!');
+        // Fallback: делаем поля редактируемыми вручную
+        $('.timepicker').removeClass('timepicker').attr('placeholder', 'ЧЧ:ММ (например, 09:00)');
+      }
+    });
+  } else {
+    console.error('jQuery не загружен!');
+    // Fallback: делаем поля редактируемыми вручную
+    setTimeout(function() {
+      var timeInputs = document.querySelectorAll('.timepicker');
+      timeInputs.forEach(function(input) {
+        input.classList.remove('timepicker');
+        input.placeholder = 'ЧЧ:ММ (например, 09:00)';
+      });
+    }, 500);
+  }
+
+  // Автодополнение для кабинета
+  var roomInput = document.getElementById('id_room_number');
+  var autocomplete = document.getElementById('room-autocomplete');
+  var selectedIndex = -1;
+
+  if (roomInput && autocomplete) {
+    roomInput.addEventListener('input', function() {
+      var value = this.value.toLowerCase();
+      if (value.length === 0) {
+        autocomplete.style.display = 'none';
+        return;
+      }
+
+      var matches = existingRooms.filter(function(room) {
+        return room.toLowerCase().indexOf(value) !== -1;
+      });
+
+      if (matches.length > 0) {
+        var html = '';
+        matches.slice(0, 10).forEach(function(room) {
+          html += '<div class="autocomplete-suggestion">' + room + '</div>';
+        });
+        autocomplete.innerHTML = html;
+        autocomplete.style.display = 'block';
+        selectedIndex = -1;
+      } else {
+        autocomplete.style.display = 'none';
+      }
+    });
+
+    // Обработка выбора из автодополнения
+    autocomplete.addEventListener('click', function(e) {
+      if (e.target.classList.contains('autocomplete-suggestion')) {
+        roomInput.value = e.target.textContent;
+        autocomplete.style.display = 'none';
+      }
+    });
+
+    // Закрытие автодополнения при клике вне
+    document.addEventListener('click', function(e) {
+      if (!roomInput.contains(e.target) && !autocomplete.contains(e.target)) {
+        autocomplete.style.display = 'none';
+      }
+    });
+
+    // Навигация по автодополнению клавиатурой
+    roomInput.addEventListener('keydown', function(e) {
+      var suggestions = autocomplete.querySelectorAll('.autocomplete-suggestion');
+      if (suggestions.length === 0) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        selectedIndex = Math.min(selectedIndex + 1, suggestions.length - 1);
+        suggestions.forEach(function(s) { s.classList.remove('selected'); });
+        suggestions[selectedIndex].classList.add('selected');
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        selectedIndex = Math.max(selectedIndex - 1, -1);
+        suggestions.forEach(function(s) { s.classList.remove('selected'); });
+        if (selectedIndex >= 0) {
+          suggestions[selectedIndex].classList.add('selected');
+        }
+      } else if (e.key === 'Enter' && selectedIndex >= 0) {
+        e.preventDefault();
+        roomInput.value = suggestions[selectedIndex].textContent;
+        autocomplete.style.display = 'none';
+      } else if (e.key === 'Escape') {
+        autocomplete.style.display = 'none';
+      }
+    });
+  }
+
+  // Mode switching
+  var modeButtons = document.querySelectorAll('.mode-btn');
+  var modeInput = document.getElementById('mode-input');
+  var dayFields = document.getElementById('day-mode-fields');
+  var singleFields = document.getElementById('single-mode-fields');
+
+  modeButtons.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var mode = this.getAttribute('data-mode');
+
+      modeButtons.forEach(function(b) {
+        b.classList.remove('btn-primary');
+        b.classList.add('btn-outline-primary');
+      });
+      this.classList.remove('btn-outline-primary');
+      this.classList.add('btn-primary');
+
+      modeInput.value = mode;
+
+    if (mode === 'day') {
+        dayFields.style.display = 'block';
+        singleFields.style.display = 'none';
+    } else {
+        dayFields.style.display = 'none';
+        singleFields.style.display = 'block';
+    }
+    });
+  });
+
+  // Break toggle - открытие/закрытие полей перерыва
+  var hasBreakCheckbox = document.getElementById('has_break');
+  var breakFields = document.getElementById('break-fields');
+
+  if (hasBreakCheckbox && breakFields) {
+    hasBreakCheckbox.addEventListener('change', function() {
+      var isChecked = this.checked;
+      console.log('Галочка перерыва изменена:', isChecked);
+      
+      if (isChecked) {
+        console.log('Показываем поля перерыва');
+        breakFields.style.display = 'block';
+        // Плавное появление
+        breakFields.style.opacity = '0';
+        setTimeout(function() {
+          breakFields.style.transition = 'opacity 0.3s';
+          breakFields.style.opacity = '1';
+        }, 10);
+    } else {
+        console.log('Скрываем поля перерыва');
+        breakFields.style.transition = 'opacity 0.3s';
+        breakFields.style.opacity = '0';
+        setTimeout(function() {
+          breakFields.style.display = 'none';
+        }, 300);
+    }
+  });
+    
+    // Инициализация при загрузке - проверяем состояние галочки
+    if (hasBreakCheckbox.checked) {
+      console.log('Галочка перерыва уже установлена при загрузке');
+      breakFields.style.display = 'block';
+    }
+  }
+
+  console.log('Инициализация формы завершена');
+});
+</script>
+{% endblock %}
