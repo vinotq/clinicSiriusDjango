@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Информация о записи | Clinic Sirius{% endblock %}
+
+{% block content %}
+<section class="container py-5">
+  <div class="row">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-body p-5">
+          <div class="text-center mb-4">
+            <i class="bi bi-calendar-check text-primary" style="font-size: 4rem;"></i>
+            <h2 class="mt-3 mb-2">Ваша запись подтверждена</h2>
+            <p class="text-muted">Сохраните эту информацию</p>
+          </div>
+
+          <!-- Информация о записи -->
+          <div class="card border-primary mb-4">
+            <div class="card-header bg-primary text-white">
+              <h5 class="mb-0">
+                <i class="bi bi-calendar-event"></i> Данные записи
+              </h5>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <strong><i class="bi bi-person-badge"></i> Врач:</strong><br>
+                  <span class="fs-5">
+                    {{ appointment.doctor.lname }} 
+                    {% if appointment.doctor.fname %}{{ appointment.doctor.fname|first }}.{% endif %}
+                    {% if appointment.doctor.tname %}{{ appointment.doctor.tname|first }}.{% endif %}
+                  </span><br>
+                  <span class="text-muted">
+                    {% if "терапевт" in appointment.doctor.specialization.name|lower or "терапия" in appointment.doctor.specialization.name|lower %}
+                      <i class="bi bi-heart-pulse me-1"></i>
+                    {% elif "кардиолог" in appointment.doctor.specialization.name|lower or "кардиология" in appointment.doctor.specialization.name|lower %}
+                      <i class="bi bi-heart me-1"></i>
+                    {% elif "невролог" in appointment.doctor.specialization.name|lower or "неврология" in appointment.doctor.specialization.name|lower %}
+                      <i class="bi bi-brain me-1"></i>
+                    {% elif "педиатр" in appointment.doctor.specialization.name|lower or "педиатрия" in appointment.doctor.specialization.name|lower %}
+                      <i class="bi bi-emoji-smile me-1"></i>
+                    {% elif "семейн" in appointment.doctor.specialization.name|lower %}
+                      <i class="bi bi-people me-1"></i>
+                    {% elif "гинеколог" in appointment.doctor.specialization.name|lower or "гинекология" in appointment.doctor.specialization.name|lower %}
+                      <i class="bi bi-gender-female me-1"></i>
+                    {% elif "уролог" in appointment.doctor.specialization.name|lower or "урология" in appointment.doctor.specialization.name|lower %}
+                      <i class="bi bi-gender-male me-1"></i>
+                    {% elif "дерматолог" in appointment.doctor.specialization.name|lower or "дерматология" in appointment.doctor.specialization.name|lower %}
+                      <i class="bi bi-droplet me-1"></i>
+                    {% elif "офтальмолог" in appointment.doctor.specialization.name|lower or "офтальмология" in appointment.doctor.specialization.name|lower %}
+                      <i class="bi bi-eye me-1"></i>
+                    {% elif "отоларинголог" in appointment.doctor.specialization.name|lower or "лор" in appointment.doctor.specialization.name|lower %}
+                      <i class="bi bi-earbuds me-1"></i>
+                    {% elif "стоматолог" in appointment.doctor.specialization.name|lower or "стоматология" in appointment.doctor.specialization.name|lower %}
+                      <i class="bi bi-tooth me-1"></i>
+                    {% elif "хирург" in appointment.doctor.specialization.name|lower or "хирургия" in appointment.doctor.specialization.name|lower %}
+                      <i class="bi bi-scissors me-1"></i>
+                    {% elif "ортопед" in appointment.doctor.specialization.name|lower or "ортопедия" in appointment.doctor.specialization.name|lower %}
+                      <i class="bi bi-bone me-1"></i>
+                    {% elif "эндокринолог" in appointment.doctor.specialization.name|lower or "эндокринология" in appointment.doctor.specialization.name|lower %}
+                      <i class="bi bi-activity me-1"></i>
+                    {% elif "гастроэнтеролог" in appointment.doctor.specialization.name|lower or "гастроэнтерология" in appointment.doctor.specialization.name|lower %}
+                      <i class="bi bi-stomach me-1"></i>
+                    {% elif "психиатр" in appointment.doctor.specialization.name|lower or "психиатрия" in appointment.doctor.specialization.name|lower %}
+                      <i class="bi bi-headset me-1"></i>
+                    {% elif "диагностик" in appointment.doctor.specialization.name|lower %}
+                      <i class="bi bi-clipboard2-pulse me-1"></i>
+                    {% else %}
+                      <i class="bi bi-hospital me-1"></i>
+                    {% endif %}
+                    {{ appointment.doctor.specialization.name }}
+                  </span>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <strong><i class="bi bi-clock"></i> Дата и время:</strong><br>
+                  <span class="fs-5 fw-bold" style="color: #000;">{{ appointment.date|date:"d.m.Y" }}</span><br>
+                  <span class="fs-5 fw-bold" style="color: #000;">{{ appointment.date|time:"H:i" }}</span>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <strong><i class="bi bi-person"></i> Пациент:</strong><br>
+                  <span class="fs-5">
+                    {{ appointment.patient.lname }} 
+                    {% if appointment.patient.fname %}{{ appointment.patient.fname|first }}.{% endif %}
+                    {% if appointment.patient.tname %}{{ appointment.patient.tname|first }}.{% endif %}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Контакты клиники -->
+          <div class="card border-warning mb-4">
+            <div class="card-header bg-warning">
+              <h5 class="mb-0">
+                <i class="bi bi-telephone"></i> Контакты клиники
+              </h5>
+            </div>
+            <div class="card-body">
+              <p class="mb-3">
+                Если у вас возникли вопросы или нужно изменить запись, свяжитесь с нами:
+              </p>
+              <div class="d-flex flex-column gap-3">
+                <div>
+                  <strong><i class="bi bi-telephone-fill text-primary"></i> Телефон:</strong><br>
+                  <a href="tel:{{ clinic_phone_url }}" class="fs-5 text-decoration-none">{{ clinic_phone }}</a>
+                </div>
+                <div>
+                  <strong><i class="bi bi-envelope-fill text-primary"></i> Email:</strong><br>
+                  <a href="mailto:{{ clinic_email }}" class="fs-5 text-decoration-none">{{ clinic_email }}</a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Важная информация -->
+          <div class="alert alert-info">
+            <h6 class="alert-heading"><i class="bi bi-info-circle"></i> Важно:</h6>
+            <ul class="mb-0">
+              <li>Приходите за 10-15 минут до назначенного времени</li>
+              <li>Не забудьте взять с собой документы (паспорт, полис ОМС, СНИЛС)</li>
+              <li>При необходимости отмены или переноса записи звоните по указанному телефону</li>
+            </ul>
+          </div>
+
+          <div class="text-center mt-4">
+            {% if is_authenticated %}
+              <a href="{% url 'index' %}" class="btn btn-primary">На главную</a>
+              <a href="{% url 'index' %}" class="btn btn-outline-primary ms-2">Мои записи</a>
+            {% else %}
+              <a href="{% url 'index' %}" class="btn btn-primary">На главную</a>
+              <a href="{% url 'accounts:register' %}" class="btn btn-outline-primary ms-2">Создать аккаунт</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+

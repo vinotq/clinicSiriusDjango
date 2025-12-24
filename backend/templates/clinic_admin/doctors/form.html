@@ -1,0 +1,268 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if action == 'edit' %}Редактирование врача{% else %}Создание врача{% endif %} | Clinic Sirius{% endblock %}
+
+{% block extra_head %}
+<style>
+  .searchable-select-wrapper {
+    position: relative;
+  }
+  
+  .searchable-select-input {
+    width: 100%;
+    padding: 0.375rem 0.75rem;
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    background: white;
+  }
+  
+  .searchable-select-input:focus {
+    border-color: #86b7fe;
+    outline: 0;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  }
+  
+  .searchable-select-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1060;
+    background: white;
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    max-height: 300px;
+    overflow-y: auto;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    display: none;
+    margin-top: 2px;
+  }
+  
+  .searchable-select-dropdown.show {
+    display: block;
+  }
+  
+  .searchable-select-option {
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    border-bottom: 1px solid #f8f9fa;
+  }
+  
+  .searchable-select-option:hover,
+  .searchable-select-option.selected {
+    background-color: #e7f1ff;
+  }
+  
+  .searchable-select-option:last-child {
+    border-bottom: none;
+  }
+  
+  .searchable-select-search {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #dee2e6;
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 1;
+  }
+  
+  .searchable-select-search input {
+    width: 100%;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    padding: 0.25rem 0.5rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="container py-5">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+    <div>
+      <h2 class="fw-bold mb-0">
+        {% if action == 'edit' %}
+          Редактирование врача
+        {% else %}
+          Создание врача
+        {% endif %}
+      </h2>
+      <p class="text-muted mb-0">
+        {% if action == 'edit' %}
+          Изменение данных врача
+        {% else %}
+          Регистрация нового врача в системе
+        {% endif %}
+      </p>
+    </div>
+    <a class="btn btn-outline-secondary" href="{% if action == 'edit' %}{% url 'clinic_admin:doctor_detail' doctor.pk %}{% else %}{% url 'clinic_admin:doctor_list' %}{% endif %}">
+      <i class="bi bi-arrow-left"></i> Назад
+    </a>
+  </div>
+
+  {% if error %}
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      {{ error }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  {% endif %}
+
+  <div class="card">
+    <div class="card-body p-4">
+      <form method="post">
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">Фамилия <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="lname" value="{{ doctor.lname|default:'' }}" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Имя <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="fname" value="{{ doctor.fname|default:'' }}" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Отчество</label>
+            <input type="text" class="form-control" name="tname" value="{{ doctor.tname|default:'' }}">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Дата рождения <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="bdate" value="{% if doctor.bdate %}{{ doctor.bdate|date:'d.m.Y' }}{% endif %}" placeholder="ДД.ММ.ГГГГ" pattern="\d{2}\.\d{2}\.\d{4}" required>
+            <small class="text-muted">Формат: ДД.ММ.ГГГГ (например, 25.12.1990)</small>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Email <span class="text-danger">*</span></label>
+            <input type="email" class="form-control" name="email" value="{{ doctor.email|default:'' }}" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Телефон</label>
+            <input type="text" class="form-control" name="phone_number" value="{{ doctor.phone_number|default:'' }}">
+          </div>
+          <div class="col-md-12">
+            <label class="form-label">Специализация <span class="text-danger">*</span></label>
+            <div class="searchable-select-wrapper">
+              <input type="text" class="form-control searchable-select-input" id="specializationSelect" 
+                     placeholder="Начните вводить название специализации..." 
+                     autocomplete="off" readonly
+                     value="{% if doctor and doctor.specialization %}{{ doctor.specialization.name }}{% endif %}">
+              <input type="hidden" name="specialization" id="specializationId" 
+                     value="{% if doctor and doctor.specialization %}{{ doctor.specialization.pk }}{% endif %}" required>
+              <div class="searchable-select-dropdown" id="specializationDropdown">
+                <div class="searchable-select-search">
+                  <input type="text" placeholder="Поиск..." id="specializationSearch" autocomplete="off">
+                </div>
+                <div id="specializationOptions">
+                  {% for spec in specializations %}
+                  <div class="searchable-select-option" data-value="{{ spec.pk }}" 
+                       data-text="{{ spec.name }}"
+                       {% if doctor and doctor.specialization and doctor.specialization.pk == spec.pk %}data-selected="true"{% endif %}>
+                    {{ spec.name }}
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="mt-4 d-flex gap-2">
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check"></i> Сохранить
+          </button>
+          <a class="btn btn-outline-secondary" href="{% if action == 'edit' %}{% url 'clinic_admin:doctor_detail' doctor.pk %}{% else %}{% url 'clinic_admin:doctor_list' %}{% endif %}">
+            Отмена
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const selectInput = document.getElementById('specializationSelect');
+  const hiddenInput = document.getElementById('specializationId');
+  const dropdown = document.getElementById('specializationDropdown');
+  const searchInput = document.getElementById('specializationSearch');
+  const optionsContainer = document.getElementById('specializationOptions');
+  let allOptions = Array.from(optionsContainer.querySelectorAll('.searchable-select-option'));
+  
+  // Устанавливаем начальное значение, если есть выбранный элемент
+  const selectedOption = allOptions.find(opt => opt.getAttribute('data-selected') === 'true');
+  if (selectedOption) {
+    selectInput.value = selectedOption.getAttribute('data-text');
+    hiddenInput.value = selectedOption.getAttribute('data-value');
+  }
+  
+  function filterOptions(query) {
+    const lowerQuery = query.toLowerCase();
+    allOptions.forEach(option => {
+      const text = option.getAttribute('data-text').toLowerCase();
+      if (text.includes(lowerQuery)) {
+        option.style.display = 'block';
+      } else {
+        option.style.display = 'none';
+      }
+    });
+  }
+  
+  function selectOption(option) {
+    const value = option.getAttribute('data-value');
+    const text = option.getAttribute('data-text');
+    hiddenInput.value = value;
+    selectInput.value = text;
+    dropdown.classList.remove('show');
+    searchInput.value = '';
+    filterOptions('');
+    
+    // Снимаем выделение со всех опций
+    allOptions.forEach(opt => opt.classList.remove('selected'));
+    option.classList.add('selected');
+  }
+  
+  // Открытие/закрытие выпадающего списка
+  selectInput.addEventListener('click', function(e) {
+    e.preventDefault();
+    if (dropdown.classList.contains('show')) {
+      dropdown.classList.remove('show');
+      searchInput.blur();
+    } else {
+      dropdown.classList.add('show');
+      searchInput.focus();
+    }
+  });
+  
+  // Поиск по опциям
+  searchInput.addEventListener('input', function() {
+    filterOptions(this.value);
+  });
+  
+  // Выбор опции
+  allOptions.forEach(option => {
+    option.addEventListener('click', function() {
+      selectOption(this);
+    });
+  });
+  
+  // Закрытие при клике вне
+  document.addEventListener('click', function(e) {
+    if (!selectInput.contains(e.target) && !dropdown.contains(e.target)) {
+      dropdown.classList.remove('show');
+    }
+  });
+  
+  // Закрытие по Escape
+  searchInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      dropdown.classList.remove('show');
+      selectInput.focus();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const visibleOptions = allOptions.filter(opt => opt.style.display !== 'none');
+      if (visibleOptions.length > 0) {
+        selectOption(visibleOptions[0]);
+      }
+    }
+  });
+});
+</script>
+{% endblock %}
+

@@ -1,0 +1,541 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Clinic Sirius — современная клиника{% endblock %}
+
+{% block content %}
+{% if user.is_authenticated and user.role != 'doctor' %}
+  <!-- Главная страница для авторизованных пациентов -->
+  <section class="container py-5">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+      <div>
+        <h2 class="fw-bold mb-1">Добро пожаловать, {{ user.patient_profile.fname|default:user.username }}!</h2>
+        <p class="text-muted mb-0">Управляйте записями и профилем в одном месте</p>
+      </div>
+      <a class="btn btn-primary" href="{% url 'scheduling:book_appointment' %}">
+        <i class="bi bi-calendar-plus"></i> Записаться на приём
+      </a>
+    </div>
+
+    <!-- Статистика -->
+    <div class="row g-3 mb-4">
+      <div class="col-md-4">
+        <div class="card border-primary">
+          <div class="card-body text-center">
+            <div class="h3 text-primary mb-2">{{ upcoming_count|default:0 }}</div>
+            <div class="text-muted">Ближайших записей</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card border-success">
+          <div class="card-body text-center">
+            <div class="h3 text-success mb-2">{{ family_count|default:0 }}</div>
+            <div class="text-muted">Членов семьи</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card border-info">
+          <div class="card-body text-center">
+            <a href="{% url 'scheduling:book_appointment' %}" class="text-decoration-none text-info">
+              <div class="h3 mb-2"><i class="bi bi-plus-circle"></i></div>
+              <div class="text-muted">Новая запись</div>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ближайшие записи -->
+    {% if upcoming_appointments %}
+    <div class="card mb-4">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="bi bi-calendar-check"></i> Ближайшие записи</h5>
+      </div>
+      <div class="card-body">
+        {% if request.GET.success %}
+        <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+          {{ request.GET.success }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endif %}
+        <div class="list-group list-group-flush">
+          {% for appt in upcoming_appointments %}
+          <div class="list-group-item">
+            <div class="d-flex justify-content-between align-items-start">
+              <div class="flex-grow-1">
+                <!-- Специализация (акцент) -->
+                <h5 class="mb-2 fw-bold text-dark">
+                  {% if "хирург" in appt.doctor.specialization.name|lower or "хирургия" in appt.doctor.specialization.name|lower %}
+                    <i class="bi bi-duffle me-2"></i>
+                  {% elif "офтальмолог" in appt.doctor.specialization.name|lower or "офтальмология" in appt.doctor.specialization.name|lower %}
+                    <i class="bi bi-eye me-2"></i>
+                  {% elif "кардиолог" in appt.doctor.specialization.name|lower or "кардиология" in appt.doctor.specialization.name|lower %}
+                    <i class="bi bi-heart-pulse me-2"></i>
+                  {% elif "невролог" in appt.doctor.specialization.name|lower or "неврология" in appt.doctor.specialization.name|lower %}
+                    <i class="bi bi-person me-2"></i>
+                  {% elif "педиатр" in appt.doctor.specialization.name|lower or "педиатрия" in appt.doctor.specialization.name|lower %}
+                    <i class="bi bi-person-walking me-2"></i>
+                  {% elif "дерматолог" in appt.doctor.specialization.name|lower or "дерматология" in appt.doctor.specialization.name|lower %}
+                    <i class="bi bi-droplet me-2"></i>
+                  {% elif "психиатр" in appt.doctor.specialization.name|lower or "психиатрия" in appt.doctor.specialization.name|lower %}
+                    <i class="bi bi-emoji-grimace me-2"></i>
+                  {% elif "ортопед" in appt.doctor.specialization.name|lower or "ортопедия" in appt.doctor.specialization.name|lower %}
+                    <i class="bi bi-universal-access me-2"></i>
+                  {% elif "эндокринолог" in appt.doctor.specialization.name|lower or "эндокринология" in appt.doctor.specialization.name|lower %}
+                    <i class="bi bi-capsule me-2"></i>
+                  {% elif "отоларинголог" in appt.doctor.specialization.name|lower or "лор" in appt.doctor.specialization.name|lower %}
+                    <i class="bi bi-earbuds me-2"></i>
+                  {% elif "стоматолог" in appt.doctor.specialization.name|lower or "стоматология" in appt.doctor.specialization.name|lower %}
+                    <i class="bi bi-tooth me-2"></i>
+                  {% elif "гастроэнтеролог" in appt.doctor.specialization.name|lower or "гастроэнтерология" in appt.doctor.specialization.name|lower %}
+                    <i class="bi bi-stomach me-2"></i>
+                  {% elif "семейн" in appt.doctor.specialization.name|lower %}
+                    <i class="bi bi-people me-2"></i>
+                  {% elif "гинеколог" in appt.doctor.specialization.name|lower or "гинекология" in appt.doctor.specialization.name|lower %}
+                    <i class="bi bi-gender-female me-2"></i>
+                  {% elif "уролог" in appt.doctor.specialization.name|lower or "урология" in appt.doctor.specialization.name|lower %}
+                    <i class="bi bi-gender-male me-2"></i>
+                  {% elif "терапевт" in appt.doctor.specialization.name|lower or "терапия" in appt.doctor.specialization.name|lower %}
+                    <i class="bi bi-prescription2 me-2"></i>
+                  {% elif "диагностик" in appt.doctor.specialization.name|lower %}
+                    <i class="bi bi-clipboard2-pulse me-2"></i>
+                  {% else %}
+                    <i class="bi bi-hospital me-2"></i>
+                  {% endif %}
+                  {{ appt.doctor.specialization.name }}
+                </h5>
+                
+                <!-- Дата и время (акцент) -->
+                <div class="mb-2">
+                  <span class="fw-bold me-2" style="color: #000;">
+                    <i class="bi bi-calendar"></i> {{ appt.date|date:"d.m.Y" }}
+                  </span>
+                  <span class="fw-bold" style="color: #000;">
+                    <i class="bi bi-clock"></i> {{ appt.date|time:"H:i" }}
+                  </span>
+                </div>
+                
+                <!-- Полное ФИО врача (под специализацией) -->
+                <p class="mb-2">
+                  <span class="text-muted small">Врач:</span>
+                  <span class="fw-semibold ms-1">
+                    {{ appt.doctor.lname }} {{ appt.doctor.fname }}
+                    {% if appt.doctor.tname %}{{ appt.doctor.tname }}{% endif %}
+                  </span>
+                </p>
+                
+                <!-- ФИО пациента (в конце) -->
+                {% if appt.patient %}
+                <small class="text-muted d-block">
+                  Пациент: {{ appt.patient.lname }} {{ appt.patient.fname }}
+                  {% if appt.patient.tname %}{{ appt.patient.tname }}{% endif %}
+                  {% if user.is_authenticated and user.patient_profile and appt.patient != user.patient_profile %}
+                  <span class="badge bg-light text-primary ms-1">Член семьи</span>
+                  {% endif %}
+                </small>
+                {% endif %}
+                
+                {% if user.is_authenticated %}
+                <div class="mt-3 d-flex gap-2">
+                  <form method="post" action="{% url 'scheduling:cancel_appointment' appt.pk %}" class="d-inline" onsubmit="return confirm('Вы уверены, что хотите отменить эту запись?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                      <i class="bi bi-x-circle"></i> Отменить
+                    </button>
+                  </form>
+                  <a href="{% url 'scheduling:update_appointment_patient' appt.pk %}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-pencil"></i> Изменить
+                  </a>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        <div class="mt-3 text-center">
+          <a href="{% url 'index' %}" class="btn btn-outline-primary">Все записи</a>
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div class="card mb-4">
+      <div class="card-body text-center py-5">
+        <i class="bi bi-calendar-x text-muted" style="font-size: 3rem;"></i>
+        <p class="text-muted mt-3 mb-0">У вас пока нет записей</p>
+        <a href="{% url 'scheduling:book_appointment' %}" class="btn btn-primary mt-3">Записаться на приём</a>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Быстрые действия -->
+    <div class="row g-3">
+      <div class="col-md-6">
+        <div class="card h-100">
+          <div class="card-body">
+            <h5 class="card-title">
+              <i class="bi bi-calendar-plus text-primary"></i> Записаться на приём
+            </h5>
+            <p class="card-text text-muted">Выберите специализацию, врача и удобное время</p>
+            <a href="{% url 'scheduling:book_appointment' %}" class="btn btn-primary">Записаться</a>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card h-100">
+          <div class="card-body">
+            <h5 class="card-title">
+              <i class="bi bi-people text-success"></i> Управление семьёй
+            </h5>
+            <p class="card-text text-muted">Добавьте членов семьи для удобной записи</p>
+            <a href="{% url 'patients:patient_manage_html' %}" class="btn btn-outline-success">Управлять</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+{% else %}
+  <!-- Главная страница для неавторизованных пользователей -->
+<section class="container py-5" id="hero">
+  <div class="row align-items-center g-4">
+    <div class="col-lg-6">
+      <h1 class="display-5 fw-bold mb-3">Забота о здоровье без очередей и лишнего стресса</h1>
+      <p class="text-muted mb-4">Мы объединили опытных специалистов, современное оборудование и дружелюбный сервис, чтобы каждый визит был простым и спокойным.</p>
+      <div class="d-flex flex-wrap gap-3 mb-4">
+        <a class="btn btn-primary" href="#booking">Записаться</a>
+      </div>
+      <div class="d-flex flex-wrap gap-3">
+        <div class="stat-bubble">
+          <div class="h4 mb-1">24/7</div>
+          <small class="text-muted">Поддержка пациентов</small>
+        </div>
+        <div class="stat-bubble">
+          <div class="h4 mb-1">15+</div>
+          <small class="text-muted">Направлений лечения</small>
+        </div>
+        <div class="stat-bubble">
+          <div class="h4 mb-1">4.9</div>
+          <small class="text-muted">Оценка сервиса</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card hero-card h-100">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Быстрый старт визита</h5>
+          <ul class="list-unstyled mb-4">
+            <li class="d-flex align-items-start gap-2 mb-3">
+              <div class="pill-icon"><i class="bi bi-check-circle"></i></div>
+              <div>
+                <div class="fw-semibold">Онлайн-анкета</div>
+                <small class="text-muted">Заполните данные заранее и приходите без ожидания.</small>
+              </div>
+            </li>
+            <li class="d-flex align-items-start gap-2 mb-3">
+              <div class="pill-icon"><i class="bi bi-check-circle"></i></div>
+              <div>
+                <div class="fw-semibold">Персональный ассистент</div>
+                <small class="text-muted">Сопровождает на каждом этапе и напоминает о визитах.</small>
+              </div>
+            </li>
+            <li class="d-flex align-items-start gap-2">
+              <div class="pill-icon"><i class="bi bi-check-circle"></i></div>
+              <div>
+                <div class="fw-semibold">Результаты в личном кабинете</div>
+                <small class="text-muted">Все исследования и рекомендации доступны онлайн.</small>
+              </div>
+            </li>
+          </ul>
+          <div class="d-flex flex-wrap gap-3">
+            <a class="btn btn-primary" href="#services">Услуги клиники</a>
+            <a class="btn btn-outline-primary" href="#contacts">Как доехать</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="container pb-5" id="account">
+  <div class="section-header mb-4 d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
+    <div>
+      <h2 class="fw-bold mt-2 mb-1">Управляйте визитами онлайн</h2>
+      <p class="text-muted mb-0">Вход, регистрация и доступ к кабинету пациента без звонков.</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <a class="btn btn-primary" href="{% url 'accounts:login' %}">Войти</a>
+      <a class="btn btn-outline-primary" href="{% url 'accounts:register' %}">Создать аккаунт</a>
+      <a class="btn btn-outline-secondary" href="{% url 'index' %}">Кабинет пациента</a>
+    </div>
+  </div>
+  <div class="row g-3">
+    <div class="col-lg-4">
+      <div class="pill-card h-100">
+        <div class="fw-semibold mb-1">Запись без ожидания</div>
+        <small class="text-muted">Выбирайте врача и время онлайн, получайте подтверждение на почту.</small>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="pill-card h-100">
+        <div class="fw-semibold mb-1">Документы в одном месте</div>
+        <small class="text-muted">Результаты анализов, рекомендации и выписки всегда под рукой.</small>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="pill-card h-100">
+        <div class="fw-semibold mb-1">Семейный доступ</div>
+        <small class="text-muted">Ведите профили детей и родителей из единого кабинета.</small>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="container pb-5" id="services">
+  <div class="section-header mb-4">
+    <h2 class="fw-bold mt-2">Забота с акцентом на комфорт</h2>
+    <p class="text-muted">Эвиденс-бейз подход, современная диагностика и прозрачные планы лечения.</p>
+  </div>
+  <div class="row g-4">
+    <div class="col-md-4">
+      <div class="service-card h-100">
+        <div class="service-icon bg-primary-subtle text-primary"><i class="bi bi-heart-pulse"></i></div>
+        <h5 class="fw-semibold mb-2">Терапия и профилактика</h5>
+        <p class="text-muted mb-3">Регулярные чек-апы, ведение хронических состояний, консультации специалистов.</p>
+        <ul class="simple-list mb-0">
+          <li>Индивидуальные планы наблюдения</li>
+          <li>Контроль ключевых показателей</li>
+          <li>Рекомендации по образу жизни</li>
+        </ul>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="service-card h-100">
+        <div class="service-icon bg-success-subtle text-success"><i class="bi bi-clipboard2-pulse"></i></div>
+        <h5 class="fw-semibold mb-2">Диагностика</h5>
+        <p class="text-muted mb-3">Лабораторные анализы, УЗИ, ЭКГ, мониторинг сна и расширенные исследования.</p>
+        <ul class="simple-list mb-0">
+          <li>Результаты в течение суток</li>
+          <li>Чёткие рекомендации врача</li>
+          <li>Удобные слоты записи</li>
+        </ul>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="service-card h-100">
+        <div class="service-icon bg-info-subtle text-info"><i class="bi bi-people"></i></div>
+        <h5 class="fw-semibold mb-2">Семейная медицина</h5>
+        <p class="text-muted mb-3">Комплексный подход к здоровью семьи: взрослые и дети в одном месте.</p>
+        <ul class="simple-list mb-0">
+          <li>Сопровождение беременности</li>
+          <li>Педиатрия без страха</li>
+          <li>Вакцинация и профилактика</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="container pb-5" id="specializations">
+  <div class="section-header mb-4 d-flex flex-column flex-md-row align-items-md-end justify-content-between gap-2">
+    <div>
+      <h2 class="fw-bold mt-2 mb-1">Команда экспертов</h2>
+      <p class="text-muted mb-0">Мы подбираем врачей по опыту, эмпатии и стремлению лечить доказательно.</p>
+    </div>
+    <a class="btn btn-outline-primary" href="#booking">Подобрать врача</a>
+  </div>
+  <div class="row g-3">
+    {% if specializations %}
+      {% for specialization in specializations %}
+        <div class="col-6 col-md-3">
+          <div class="pill-card h-100">
+            <div class="mb-2">
+              {% if "терапевт" in specialization.name|lower or "терапия" in specialization.name|lower %}
+                <i class="bi bi-heart-pulse" style="font-size: 1.5rem; color: var(--primary);"></i>
+              {% elif "кардиолог" in specialization.name|lower or "кардиология" in specialization.name|lower %}
+                <i class="bi bi-heart" style="font-size: 1.5rem; color: var(--primary);"></i>
+              {% elif "невролог" in specialization.name|lower or "неврология" in specialization.name|lower %}
+                <i class="bi bi-brain" style="font-size: 1.5rem; color: var(--primary);"></i>
+              {% elif "педиатр" in specialization.name|lower or "педиатрия" in specialization.name|lower %}
+                <i class="bi bi-emoji-smile" style="font-size: 1.5rem; color: var(--primary);"></i>
+              {% elif "семейн" in specialization.name|lower %}
+                <i class="bi bi-people" style="font-size: 1.5rem; color: var(--primary);"></i>
+              {% elif "гинеколог" in specialization.name|lower or "гинекология" in specialization.name|lower %}
+                <i class="bi bi-gender-female" style="font-size: 1.5rem; color: var(--primary);"></i>
+              {% elif "уролог" in specialization.name|lower or "урология" in specialization.name|lower %}
+                <i class="bi bi-gender-male" style="font-size: 1.5rem; color: var(--primary);"></i>
+              {% elif "дерматолог" in specialization.name|lower or "дерматология" in specialization.name|lower %}
+                <i class="bi bi-droplet" style="font-size: 1.5rem; color: var(--primary);"></i>
+              {% elif "офтальмолог" in specialization.name|lower or "офтальмология" in specialization.name|lower %}
+                <i class="bi bi-eye" style="font-size: 1.5rem; color: var(--primary);"></i>
+              {% elif "отоларинголог" in specialization.name|lower or "лор" in specialization.name|lower %}
+                <i class="bi bi-earbuds" style="font-size: 1.5rem; color: var(--primary);"></i>
+              {% elif "стоматолог" in specialization.name|lower or "стоматология" in specialization.name|lower %}
+                <i class="bi bi-tooth" style="font-size: 1.5rem; color: var(--primary);"></i>
+              {% elif "хирург" in specialization.name|lower or "хирургия" in specialization.name|lower %}
+                <i class="bi bi-scissors" style="font-size: 1.5rem; color: var(--primary);"></i>
+              {% elif "ортопед" in specialization.name|lower or "ортопедия" in specialization.name|lower %}
+                <i class="bi bi-bone" style="font-size: 1.5rem; color: var(--primary);"></i>
+              {% elif "эндокринолог" in specialization.name|lower or "эндокринология" in specialization.name|lower %}
+                <i class="bi bi-activity" style="font-size: 1.5rem; color: var(--primary);"></i>
+              {% elif "гастроэнтеролог" in specialization.name|lower or "гастроэнтерология" in specialization.name|lower %}
+                <i class="bi bi-stomach" style="font-size: 1.5rem; color: var(--primary);"></i>
+              {% elif "психиатр" in specialization.name|lower or "психиатрия" in specialization.name|lower %}
+                <i class="bi bi-headset" style="font-size: 1.5rem; color: var(--primary);"></i>
+              {% elif "диагностик" in specialization.name|lower %}
+                <i class="bi bi-clipboard2-pulse" style="font-size: 1.5rem; color: var(--primary);"></i>
+              {% else %}
+                <i class="bi bi-hospital" style="font-size: 1.5rem; color: var(--primary);"></i>
+              {% endif %}
+            </div>
+            <div class="fw-semibold">{{ specialization.name }}</div>
+            <small class="text-muted">Приём без очередей</small>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="col-12">
+        <div class="pill-card">
+          <div class="fw-semibold">Скоро обновим список</div>
+          <small class="text-muted">Мы подготавливаем команды врачей.</small>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</section>
+
+<section class="container pb-5" id="care">
+  <div class="row g-4 align-items-center">
+    <div class="col-lg-6">
+      <div class="section-header mb-3">
+        <h2 class="fw-bold mt-2 mb-0">Что делает визит спокойным</h2>
+      </div>
+      <ul class="focus-list">
+        <li>
+          <div class="fw-semibold">Честные планы лечения</div>
+          <p class="text-muted mb-0">Понятные этапы, расчёт стоимости заранее, прозрачные отчёты.</p>
+        </li>
+        <li>
+          <div class="fw-semibold">Комфортное пространство</div>
+          <p class="text-muted mb-0">Светлые кабинеты, приглушённый шум, забота о приватности.</p>
+        </li>
+        <li>
+          <div class="fw-semibold">Внимание к эмоциям</div>
+          <p class="text-muted mb-0">Спокойная коммуникация, объяснения простыми словами, поддержка близких.</p>
+        </li>
+      </ul>
+    </div>
+    <div class="col-lg-6">
+      <div class="card gradient-card h-100">
+        <div class="card-body">
+          <h5 class="fw-semibold mb-3">Комфорт в каждом шаге</h5>
+          <div class="d-flex flex-column gap-3">
+            <div class="info-row">
+              <div class="info-dot bg-primary"></div>
+              <div>
+                <div class="fw-semibold">Цифровые карты пациента</div>
+                <small class="text-muted">История визитов, назначения и документы — в одном месте.</small>
+              </div>
+            </div>
+            <div class="info-row">
+              <div class="info-dot bg-success"></div>
+              <div>
+                <div class="fw-semibold">Напоминания о приёме</div>
+                <small class="text-muted">Забота о времени: уведомления и рекомендации подготовки.</small>
+              </div>
+            </div>
+            <div class="info-row">
+              <div class="info-dot bg-info"></div>
+              <div>
+                <div class="fw-semibold">Простые способы связи</div>
+                <small class="text-muted">Телефон, мессенджеры или почта — выбирайте то, что удобнее.</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="container pb-5" id="booking">
+  <div class="section-header mb-3">
+    <h2 class="fw-bold mb-0">Выберите удобный способ</h2>
+    <p class="text-muted mb-0">Позвоните или напишите нам — подберём время и врача. Или используйте онлайн-форму</p>
+  </div>
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <div class="card h-100">
+        <div class="card-body">
+          <h5 class="fw-semibold mb-3">Онлайн или по телефону</h5>
+          <p class="text-muted mb-4">Наши администраторы помогут подобрать врача и время, подготовят кабинет и подскажут, как подготовиться к визиту.</p>
+          <div class="row g-3">
+            <div class="col-sm-6">
+              <div class="contact-tile">
+                <div class="fw-semibold text-dark">Телефон</div>
+                <div class="h5 text-primary mb-2">8 (800) 707-56-27</div>
+                <div class="text-muted mb-2" style="font-size: 0.875rem;">или</div>
+                <div class="text-dark fw-semibold mb-1">+7 (862) 444-01-03</div>
+                <small class="text-muted">Пн — Сб: 08:00–20:00, Вс: 08:00–15:00</small>
+              </div>
+            </div>
+          </div>
+          <div class="d-flex flex-wrap gap-3 mt-4">
+            <a class="btn btn-primary" href="{% url 'scheduling:book_appointment' %}">Записаться онлайн</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-5">
+      <div class="card h-100 bg-light border-0">
+        <div class="card-body">
+          <h6 class="fw-semibold mb-3">Адрес и время работы</h6>
+          <div class="d-flex flex-column gap-3">
+            <div>
+              <div class="fw-semibold text-dark">Клиника Сириус</div>
+              <small class="text-muted">пгт. Сириус, ул. Старообрядческая, 64</small>
+            </div>
+            <div>
+              <div class="fw-semibold text-dark mb-1">График</div>
+              <small class="text-muted d-block">Пн — Сб: 08:00–20:00</small>
+              <small class="text-muted d-block">Воскресенье: 08:00–15:00</small>
+            </div>
+            <div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="container pb-5" id="contacts">
+  <div class="section-header mb-3">
+    <h2 class="fw-bold mb-0">Мы рядом, чтобы помочь</h2>
+    <p class="text-muted mb-0">Ежедневно отвечаем на вопросы и помогаем с визитами.</p>
+  </div>
+  <div class="row g-4">
+    <div class="col-md-6">
+      <div class="contact-card h-100">
+        <div class="fw-semibold mb-1">Регистратура</div>
+        <p class="text-muted mb-2">Ответим на вопросы, поможем с переносом визита.</p>
+        <div class="text-dark fw-semibold mb-1">8 (800) 707-56-27</div>
+        <div class="text-muted mb-2" style="font-size: 0.875rem;">или</div>
+        <div class="text-dark fw-semibold">+7 (862) 444-01-03</div>
+        <small class="text-muted">Пн — Сб: 08:00–20:00, Вс: 08:00–15:00</small>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="contact-card h-100">
+        <div class="fw-semibold mb-1">Поддержка пациентов</div>
+        <p class="text-muted mb-2">Консультации по рекомендациям врача и подготовке к процедурам.</p>
+        <div class="text-dark fw-semibold">support@clinicsirius.ru</div>
+        <small class="text-muted">Время ответа до 1 часа</small>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+{% endblock %}
+

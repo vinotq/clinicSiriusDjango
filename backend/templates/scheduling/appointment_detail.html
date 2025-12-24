@@ -1,0 +1,1713 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Прием — {{ appointment.patient.lname }} {{ appointment.patient.fname }} | Clinic Sirius{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<style>
+.appointment-header {
+  background: linear-gradient(135deg, var(--brand-start) 0%, var(--brand-end) 100%);
+  color: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.appointment-header * {
+  color: white !important;
+}
+
+.patient-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .patient-info {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .appointment-time {
+    text-align: left !important;
+    width: 100%;
+  }
+}
+
+.patient-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: white !important;
+  line-height: 1.3;
+}
+
+.patient-details {
+  font-size: 0.9rem;
+  opacity: 0.95;
+  color: white !important;
+  line-height: 1.5;
+}
+
+.appointment-time {
+  text-align: right;
+  min-width: 200px;
+}
+
+@media (max-width: 768px) {
+  .appointment-time {
+    min-width: auto;
+  }
+}
+
+.appointment-time-label {
+  font-size: 0.875rem;
+  opacity: 0.9;
+  margin-bottom: 0.5rem;
+  color: white !important;
+}
+
+.appointment-time-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: white !important;
+  margin-bottom: 0.25rem;
+  line-height: 1.3;
+}
+
+.appointment-status {
+  display: inline-block;
+  padding: 0.375rem 0.875rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-top: 0.75rem;
+  white-space: nowrap;
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  color: white !important;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.appointment-status.booked {
+  background-color: #ff9800;
+  color: white;
+}
+
+.appointment-status.in_progress {
+  background-color: #2196f3;
+  color: white;
+}
+
+.appointment-status.completed {
+  background-color: #4caf50;
+  color: white;
+}
+
+.form-section {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.form-section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--dark);
+  border-bottom: 2px solid var(--brand-start);
+  padding-bottom: 0.5rem;
+}
+
+.diagnosis-autocomplete {
+  position: relative;
+}
+
+.diagnosis-autocomplete input {
+  width: 100%;
+}
+
+.diagnosis-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 1000;
+  display: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.diagnosis-suggestion {
+  padding: 0.75rem;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.diagnosis-suggestion:hover {
+  background: #f8f9fa;
+}
+
+.diagnosis-suggestion:last-child {
+  border-bottom: none;
+}
+
+.checkbox-section {
+  margin-bottom: 1rem;
+}
+
+.checkbox-section input[type="checkbox"] {
+  margin-right: 0.5rem;
+}
+
+.hidden-section {
+  display: none;
+}
+
+/* Стили для flatpickr календаря */
+.flatpickr-calendar {
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid #dee2e6;
+  padding: 8px;
+  font-size: 13px;
+  width: 100%;
+  min-width: 320px;
+  max-width: 340px;
+  z-index: 1050 !important;
+}
+
+.flatpickr-months {
+  margin-bottom: 6px;
+  padding: 0;
+}
+
+.flatpickr-month {
+  padding: 6px 4px;
+  font-size: 14px;
+  font-weight: 600;
+  height: 32px;
+  line-height: 32px;
+  margin-bottom: 0;
+  position: relative;
+}
+
+.flatpickr-current-month {
+  font-size: 14px;
+  font-weight: 600;
+  padding: 0;
+  height: auto;
+  line-height: 1.2;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 50%;
+  margin-top: -0.6em;
+}
+
+.flatpickr-weekdays {
+  padding: 6px 0;
+  margin-bottom: 2px;
+  margin-top: 0;
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.flatpickr-weekday {
+  font-size: 11px;
+  font-weight: 600;
+  color: #495057;
+  padding: 4px 2px;
+  line-height: 1.2;
+  display: table-cell;
+  text-align: center;
+  width: 14.28%;
+  overflow: visible;
+  white-space: nowrap;
+}
+
+.flatpickr-days {
+  padding: 2px 0;
+  margin-top: 0;
+}
+
+.flatpickr-calendar .flatpickr-innerContainer {
+  padding: 0;
+}
+
+.flatpickr-day {
+  height: 32px;
+  line-height: 32px;
+  font-size: 13px;
+  margin: 1px;
+  border-radius: 6px;
+  width: calc(14.28% - 2px);
+  max-width: 42px;
+}
+
+.flatpickr-day:hover {
+  background: #e7f1ff;
+  border-color: #e7f1ff;
+  cursor: pointer;
+}
+
+.flatpickr-day.selected {
+  background: #0d6efd !important;
+  border-color: #0d6efd !important;
+  color: white !important;
+  font-weight: 600;
+}
+
+.flatpickr-day.selected:hover {
+  background: #0a58ca !important;
+  border-color: #0a58ca !important;
+}
+
+.flatpickr-day.today {
+  border: 2px solid #ffc107;
+  color: #000;
+  font-weight: 600;
+}
+
+.flatpickr-day.today:hover {
+  background: #fff3cd;
+  border-color: #ffc107;
+}
+
+.flatpickr-day.flatpickr-disabled,
+.flatpickr-day.prevMonthDay,
+.flatpickr-day.nextMonthDay {
+  color: #adb5bd;
+  opacity: 0.5;
+}
+
+.flatpickr-prev-month,
+.flatpickr-next-month {
+  padding: 4px 8px;
+  top: 6px;
+  height: 24px;
+  width: 24px;
+  border-radius: 4px;
+}
+
+.flatpickr-prev-month:hover,
+.flatpickr-next-month:hover {
+  background: #f8f9fa;
+}
+
+.flatpickr-prev-month svg,
+.flatpickr-next-month svg {
+  width: 12px;
+  height: 12px;
+}
+
+.slot-card {
+  border: 2px solid #6c9b7a;
+  border-radius: 12px;
+  width: 100px;
+  height: 60px;
+  padding: 0;
+  margin: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: #e8f5e9;
+}
+
+.slot-card:hover {
+  border-color: #5a8a6a;
+  background: #c8e6c9;
+  transform: scale(1.05);
+}
+
+.slot-card.selected {
+  border-color: #4caf50;
+  background: #66bb6a;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.25);
+}
+
+.slot-card input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  cursor: pointer;
+}
+
+.slot-card .slot-content {
+  text-align: center;
+  pointer-events: none;
+}
+
+.slot-card .slot-time {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #2e7d32;
+}
+
+.slot-card.selected .slot-time {
+  color: #fff;
+}
+
+.slots-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.specialization-card {
+  border: 2px solid #dee2e6;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.specialization-card:hover {
+  border-color: #0d6efd;
+  background: #f8f9ff;
+}
+
+.specialization-card.selected {
+  border-color: #0d6efd;
+  background: #e7f1ff;
+}
+
+.specialization-card input[type="radio"] {
+  display: none;
+}
+
+.doctor-card {
+  border: 2px solid #dee2e6;
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.doctor-card:hover {
+  border-color: #0d6efd;
+  background: #f8f9ff;
+}
+
+.doctor-card.selected {
+  border-color: #0d6efd;
+  background: #e7f1ff;
+}
+
+.doctor-card input[type="radio"] {
+  margin-right: 0.75rem;
+}
+
+.view-mode .form-control-plaintext {
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+  min-height: 2.5rem;
+  white-space: pre-wrap;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="container py-5" style="max-width: 900px;">
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle"></i> {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+  
+  <div class="appointment-header">
+    <div class="patient-info">
+      <div>
+        <div class="patient-name">{{ appointment.patient.lname }} {{ appointment.patient.fname }} {% if appointment.patient.tname %}{{ appointment.patient.tname }}{% endif %}</div>
+        <div class="patient-details">
+          {% if appointment.patient.bdate %}Дата рождения: {{ appointment.patient.bdate|date:"d.m.Y" }} · {% endif %}СНИЛС: {{ appointment.patient.snils }} · ОМС: {{ appointment.patient.oms }}
+        </div>
+      </div>
+      <div class="appointment-time">
+        <div class="appointment-time-label">Дата и время приема</div>
+        <div class="appointment-time-value">
+          {{ appointment.date|date:"d.m.Y" }} {{ appointment.date|time:"H:i" }}
+        </div>
+        {% if appointment.slot %}
+          <div class="patient-details" style="margin-top: 0.25rem;">Кабинет {{ appointment.slot.room.room_number }}</div>
+        {% endif %}
+        <div class="appointment-status {{ appointment.status }}">
+          {{ appointment.get_status_display }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if appointment.status == 'completed' %}
+    <div class="d-flex gap-2 justify-content-end mb-3">
+      <button type="button" id="edit-button" class="btn btn-primary">Редактировать</button>
+    </div>
+  {% endif %}
+
+  <form method="post" id="appointment-form" action="{% url 'scheduling:update_status' appointment.pk %}" {% if appointment.status == 'completed' or appointment.status == 'in_progress' %}style="display: none;"{% endif %}>
+    {% csrf_token %}
+    
+    <!-- Диагноз -->
+    <div class="form-section">
+      <div class="form-section-title">Диагноз</div>
+      <div class="diagnosis-autocomplete">
+        <input type="text" 
+               id="diagnosis-input" 
+               name="diagnosis_text" 
+               class="form-control" 
+               placeholder="Начните вводить название диагноза..."
+               autocomplete="off"
+               value="{% if recipe and recipe.diagnosis %}{{ recipe.diagnosis.name }}{% endif %}"
+               {% if appointment.status == 'completed' %}readonly{% endif %}>
+        <input type="hidden" 
+               id="diagnosis-id" 
+               name="diagnosis" 
+               value="{% if recipe and recipe.diagnosis %}{{ recipe.diagnosis.id }}{% endif %}"
+               {% if not recipe %}required{% endif %}>
+        <div id="diagnosis-suggestions" class="diagnosis-suggestions"></div>
+      </div>
+    </div>
+
+    <!-- Жалобы -->
+    <div class="form-section">
+      <div class="form-section-title">Жалобы пациента</div>
+      <textarea name="complaints" class="form-control" rows="4" placeholder="Опишите жалобы пациента..." {% if appointment.status == 'completed' %}readonly{% endif %}>{% if recipe %}{{ recipe.complaints|default:"" }}{% endif %}</textarea>
+    </div>
+
+    <!-- Лечение и рекомендации -->
+    <div class="form-section">
+      <div class="form-section-title">Лечение и рекомендации</div>
+      <textarea name="recommendations" class="form-control" rows="6" placeholder="Опишите назначенное лечение и рекомендации..." {% if appointment.status == 'completed' %}readonly{% endif %}>{% if recipe %}{{ recipe.recommendations|default:"" }}{% endif %}</textarea>
+    </div>
+
+    <!-- Повторный прием у того же врача -->
+    {% if appointment.status != 'completed' %}
+    <div class="form-section">
+      <div class="checkbox-section">
+        <input type="checkbox" id="next-appointment-checkbox" name="enable_next_appointment" 
+               {% if recipe and recipe.next_appointment_slot %}checked{% endif %}>
+        <label for="next-appointment-checkbox" class="form-section-title" style="margin-bottom: 0; border-bottom: none; padding-bottom: 0; cursor: pointer;">
+          Повторный прием
+        </label>
+      </div>
+      <div id="next-appointment-section" class="hidden-section">
+        <p class="text-muted small mb-3">Выберите дату и время для повторного приема у вас</p>
+        
+        <!-- Календарь для выбора даты -->
+        <div class="mb-4">
+          <label class="form-label fw-semibold mb-2">Выберите дату</label>
+          <div class="input-group" style="position: relative; max-width: 340px;">
+            <input type="text" id="next-datepicker" class="form-control" autocomplete="off" placeholder="ДД.ММ.ГГГГ" 
+                   value="{% if recipe and recipe.next_appointment_slot %}{{ recipe.next_appointment_slot.time_from|date:'d.m.Y' }}{% endif %}" readonly>
+            <span class="input-group-text" id="next-calendar-icon" style="cursor: pointer;"><i class="bi bi-calendar-week"></i></span>
+          </div>
+          <small class="text-muted d-block mt-2">Выберите дату в календаре, затем выберите время</small>
+        </div>
+        
+        <!-- Временные слоты для выбранной даты -->
+        <div id="next-time-slots-container" style="display: none;">
+          <label class="form-label fw-semibold mb-2">Выберите время</label>
+          <div id="next-slots-list" class="slots-grid"></div>
+        </div>
+        
+        <div id="next-no-slots-message" class="alert alert-info" style="display: none;">
+          На выбранную дату нет доступных временных слотов
+        </div>
+        
+        <input type="hidden" name="next_appointment_slot" id="next-selected-slot-id" 
+               value="{% if recipe and recipe.next_appointment_slot %}{{ recipe.next_appointment_slot.id }}{% endif %}">
+        <input type="hidden" name="next-selected-date" id="next-selected-date" 
+               value="{% if recipe and recipe.next_appointment_slot %}{{ recipe.next_appointment_slot.time_from|date:'Y-m-d' }}{% endif %}">
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Направление к другому специалисту -->
+    {% if appointment.status != 'completed' %}
+    <div class="form-section">
+      <div class="checkbox-section">
+        <input type="checkbox" id="referral-checkbox" name="enable_referral" 
+               {% if recipe and recipe.referral_doctor %}checked{% endif %}>
+        <label for="referral-checkbox" class="form-section-title" style="margin-bottom: 0; border-bottom: none; padding-bottom: 0; cursor: pointer;">
+          Направление к другому специалисту
+        </label>
+      </div>
+      <div id="referral-section" class="hidden-section">
+        
+        <!-- Выбор специализации -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold mb-2">Выберите специализацию</label>
+          {% if specializations %}
+          <div class="row g-3">
+            {% for spec in specializations %}
+            <div class="col-md-6 col-lg-4">
+              <label class="specialization-card d-flex flex-column h-100 {% if referral_specialization_id == spec.id|stringformat:'s' %}selected{% endif %}">
+                <input type="radio" name="referral_specialization" value="{{ spec.id }}" 
+                       {% if referral_specialization_id == spec.id|stringformat:'s' %}checked{% endif %}>
+                <div class="flex-grow-1 d-flex flex-column justify-content-center align-items-center">
+                  {% if "хирург" in spec.name|lower or "хирургия" in spec.name|lower %}
+                    <i class="bi bi-duffle fs-3 mb-2"></i>
+                  {% elif "офтальмолог" in spec.name|lower or "офтальмология" in spec.name|lower %}
+                    <i class="bi bi-eye fs-3 mb-2"></i>
+                  {% elif "кардиолог" in spec.name|lower or "кардиология" in spec.name|lower %}
+                    <i class="bi bi-heart-pulse fs-3 mb-2"></i>
+                  {% elif "невролог" in spec.name|lower or "неврология" in spec.name|lower %}
+                    <i class="bi bi-person fs-3 mb-2"></i>
+                  {% elif "педиатр" in spec.name|lower or "педиатрия" in spec.name|lower %}
+                    <i class="bi bi-person-walking fs-3 mb-2"></i>
+                  {% elif "дерматолог" in spec.name|lower or "дерматология" in spec.name|lower %}
+                    <i class="bi bi-droplet fs-3 mb-2"></i>
+                  {% elif "психиатр" in spec.name|lower or "психиатрия" in spec.name|lower %}
+                    <i class="bi bi-emoji-grimace fs-3 mb-2"></i>
+                  {% elif "ортопед" in spec.name|lower or "ортопедия" in spec.name|lower %}
+                    <i class="bi bi-universal-access fs-3 mb-2"></i>
+                  {% elif "эндокринолог" in spec.name|lower or "эндокринология" in spec.name|lower %}
+                    <i class="bi bi-capsule fs-3 mb-2"></i>
+                  {% elif "отоларинголог" in spec.name|lower or "лор" in spec.name|lower %}
+                    <i class="bi bi-earbuds fs-3 mb-2"></i>
+                  {% elif "стоматолог" in spec.name|lower or "стоматология" in spec.name|lower %}
+                    <i class="bi bi-tooth fs-3 mb-2"></i>
+                  {% elif "гастроэнтеролог" in spec.name|lower or "гастроэнтерология" in spec.name|lower %}
+                    <i class="bi bi-stomach fs-3 mb-2"></i>
+                  {% elif "семейн" in spec.name|lower %}
+                    <i class="bi bi-people fs-3 mb-2"></i>
+                  {% elif "гинеколог" in spec.name|lower or "гинекология" in spec.name|lower %}
+                    <i class="bi bi-gender-female fs-3 mb-2"></i>
+                  {% elif "уролог" in spec.name|lower or "урология" in spec.name|lower %}
+                    <i class="bi bi-gender-male fs-3 mb-2"></i>
+                  {% elif "терапевт" in spec.name|lower or "терапия" in spec.name|lower %}
+                    <i class="bi bi-prescription2 fs-3 mb-2"></i>
+                  {% elif "диагностик" in spec.name|lower %}
+                    <i class="bi bi-clipboard2-pulse fs-3 mb-2"></i>
+                  {% else %}
+                    <i class="bi bi-hospital fs-3 mb-2"></i>
+                  {% endif %}
+                  <div class="fw-semibold text-center">{{ spec.name }}</div>
+                  <small class="text-muted text-center d-block mt-1">
+                    {% with spec.doctor_set.all|length as doctor_count %}
+                      {% if doctor_count > 0 %}
+                        <i class="bi bi-person-badge"></i> {{ doctor_count }} {% if doctor_count == 1 %}врач{% elif doctor_count < 5 %}врача{% else %}врачей{% endif %}
+                      {% endif %}
+                    {% endwith %}
+                  </small>
+                </div>
+              </label>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> В данный момент нет доступных специализаций для направления
+          </div>
+          {% endif %}
+        </div>
+        
+        <!-- Выбор врача -->
+        <div class="mb-3" id="referral-doctor-section" style="display: {% if referral_specialization_id %}block{% else %}none{% endif %};">
+          <label class="form-label fw-semibold mb-2">Выберите врача</label>
+          <div class="row g-3" id="referral-doctors-container">
+            {% for doc in all_doctors %}
+            <div class="col-md-6">
+              <label class="doctor-card d-block {% if referral_doctor_id == doc.id|stringformat:'s' %}selected{% endif %}" data-doctor-id="{{ doc.id }}">
+                <input type="radio" name="referral_doctor" value="{{ doc.id }}" 
+                       {% if referral_doctor_id == doc.id|stringformat:'s' %}checked{% endif %}
+                       class="referral-doctor-radio">
+                <div class="d-flex align-items-center">
+                  <div class="me-3">
+                    {% if "терапевт" in doc.specialization.name|lower or "терапия" in doc.specialization.name|lower %}
+                      <i class="bi bi-heart-pulse fs-4 text-primary"></i>
+                    {% elif "кардиолог" in doc.specialization.name|lower or "кардиология" in doc.specialization.name|lower %}
+                      <i class="bi bi-heart fs-4 text-danger"></i>
+                    {% elif "невролог" in doc.specialization.name|lower or "неврология" in doc.specialization.name|lower %}
+                      <i class="bi bi-brain fs-4 text-info"></i>
+                    {% elif "педиатр" in doc.specialization.name|lower or "педиатрия" in doc.specialization.name|lower %}
+                      <i class="bi bi-emoji-smile fs-4 text-warning"></i>
+                    {% elif "семейн" in doc.specialization.name|lower %}
+                      <i class="bi bi-people fs-4 text-primary"></i>
+                    {% elif "гинеколог" in doc.specialization.name|lower or "гинекология" in doc.specialization.name|lower %}
+                      <i class="bi bi-gender-female fs-4 text-danger"></i>
+                    {% elif "уролог" in doc.specialization.name|lower or "урология" in doc.specialization.name|lower %}
+                      <i class="bi bi-gender-male fs-4 text-primary"></i>
+                    {% elif "дерматолог" in doc.specialization.name|lower or "дерматология" in doc.specialization.name|lower %}
+                      <i class="bi bi-droplet fs-4 text-info"></i>
+                    {% elif "офтальмолог" in doc.specialization.name|lower or "офтальмология" in doc.specialization.name|lower %}
+                      <i class="bi bi-eye fs-4 text-primary"></i>
+                    {% elif "отоларинголог" in doc.specialization.name|lower or "лор" in doc.specialization.name|lower %}
+                      <i class="bi bi-earbuds fs-4 text-info"></i>
+                    {% elif "стоматолог" in doc.specialization.name|lower or "стоматология" in doc.specialization.name|lower %}
+                      <i class="bi bi-tooth fs-4 text-primary"></i>
+                    {% elif "хирург" in doc.specialization.name|lower or "хирургия" in doc.specialization.name|lower %}
+                      <i class="bi bi-scissors fs-4 text-danger"></i>
+                    {% elif "ортопед" in doc.specialization.name|lower or "ортопедия" in doc.specialization.name|lower %}
+                      <i class="bi bi-bone fs-4 text-secondary"></i>
+                    {% elif "эндокринолог" in doc.specialization.name|lower or "эндокринология" in doc.specialization.name|lower %}
+                      <i class="bi bi-activity fs-4 text-success"></i>
+                    {% elif "гастроэнтеролог" in doc.specialization.name|lower or "гастроэнтерология" in doc.specialization.name|lower %}
+                      <i class="bi bi-stomach fs-4 text-info"></i>
+                    {% elif "психиатр" in doc.specialization.name|lower or "психиатрия" in doc.specialization.name|lower %}
+                      <i class="bi bi-headset fs-4 text-warning"></i>
+                    {% elif "диагностик" in doc.specialization.name|lower %}
+                      <i class="bi bi-clipboard2-pulse fs-4 text-primary"></i>
+                    {% else %}
+                      <i class="bi bi-hospital fs-4 text-secondary"></i>
+                    {% endif %}
+                  </div>
+                  <div class="flex-grow-1">
+                    <div class="fw-semibold">
+                      {{ doc.lname }} {{ doc.fname }}
+                    </div>
+                    <small class="text-muted">
+                      {% if "терапевт" in doc.specialization.name|lower or "терапия" in doc.specialization.name|lower %}
+                        <i class="bi bi-heart-pulse me-1"></i>
+                      {% elif "кардиолог" in doc.specialization.name|lower or "кардиология" in doc.specialization.name|lower %}
+                        <i class="bi bi-heart me-1"></i>
+                      {% elif "невролог" in doc.specialization.name|lower or "неврология" in doc.specialization.name|lower %}
+                        <i class="bi bi-brain me-1"></i>
+                      {% elif "педиатр" in doc.specialization.name|lower or "педиатрия" in doc.specialization.name|lower %}
+                        <i class="bi bi-emoji-smile me-1"></i>
+                      {% elif "семейн" in doc.specialization.name|lower %}
+                        <i class="bi bi-people me-1"></i>
+                      {% elif "гинеколог" in doc.specialization.name|lower or "гинекология" in doc.specialization.name|lower %}
+                        <i class="bi bi-gender-female me-1"></i>
+                      {% elif "уролог" in doc.specialization.name|lower or "урология" in doc.specialization.name|lower %}
+                        <i class="bi bi-gender-male me-1"></i>
+                      {% elif "дерматолог" in doc.specialization.name|lower or "дерматология" in doc.specialization.name|lower %}
+                        <i class="bi bi-droplet me-1"></i>
+                      {% elif "офтальмолог" in doc.specialization.name|lower or "офтальмология" in doc.specialization.name|lower %}
+                        <i class="bi bi-eye me-1"></i>
+                      {% elif "отоларинголог" in doc.specialization.name|lower or "лор" in doc.specialization.name|lower %}
+                        <i class="bi bi-earbuds me-1"></i>
+                      {% elif "стоматолог" in doc.specialization.name|lower or "стоматология" in doc.specialization.name|lower %}
+                        <i class="bi bi-tooth me-1"></i>
+                      {% elif "хирург" in doc.specialization.name|lower or "хирургия" in doc.specialization.name|lower %}
+                        <i class="bi bi-scissors me-1"></i>
+                      {% elif "ортопед" in doc.specialization.name|lower or "ортопедия" in doc.specialization.name|lower %}
+                        <i class="bi bi-bone me-1"></i>
+                      {% elif "эндокринолог" in doc.specialization.name|lower or "эндокринология" in doc.specialization.name|lower %}
+                        <i class="bi bi-activity me-1"></i>
+                      {% elif "гастроэнтеролог" in doc.specialization.name|lower or "гастроэнтерология" in doc.specialization.name|lower %}
+                        <i class="bi bi-stomach me-1"></i>
+                      {% elif "психиатр" in doc.specialization.name|lower or "психиатрия" in doc.specialization.name|lower %}
+                        <i class="bi bi-headset me-1"></i>
+                      {% elif "диагностик" in doc.specialization.name|lower %}
+                        <i class="bi bi-clipboard2-pulse me-1"></i>
+                      {% else %}
+                        <i class="bi bi-hospital me-1"></i>
+                      {% endif %}
+                      {{ doc.specialization.name }}
+                    </small>
+                  </div>
+                </div>
+              </label>
+            </div>
+            {% empty %}
+            <div class="col-12">
+              <p class="text-muted">Врачи не найдены для выбранной специализации</p>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Календарь и слоты для направления -->
+        <div id="referral-slots-section" style="display: {% if referral_doctor_id %}block{% else %}none{% endif %};">
+          <!-- Календарь для выбора даты -->
+          <div class="mb-4">
+            <label class="form-label fw-semibold mb-2">Выберите дату</label>
+            <div class="input-group" style="position: relative; max-width: 340px;">
+              <input type="text" id="referral-datepicker" class="form-control" autocomplete="off" placeholder="ДД.ММ.ГГГГ" 
+                     value="{% if recipe and recipe.referral_slot %}{{ recipe.referral_slot.time_from|date:'d.m.Y' }}{% endif %}" readonly>
+              <span class="input-group-text" id="referral-calendar-icon" style="cursor: pointer;"><i class="bi bi-calendar-week"></i></span>
+            </div>
+            <small class="text-muted d-block mt-2">Выберите дату в календаре, затем выберите время</small>
+          </div>
+          
+          <!-- Временные слоты для выбранной даты -->
+          <div id="referral-time-slots-container" style="display: none;">
+            <label class="form-label fw-semibold mb-2">Выберите время</label>
+            <div id="referral-slots-list" class="slots-grid"></div>
+          </div>
+          
+          <div id="referral-no-slots-message" class="alert alert-info" style="display: none;">
+            На выбранную дату нет доступных временных слотов
+          </div>
+          
+          <input type="hidden" name="referral_slot" id="referral-selected-slot-id" 
+                 value="{% if recipe and recipe.referral_slot %}{{ recipe.referral_slot.id }}{% endif %}">
+          <input type="hidden" name="referral-selected-date" id="referral-selected-date" 
+                 value="{% if recipe and recipe.referral_slot %}{{ recipe.referral_slot.time_from|date:'Y-m-d' }}{% endif %}">
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div id="diagnosis-error" class="alert alert-danger" style="display: none; margin-bottom: 1rem;">
+      <i class="bi bi-exclamation-triangle"></i> <span id="diagnosis-error-text">Необходимо выбрать диагноз</span>
+    </div>
+    
+    <div class="d-flex gap-2 justify-content-end">
+      <a href="{% url 'scheduling:doctor_schedule' appointment.doctor.id %}" class="btn btn-outline-secondary">Отмена</a>
+      <button type="submit" class="btn btn-primary">Сохранить</button>
+    </div>
+  </form>
+
+  <!-- Режим просмотра для завершенных приемов -->
+  {% if appointment.status == 'completed' %}
+  <div id="view-mode" class="view-mode">
+    <!-- Диагноз -->
+    <div class="form-section">
+      <div class="form-section-title">Диагноз</div>
+      <div class="form-control-plaintext">
+        {% if recipe and recipe.diagnosis %}
+          {{ recipe.diagnosis.name }}
+        {% else %}
+          <span class="text-muted">Не указан</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Жалобы -->
+    <div class="form-section">
+      <div class="form-section-title">Жалобы пациента</div>
+      <div class="form-control-plaintext">
+        {% if recipe and recipe.complaints %}
+          {{ recipe.complaints|linebreaks }}
+        {% else %}
+          <span class="text-muted">Не указаны</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Лечение и рекомендации -->
+    <div class="form-section">
+      <div class="form-section-title">Лечение и рекомендации</div>
+      <div class="form-control-plaintext">
+        {% if recipe and recipe.recommendations %}
+          {{ recipe.recommendations|linebreaks }}
+        {% else %}
+          <span class="text-muted">Не указаны</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="d-flex gap-2 justify-content-end">
+      <a href="{% url 'scheduling:doctor_schedule' appointment.doctor.id %}" class="btn btn-outline-secondary">Назад</a>
+      <button type="button" id="edit-button-view" class="btn btn-primary">Редактировать</button>
+    </div>
+  </div>
+  {% endif %}
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>
+<script>
+(function() {
+  // Диагнозы для autocomplete
+  const diagnoses = [
+    {% for diagnosis in diagnoses %}
+    {id: {{ diagnosis.id }}, name: "{{ diagnosis.name|escapejs }}"}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+  
+  const diagnosisInput = document.getElementById('diagnosis-input');
+  const diagnosisIdInput = document.getElementById('diagnosis-id');
+  const diagnosisSuggestions = document.getElementById('diagnosis-suggestions');
+  
+  // Autocomplete для диагноза
+  diagnosisInput.addEventListener('input', function() {
+    const query = this.value.toLowerCase().trim();
+    diagnosisSuggestions.innerHTML = '';
+    diagnosisSuggestions.style.display = 'none';
+    
+    if (query.length < 2) {
+      diagnosisIdInput.value = '';
+      return;
+    }
+    
+    const matches = diagnoses.filter(d => d.name.toLowerCase().includes(query)).slice(0, 10);
+    
+    if (matches.length > 0) {
+      matches.forEach(d => {
+        const div = document.createElement('div');
+        div.className = 'diagnosis-suggestion';
+        div.textContent = d.name;
+        div.addEventListener('click', function() {
+          diagnosisInput.value = d.name;
+          diagnosisIdInput.value = d.id;
+          diagnosisSuggestions.style.display = 'none';
+        });
+        diagnosisSuggestions.appendChild(div);
+      });
+      diagnosisSuggestions.style.display = 'block';
+    }
+  });
+  
+  // Скрыть подсказки при клике вне
+  document.addEventListener('click', function(e) {
+    if (!diagnosisInput.contains(e.target) && !diagnosisSuggestions.contains(e.target)) {
+      diagnosisSuggestions.style.display = 'none';
+    }
+  });
+  
+  // Валидация и отправка формы
+  const appointmentForm = document.getElementById('appointment-form');
+  if (appointmentForm) {
+    appointmentForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const diagnosisId = diagnosisIdInput.value;
+      const diagnosisText = diagnosisInput.value.trim();
+      const diagnosisError = document.getElementById('diagnosis-error');
+      const diagnosisErrorText = document.getElementById('diagnosis-error-text');
+      
+      // Проверяем, выбран ли диагноз
+      if (!diagnosisId && !diagnosisText) {
+        if (diagnosisError && diagnosisErrorText) {
+          diagnosisError.style.display = 'block';
+          diagnosisErrorText.textContent = 'Необходимо выбрать диагноз из списка или ввести название';
+        }
+        // Подсвечиваем поле ввода
+        if (diagnosisInput) {
+          diagnosisInput.classList.add('is-invalid');
+          diagnosisInput.focus();
+        }
+        // Прокручиваем к ошибке
+        if (diagnosisError) {
+          diagnosisError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        return false;
+      }
+      
+      // Если есть текст, но нет ID, пытаемся найти в списке
+      if (!diagnosisId && diagnosisText) {
+        const matchingDiagnosis = diagnoses.find(d => d.name.toLowerCase() === diagnosisText.toLowerCase());
+        if (!matchingDiagnosis) {
+          if (diagnosisError && diagnosisErrorText) {
+            diagnosisError.style.display = 'block';
+            diagnosisErrorText.textContent = 'Диагноз не найден. Пожалуйста, выберите диагноз из списка подсказок.';
+          }
+          if (diagnosisInput) {
+            diagnosisInput.classList.add('is-invalid');
+            diagnosisInput.focus();
+          }
+          if (diagnosisError) {
+            diagnosisError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+          return false;
+        } else {
+          // Устанавливаем ID найденного диагноза
+          diagnosisIdInput.value = matchingDiagnosis.id;
+        }
+      }
+      
+      // Скрываем ошибку, если все в порядке
+      if (diagnosisError) {
+        diagnosisError.style.display = 'none';
+      }
+      if (diagnosisInput) {
+        diagnosisInput.classList.remove('is-invalid');
+      }
+      
+      // Отправляем форму через AJAX
+      const formData = new FormData(this);
+      const action = this.action || '{% url "scheduling:update_status" appointment.pk %}';
+      const submitBtn = this.querySelector('button[type="submit"]');
+      
+      // Отключаем кнопку на время отправки
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Сохранение...';
+      }
+      
+      fetch(action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+        },
+        redirect: 'follow'
+      })
+      .then(response => {
+        if (response.redirected) {
+          window.location.href = response.url;
+        } else if (response.ok) {
+          // Если ответ успешный, но нет редиректа, перезагружаем страницу
+          window.location.reload();
+        } else {
+          return response.text().then(text => {
+            throw new Error('Ошибка при сохранении приема: ' + response.status);
+          });
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Ошибка при сохранении приема: ' + error.message);
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = 'Сохранить';
+        }
+      });
+      
+      return false;
+    });
+  }
+  
+  // Скрывать ошибку при изменении поля диагноза
+  if (diagnosisInput) {
+    diagnosisInput.addEventListener('input', function() {
+      const diagnosisError = document.getElementById('diagnosis-error');
+      if (diagnosisError && this.value.trim()) {
+        diagnosisError.style.display = 'none';
+        this.classList.remove('is-invalid');
+      }
+    });
+    
+    diagnosisInput.addEventListener('change', function() {
+      const diagnosisError = document.getElementById('diagnosis-error');
+      if (diagnosisError && diagnosisIdInput && diagnosisIdInput.value) {
+        diagnosisError.style.display = 'none';
+        this.classList.remove('is-invalid');
+      }
+    });
+  }
+  
+  // Чекбоксы для показа/скрытия секций
+  const nextAppointmentCheckbox = document.getElementById('next-appointment-checkbox');
+  const nextAppointmentSection = document.getElementById('next-appointment-section');
+  const referralCheckbox = document.getElementById('referral-checkbox');
+  const referralSection = document.getElementById('referral-section');
+  
+  function toggleNextAppointment() {
+    if (nextAppointmentCheckbox.checked) {
+      nextAppointmentSection.classList.remove('hidden-section');
+    } else {
+      nextAppointmentSection.classList.add('hidden-section');
+      document.getElementById('next-selected-slot-id').value = '';
+      document.getElementById('next-selected-date').value = '';
+    }
+  }
+  
+  function toggleReferral() {
+    if (referralCheckbox.checked) {
+      referralSection.classList.remove('hidden-section');
+    } else {
+      referralSection.classList.add('hidden-section');
+      document.getElementById('referral-selected-slot-id').value = '';
+      document.getElementById('referral-selected-date').value = '';
+      // Очистить выбор специализации и врача
+      document.querySelectorAll('input[name="referral_specialization"]').forEach(r => r.checked = false);
+      document.querySelectorAll('input[name="referral_doctor"]').forEach(r => r.checked = false);
+    }
+  }
+  
+  // Инициализация при загрузке
+  document.addEventListener('DOMContentLoaded', function() {
+    if (nextAppointmentCheckbox) {
+      nextAppointmentCheckbox.addEventListener('change', toggleNextAppointment);
+    }
+    if (referralCheckbox) {
+      referralCheckbox.addEventListener('change', toggleReferral);
+    }
+    if (nextAppointmentCheckbox && nextAppointmentCheckbox.checked) {
+      toggleNextAppointment();
+    }
+    if (referralCheckbox && referralCheckbox.checked) {
+      toggleReferral();
+    }
+    
+    // Обработка кнопки "Редактировать" для завершенных приемов
+    const editButton = document.getElementById('edit-button');
+    const editButtonView = document.getElementById('edit-button-view');
+    const appointmentForm = document.getElementById('appointment-form');
+    const viewMode = document.getElementById('view-mode');
+    
+    function enableEditMode() {
+      if (viewMode) viewMode.style.display = 'none';
+      if (appointmentForm) appointmentForm.style.display = 'block';
+      if (editButton) editButton.style.display = 'none';
+      if (editButtonView) editButtonView.style.display = 'none';
+      
+      // Скрываем секции повторной записи и направления для завершенных приемов
+      const nextAppointmentSection = document.getElementById('next-appointment-section');
+      const referralSection = document.getElementById('referral-section');
+      const nextAppointmentFormSection = document.querySelector('#next-appointment-checkbox')?.closest('.form-section');
+      const referralFormSection = document.querySelector('#referral-checkbox')?.closest('.form-section');
+      
+      if (nextAppointmentFormSection) {
+        nextAppointmentFormSection.style.display = 'none';
+      }
+      if (referralFormSection) {
+        referralFormSection.style.display = 'none';
+      }
+      
+      // Активируем поля формы
+      if (appointmentForm) {
+        appointmentForm.querySelectorAll('input, textarea').forEach(field => {
+          field.removeAttribute('readonly');
+        });
+      }
+    }
+    
+    if (editButton && appointmentForm && viewMode) {
+      editButton.addEventListener('click', enableEditMode);
+    }
+    if (editButtonView && appointmentForm && viewMode) {
+      editButtonView.addEventListener('click', enableEditMode);
+    }
+    
+    // Данные всех врачей для фильтрации
+    const allDoctorsData = {{ all_doctors_json|safe }};
+    
+    // Функция для фильтрации и отображения врачей по специализации
+    function filterDoctorsBySpecialization(specId) {
+      const doctorSection = document.getElementById('referral-doctor-section');
+      const doctorContainer = document.getElementById('referral-doctors-container');
+      
+      if (!specId) {
+        doctorSection.style.display = 'none';
+        document.getElementById('referral-slots-section').style.display = 'none';
+        return;
+      }
+      
+      // Фильтруем врачей по специализации
+      const filteredDoctors = allDoctorsData.filter(doc => doc.specialization_id == specId);
+      
+      // Очищаем контейнер
+      if (doctorContainer) {
+        doctorContainer.innerHTML = '';
+        
+        if (filteredDoctors.length === 0) {
+          doctorContainer.innerHTML = '<div class="col-12"><p class="text-muted">Врачи не найдены для выбранной специализации</p></div>';
+        } else {
+          // Создаем карточки врачей
+          filteredDoctors.forEach(doc => {
+            const col = document.createElement('div');
+            col.className = 'col-md-6';
+            
+            const label = document.createElement('label');
+            label.className = 'doctor-card d-block';
+            
+            const radio = document.createElement('input');
+            radio.type = 'radio';
+            radio.name = 'referral_doctor';
+            radio.value = doc.id;
+            
+            const content = document.createElement('div');
+            content.className = 'd-flex align-items-center';
+            
+            const textDiv = document.createElement('div');
+            textDiv.className = 'flex-grow-1';
+            
+            const nameDiv = document.createElement('div');
+            nameDiv.className = 'fw-semibold';
+            nameDiv.textContent = doc.name;
+            
+            const specDiv = document.createElement('small');
+            specDiv.className = 'text-muted';
+            specDiv.textContent = doc.specialization_name;
+            
+            textDiv.appendChild(nameDiv);
+            textDiv.appendChild(specDiv);
+            content.appendChild(radio);
+            content.appendChild(textDiv);
+            label.appendChild(content);
+            col.appendChild(label);
+            doctorContainer.appendChild(col);
+            
+            // Добавляем обработчик выбора врача
+            radio.addEventListener('change', function() {
+              if (this.checked) {
+                // Убираем выделение с других карточек
+                document.querySelectorAll('#referral-doctor-section .doctor-card').forEach(card => {
+                  card.classList.remove('selected');
+                });
+                label.classList.add('selected');
+                
+                // Загружаем слоты для выбранного врача
+                window.loadReferralSlots(doc.id);
+              }
+            });
+          });
+        }
+      }
+      
+      doctorSection.style.display = 'block';
+    }
+    
+    // Функция для загрузки слотов врача через AJAX (глобальная)
+    window.loadReferralSlots = function(doctorId) {
+      const slotsSection = document.getElementById('referral-slots-section');
+      const datepickerInput = document.getElementById('referral-datepicker');
+      const slotsContainer = document.getElementById('referral-time-slots-container');
+      const slotsList = document.getElementById('referral-slots-list');
+      const noSlotsMessage = document.getElementById('referral-no-slots-message');
+      
+      // Показываем секцию слотов
+      slotsSection.style.display = 'block';
+      
+      // Очищаем предыдущие данные
+      if (datepickerInput) {
+        datepickerInput.value = '';
+      }
+      if (slotsList) {
+        slotsList.innerHTML = '';
+      }
+      if (slotsContainer) {
+        slotsContainer.style.display = 'none';
+      }
+      if (noSlotsMessage) {
+        noSlotsMessage.style.display = 'none';
+      }
+      
+      // Загружаем слоты через AJAX
+      fetch('/scheduling/referral-slots/' + doctorId + '/')
+        .then(response => response.json())
+        .then(data => {
+          // Обновляем глобальные переменные
+          window.referralSlotsData = data.slots;
+          window.referralAvailableDates = data.available_dates;
+          
+          // Инициализируем календарь с новыми данными
+          if (datepickerInput && window.referralFlatpickr) {
+            window.referralFlatpickr.destroy();
+          }
+          
+          if (datepickerInput && data.available_dates.length > 0) {
+            // Фильтруем доступные даты, оставляя только те, где есть будущие слоты
+            const now = new Date();
+            const nowWithMargin = new Date(now.getTime() - 60000);
+            const filteredAvailableDates = data.available_dates.filter(dateStr => {
+              return data.slots.some(slot => {
+                if (slot.date !== dateStr) {
+                  return false;
+                }
+                if (slot.time_from) {
+                  try {
+                    const slotTime = new Date(slot.time_from);
+                    return slotTime > nowWithMargin;
+                  } catch (e) {
+                    return false;
+                  }
+                }
+                return false;
+              });
+            });
+            
+            window.referralFlatpickr = flatpickr(datepickerInput, {
+              dateFormat: 'd.m.Y',
+              locale: 'ru',
+              minDate: 'today',
+              allowInput: false,
+              clickOpens: true,
+              animate: true,
+              enable: filteredAvailableDates.map(date => {
+                const parts = date.split('-');
+                return parts[2] + '.' + parts[1] + '.' + parts[0];
+              }),
+              onChange: function(selectedDates, dateStr, instance) {
+                const dateStrISO = formatDateForSubmit(dateStr);
+                document.getElementById('referral-selected-date').value = dateStrISO;
+                showReferralSlotsForDate(dateStrISO);
+                datepickerInput.blur();
+              },
+              onClose: function(selectedDates, dateStr, instance) {
+                datepickerInput.blur();
+              }
+            });
+            
+            const referralCalendarIcon = document.getElementById('referral-calendar-icon');
+            if (referralCalendarIcon) {
+              referralCalendarIcon.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (window.referralFlatpickr) {
+                  window.referralFlatpickr.open();
+                }
+                return false;
+              });
+            }
+            
+            // Обработчик клика на поле даты
+            datepickerInput.addEventListener('click', function(e) {
+              if (window.referralFlatpickr) {
+                window.referralFlatpickr.open();
+              }
+            });
+          }
+        })
+        .catch(error => {
+          console.error('Error loading slots:', error);
+          if (noSlotsMessage) {
+            noSlotsMessage.textContent = 'Ошибка загрузки слотов';
+            noSlotsMessage.style.display = 'block';
+          }
+        });
+    };
+    
+    // Обработка выбора специализации для направления
+    document.querySelectorAll('input[name="referral_specialization"]').forEach(radio => {
+      radio.addEventListener('change', function() {
+        if (this.checked) {
+          // Убираем выделение с других карточек
+          document.querySelectorAll('.specialization-card').forEach(card => {
+            card.classList.remove('selected');
+          });
+          this.closest('.specialization-card').classList.add('selected');
+          
+          // Фильтруем врачей
+          filterDoctorsBySpecialization(this.value);
+          
+          // Очищаем выбор врача и слоты
+          document.querySelectorAll('input[name="referral_doctor"]').forEach(r => r.checked = false);
+          document.querySelectorAll('#referral-doctor-section .doctor-card').forEach(card => {
+            card.classList.remove('selected');
+          });
+          document.getElementById('referral-slots-section').style.display = 'none';
+          document.getElementById('referral-selected-slot-id').value = '';
+          document.getElementById('referral-selected-date').value = '';
+        }
+      });
+    });
+    
+    // Инициализация: если специализация уже выбрана, фильтруем врачей
+    const selectedSpec = document.querySelector('input[name="referral_specialization"]:checked');
+    if (selectedSpec) {
+      filterDoctorsBySpecialization(selectedSpec.value);
+    }
+    
+    // Обработчики для существующих врачей в HTML
+    document.querySelectorAll('input[name="referral_doctor"]').forEach(radio => {
+      radio.addEventListener('change', function() {
+        if (this.checked) {
+          // Убираем выделение с других карточек
+          document.querySelectorAll('#referral-doctor-section .doctor-card').forEach(card => {
+            card.classList.remove('selected');
+          });
+          this.closest('.doctor-card').classList.add('selected');
+          
+          // Загружаем слоты для выбранного врача
+          window.loadReferralSlots(this.value);
+        }
+      });
+    });
+    
+    // Если врач уже выбран, загружаем его слоты
+    const selectedDoctor = document.querySelector('input[name="referral_doctor"]:checked');
+    if (selectedDoctor) {
+      window.loadReferralSlots(selectedDoctor.value);
+    }
+  });
+  
+  // Функции для работы с календарем и слотами (повторный прием)
+  const nextSlotsData = {{ next_slots_json|safe }};
+  const nextAvailableDates = {{ next_available_dates_json|safe }};
+  const nextSelectedSlotId = '{% if recipe and recipe.next_appointment_slot %}{{ recipe.next_appointment_slot.id }}{% endif %}';
+  const nextSelectedDate = '{% if recipe and recipe.next_appointment_slot %}{{ recipe.next_appointment_slot.time_from|date:"Y-m-d" }}{% endif %}';
+  
+  function formatDateForDisplay(dateStr) {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      return parts[2] + '.' + parts[1] + '.' + parts[0];
+    }
+    return dateStr;
+  }
+  
+  function formatDateForSubmit(dateStr) {
+    if (!dateStr) return '';
+    const parts = dateStr.split('.');
+    if (parts.length === 3) {
+      return parts[2] + '-' + parts[1] + '-' + parts[0];
+    }
+    return dateStr;
+  }
+  
+  function showNextSlotsForDate(dateStr) {
+    // Используем время сервера, если доступно, иначе текущее время клиента
+    const now = new Date();
+    // Добавляем небольшую задержку (1 минута) для учета времени загрузки страницы
+    const nowWithMargin = new Date(now.getTime() - 60000);
+    
+    const slotsForDate = nextSlotsData.filter(slot => {
+      // Фильтруем по дате
+      if (slot.date !== dateStr) {
+        return false;
+      }
+      // Фильтруем прошедшие слоты
+      if (slot.time_from) {
+        try {
+          const slotTime = new Date(slot.time_from);
+          // Проверяем, что слот еще не прошел
+          if (slotTime <= nowWithMargin) {
+            return false;
+          }
+        } catch (e) {
+          // Если не удалось распарсить дату, пропускаем слот
+          console.warn('Не удалось распарсить дату слота:', slot.time_from);
+          return false;
+        }
+      } else {
+        // Если нет времени начала, пропускаем слот
+        return false;
+      }
+      return true;
+    });
+    
+    const container = document.getElementById('next-time-slots-container');
+    const list = document.getElementById('next-slots-list');
+    const noSlots = document.getElementById('next-no-slots-message');
+    
+    if (slotsForDate.length === 0) {
+      container.style.display = 'none';
+      noSlots.style.display = 'block';
+      return;
+    }
+    
+    noSlots.style.display = 'none';
+    container.style.display = 'block';
+    
+    // Сортируем слоты по времени
+    slotsForDate.sort((a, b) => a.time_from_str.localeCompare(b.time_from_str));
+    list.innerHTML = '';
+    
+    // Создаем круглые окошки слотов
+    slotsForDate.forEach(slot => {
+      const label = document.createElement('label');
+      label.className = 'slot-card';
+      if (nextSelectedSlotId == slot.id) {
+        label.classList.add('selected');
+      }
+      
+      const radio = document.createElement('input');
+      radio.type = 'radio';
+      radio.name = 'next_appointment_slot';
+      radio.value = slot.id;
+      radio.required = true;
+      if (nextSelectedSlotId == slot.id) {
+        radio.checked = true;
+      }
+      
+      radio.addEventListener('change', function() {
+        document.getElementById('next-selected-slot-id').value = slot.id;
+        document.getElementById('next-selected-date').value = dateStr;
+        // Убираем выделение с других карточек
+        document.querySelectorAll('#next-slots-list .slot-card').forEach(card => {
+          card.classList.remove('selected');
+        });
+        label.classList.add('selected');
+      });
+      
+      const content = document.createElement('div');
+      content.className = 'slot-content';
+      
+      const timeSpan = document.createElement('div');
+      timeSpan.className = 'slot-time';
+      timeSpan.textContent = slot.time_from_str;
+      
+      content.appendChild(timeSpan);
+      
+      label.appendChild(radio);
+      label.appendChild(content);
+      
+      // Клик по карточке выбирает слот
+      label.addEventListener('click', function(e) {
+        if (e.target.tagName !== 'INPUT') {
+          radio.checked = true;
+          radio.dispatchEvent(new Event('change'));
+        }
+      });
+      
+      list.appendChild(label);
+    });
+  }
+  
+  // Инициализация flatpickr для повторного приема
+  const nextDatepickerInput = document.getElementById('next-datepicker');
+  if (nextDatepickerInput) {
+    // Фильтруем доступные даты, оставляя только те, где есть будущие слоты
+    const now = new Date();
+    const nowWithMargin = new Date(now.getTime() - 60000);
+    const filteredNextAvailableDates = nextAvailableDates.filter(dateStr => {
+      // Проверяем, есть ли хотя бы один будущий слот на эту дату
+      return nextSlotsData.some(slot => {
+        if (slot.date !== dateStr) {
+          return false;
+        }
+        if (slot.time_from) {
+          try {
+            const slotTime = new Date(slot.time_from);
+            return slotTime > nowWithMargin;
+          } catch (e) {
+            return false;
+          }
+        }
+        return false;
+      });
+    });
+    
+    const nextFlatpickr = flatpickr(nextDatepickerInput, {
+      dateFormat: 'd.m.Y',
+      locale: 'ru',
+      minDate: 'today',
+      defaultDate: nextSelectedDate ? formatDateForDisplay(nextSelectedDate) : null,
+      allowInput: false,
+      clickOpens: true,
+      animate: true,
+      enable: filteredNextAvailableDates.map(date => formatDateForDisplay(date)),
+      onChange: function(selectedDates, dateStr, instance) {
+        const dateStrISO = formatDateForSubmit(dateStr);
+        document.getElementById('next-selected-date').value = dateStrISO;
+        showNextSlotsForDate(dateStrISO);
+        nextDatepickerInput.blur();
+      },
+      onClose: function(selectedDates, dateStr, instance) {
+        nextDatepickerInput.blur();
+      }
+    });
+    
+    const nextCalendarIcon = document.getElementById('next-calendar-icon');
+    if (nextCalendarIcon) {
+      nextCalendarIcon.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        nextFlatpickr.open();
+        return false;
+      });
+    }
+    
+    // Обработчик клика на поле даты
+    nextDatepickerInput.addEventListener('click', function(e) {
+      nextFlatpickr.open();
+    });
+    
+    // Если есть выбранная дата, показываем слоты (только если дата не в прошлом)
+    if (nextSelectedDate) {
+      const selectedDateObj = new Date(nextSelectedDate + 'T00:00:00');
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (selectedDateObj >= today) {
+        showNextSlotsForDate(nextSelectedDate);
+      } else {
+        // Если выбранная дата в прошлом, очищаем выбор
+        document.getElementById('next-selected-date').value = '';
+        document.getElementById('next-selected-slot-id').value = '';
+      }
+    }
+  }
+  
+  // Функции для работы с календарем и слотами (направление)
+  window.referralSlotsData = {{ referral_slots_json|safe }};
+  window.referralAvailableDates = {{ referral_available_dates_json|safe }};
+  const referralSelectedSlotId = '{% if recipe and recipe.referral_slot %}{{ recipe.referral_slot.id }}{% endif %}';
+  const referralSelectedDate = '{% if recipe and recipe.referral_slot %}{{ recipe.referral_slot.time_from|date:"Y-m-d" }}{% endif %}';
+  
+  function showReferralSlotsForDate(dateStr) {
+    if (!window.referralSlotsData || window.referralSlotsData.length === 0) {
+      return;
+    }
+    
+    // Используем время сервера, если доступно, иначе текущее время клиента
+    const now = new Date();
+    // Добавляем небольшую задержку (1 минута) для учета времени загрузки страницы
+    const nowWithMargin = new Date(now.getTime() - 60000);
+    
+    const slotsForDate = window.referralSlotsData.filter(slot => {
+      // Фильтруем по дате
+      if (slot.date !== dateStr) {
+        return false;
+      }
+      // Фильтруем прошедшие слоты
+      if (slot.time_from) {
+        try {
+          const slotTime = new Date(slot.time_from);
+          // Проверяем, что слот еще не прошел
+          if (slotTime <= nowWithMargin) {
+            return false;
+          }
+        } catch (e) {
+          // Если не удалось распарсить дату, пропускаем слот
+          console.warn('Не удалось распарсить дату слота:', slot.time_from);
+          return false;
+        }
+      } else {
+        // Если нет времени начала, пропускаем слот
+        return false;
+      }
+      return true;
+    });
+    
+    const container = document.getElementById('referral-time-slots-container');
+    const list = document.getElementById('referral-slots-list');
+    const noSlots = document.getElementById('referral-no-slots-message');
+    
+    if (slotsForDate.length === 0) {
+      container.style.display = 'none';
+      noSlots.style.display = 'block';
+      return;
+    }
+    
+    noSlots.style.display = 'none';
+    container.style.display = 'block';
+    
+    // Сортируем слоты по времени
+    slotsForDate.sort((a, b) => a.time_from_str.localeCompare(b.time_from_str));
+    list.innerHTML = '';
+    
+    // Создаем круглые окошки слотов
+    slotsForDate.forEach(slot => {
+      const label = document.createElement('label');
+      label.className = 'slot-card';
+      if (referralSelectedSlotId == slot.id) {
+        label.classList.add('selected');
+      }
+      
+      const radio = document.createElement('input');
+      radio.type = 'radio';
+      radio.name = 'referral_slot';
+      radio.value = slot.id;
+      radio.required = true;
+      if (referralSelectedSlotId == slot.id) {
+        radio.checked = true;
+      }
+      
+      radio.addEventListener('change', function() {
+        document.getElementById('referral-selected-slot-id').value = slot.id;
+        document.getElementById('referral-selected-date').value = dateStr;
+        // Убираем выделение с других карточек
+        document.querySelectorAll('#referral-slots-list .slot-card').forEach(card => {
+          card.classList.remove('selected');
+        });
+        label.classList.add('selected');
+      });
+      
+      const content = document.createElement('div');
+      content.className = 'slot-content';
+      
+      const timeSpan = document.createElement('div');
+      timeSpan.className = 'slot-time';
+      timeSpan.textContent = slot.time_from_str;
+      
+      content.appendChild(timeSpan);
+      
+      label.appendChild(radio);
+      label.appendChild(content);
+      
+      // Клик по карточке выбирает слот
+      label.addEventListener('click', function(e) {
+        if (e.target.tagName !== 'INPUT') {
+          radio.checked = true;
+          radio.dispatchEvent(new Event('change'));
+        }
+      });
+      
+      list.appendChild(label);
+    });
+  }
+  
+  // Инициализация flatpickr для направления (только если есть данные)
+  const referralDatepickerInput = document.getElementById('referral-datepicker');
+  if (referralDatepickerInput && window.referralAvailableDates && window.referralAvailableDates.length > 0) {
+    // Фильтруем доступные даты, оставляя только те, где есть будущие слоты
+    const now = new Date();
+    const nowWithMargin = new Date(now.getTime() - 60000);
+    const filteredReferralAvailableDates = window.referralAvailableDates.filter(dateStr => {
+      // Проверяем, есть ли хотя бы один будущий слот на эту дату
+      if (!window.referralSlotsData || window.referralSlotsData.length === 0) {
+        return false;
+      }
+      return window.referralSlotsData.some(slot => {
+        if (slot.date !== dateStr) {
+          return false;
+        }
+        if (slot.time_from) {
+          try {
+            const slotTime = new Date(slot.time_from);
+            return slotTime > nowWithMargin;
+          } catch (e) {
+            return false;
+          }
+        }
+        return false;
+      });
+    });
+    
+    window.referralFlatpickr = flatpickr(referralDatepickerInput, {
+      dateFormat: 'd.m.Y',
+      locale: 'ru',
+      minDate: 'today',
+      defaultDate: referralSelectedDate ? formatDateForDisplay(referralSelectedDate) : null,
+      allowInput: false,
+      clickOpens: true,
+      animate: true,
+      enable: filteredReferralAvailableDates.map(date => formatDateForDisplay(date)),
+      onChange: function(selectedDates, dateStr, instance) {
+        const dateStrISO = formatDateForSubmit(dateStr);
+        document.getElementById('referral-selected-date').value = dateStrISO;
+        showReferralSlotsForDate(dateStrISO);
+        referralDatepickerInput.blur();
+      },
+      onClose: function(selectedDates, dateStr, instance) {
+        referralDatepickerInput.blur();
+      }
+    });
+    
+    const referralCalendarIcon = document.getElementById('referral-calendar-icon');
+    if (referralCalendarIcon) {
+      referralCalendarIcon.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (window.referralFlatpickr) {
+          window.referralFlatpickr.open();
+        }
+        return false;
+      });
+    }
+    
+    // Обработчик клика на поле даты
+    referralDatepickerInput.addEventListener('click', function(e) {
+      if (window.referralFlatpickr) {
+        window.referralFlatpickr.open();
+      }
+    });
+    
+    // Если есть выбранная дата, показываем слоты (только если дата не в прошлом)
+    if (referralSelectedDate) {
+      const selectedDateObj = new Date(referralSelectedDate + 'T00:00:00');
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (selectedDateObj >= today) {
+        showReferralSlotsForDate(referralSelectedDate);
+      } else {
+        // Если выбранная дата в прошлом, очищаем выбор
+        document.getElementById('referral-selected-date').value = '';
+        document.getElementById('referral-selected-slot-id').value = '';
+      }
+    }
+  }
+})();
+</script>
+{% endblock %}

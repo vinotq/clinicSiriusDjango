@@ -8,7 +8,7 @@ class Patient(models.Model):
     tname = models.CharField(max_length=100, blank=True, null=True)
     bdate = models.DateField()
     phone_number = models.CharField(max_length=11, blank=True, null=True)
-    email = models.EmailField(blank=True, null=True)
+    email = models.EmailField()
     snils = models.CharField(max_length=11, unique=True)
     oms = models.CharField(max_length=16, unique=True)
     user = models.OneToOneField(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='patient_profile')
@@ -68,3 +68,13 @@ class PatientGroup(models.Model):
 
     def __str__(self):
         return f"{self.parent} -> {self.child}"
+
+
+class FamilyInvite(models.Model):
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='invites')
+    code = models.CharField(max_length=6, unique=True)
+    used = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.patient} - {self.code}"

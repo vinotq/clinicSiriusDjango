@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block title %}Информация о враче | Clinic Sirius{% endblock %}
+
+{% block content %}
+<section class="container py-5">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">Информация о враче</h2>
+      <p class="text-muted mb-0">{{ doctor.specialization.name }}</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-primary" href="{% url 'staff:doctor_home' %}">Главная</a>
+      <a class="btn btn-outline-secondary" href="{% url 'staff:doctor_patients' %}">Мои пациенты</a>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-4">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="fw-semibold mb-3">Личная информация</h5>
+          <div class="mb-3">
+            <small class="text-muted d-block">ФИО</small>
+            <div class="fw-semibold">{{ doctor.lname }} {{ doctor.fname }} {{ doctor.tname|default:"" }}</div>
+          </div>
+          {% if doctor.email %}
+          <div class="mb-3">
+            <small class="text-muted d-block">Email</small>
+            <div>{{ doctor.email }}</div>
+          </div>
+          {% endif %}
+          {% if doctor.phone_number %}
+          <div class="mb-3">
+            <small class="text-muted d-block">Телефон</small>
+            <div>{{ doctor.phone_number }}</div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-8">
+      <div class="card mb-4">
+        <div class="card-body">
+          <h5 class="fw-semibold mb-3">Статистика</h5>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <div class="text-center p-3 bg-light rounded">
+                <div class="h3 mb-1 text-primary">{{ total_appointments|default:0 }}</div>
+                <small class="text-muted">Всего записей</small>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="text-center p-3 bg-light rounded">
+                <div class="h3 mb-1 text-success">{{ upcoming_appointments_count|default:0 }}</div>
+                <small class="text-muted">Предстоящих</small>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="text-center p-3 bg-light rounded">
+                <div class="h3 mb-1 text-info">{{ completed_appointments|default:0 }}</div>
+                <small class="text-muted">Завершено</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <h5 class="fw-semibold mb-3">Быстрые действия</h5>
+          <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-primary" href="{% url 'scheduling:doctor_schedule' doctor.id %}">Расписание</a>
+            <a class="btn btn-outline-primary" href="{% url 'scheduling:add_timeslot' doctor.id %}">Добавить окно</a>
+            <a class="btn btn-outline-primary" href="{% url 'staff:doctor_patients' %}">Список пациентов</a>
+            <a class="btn btn-outline-secondary" href="{% url 'staff:doctor_home' %}">Главная</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+

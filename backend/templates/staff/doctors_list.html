@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}Врачи | Clinic Sirius{% endblock %}
+
+{% block content %}
+<section class="container py-5">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">Наши врачи</h2>
+      <p class="text-muted mb-0">Выберите специалиста по направлению.</p>
+    </div>
+    <form method="get" class="d-flex gap-2">
+      <select name="spec" class="form-select" onchange="this.form.submit()">
+        <option value="">Все специализации</option>
+        {% for spec in specializations %}
+          <option value="{{ spec.id }}" {% if request.GET.spec == spec.id|stringformat:'s' %}selected{% endif %}>{{ spec.name }}</option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+
+  <div class="row g-4">
+    {% for doctor in doctors %}
+      <div class="col-md-6 col-lg-4">
+        <div class="card h-100">
+          <div class="card-body">
+            <div class="d-flex align-items-center gap-3 mb-3">
+              <div class="avatar-circle">{{ doctor.lname|first|default:"Д" }}</div>
+              <div>
+                <h6 class="fw-semibold mb-0">{{ doctor.lname }} {{ doctor.fname }}</h6>
+                <small class="text-muted">{{ doctor.specialization.name }}</small>
+              </div>
+            </div>
+            <div class="d-flex flex-wrap gap-3 mb-3 small text-muted">
+              <span>Стаж: {{ doctor.years_experience }} лет</span>
+              {% if doctor.office %}
+                <span>Каб. {{ doctor.office }}</span>
+              {% endif %}
+            </div>
+            {% if doctor.bio %}
+              <p class="text-muted small mb-3">{{ doctor.bio|truncatewords:20 }}</p>
+            {% endif %}
+            <div class="d-flex gap-2">
+              <a class="btn btn-outline-primary btn-sm" href="{% url 'staff:doctor_detail' doctor.id %}">Подробнее</a>
+              <a class="btn btn-primary btn-sm" href="{% url 'scheduling:book_appointment' %}?doctor={{ doctor.id }}">Записаться</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <div class="col-12">
+        <p class="text-muted mb-0">Пока нет врачей для отображения.</p>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

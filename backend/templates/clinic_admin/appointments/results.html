@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+
+{% block title %}Результаты приема | Clinic Sirius{% endblock %}
+
+{% block content %}
+<section class="container py-5">
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+  
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+    <div>
+      <h2 class="fw-bold mb-0">Результаты приема</h2>
+      <p class="text-muted mb-0">Детальная информация о проведенном приеме</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary" href="{% url 'clinic_admin:patient_detail' appointment.patient.pk %}">
+        <i class="bi bi-arrow-left"></i> Назад к пациенту
+      </a>
+      <a class="btn btn-outline-primary" href="{% url 'clinic_admin:doctor_detail' appointment.doctor.pk %}">
+        <i class="bi bi-person-badge"></i> К врачу
+      </a>
+    </div>
+  </div>
+
+  <!-- Информация о приеме -->
+  <div class="card mb-3">
+    <div class="card-header">
+      <h5 class="mb-0"><i class="bi bi-calendar-check"></i> Информация о приеме</h5>
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <strong>Дата и время:</strong><br>
+          {{ appointment.date|date:"d.m.Y H:i" }}
+        </div>
+        <div class="col-md-6">
+          <strong>Статус:</strong><br>
+          <span class="badge" style="background: {% if appointment.status == 'completed' %}#6b7280{% elif appointment.status == 'in_progress' %}#3b82f6{% else %}#eab308{% endif %}; color: white;">
+            {{ appointment.get_status_display }}
+          </span>
+        </div>
+        <div class="col-md-6">
+          <strong>Пациент:</strong><br>
+          <a href="{% url 'clinic_admin:patient_detail' appointment.patient.pk %}" class="text-decoration-none">
+            {{ appointment.patient.lname }} {{ appointment.patient.fname }} {{ appointment.patient.tname|default:"" }}
+          </a>
+        </div>
+        <div class="col-md-6">
+          <strong>Врач:</strong><br>
+          <a href="{% url 'clinic_admin:doctor_detail' appointment.doctor.pk %}" class="text-decoration-none">
+            {{ appointment.doctor.lname }} {{ appointment.doctor.fname }} {{ appointment.doctor.tname|default:"" }}
+          </a>
+          <br>
+          <small class="text-muted">{{ appointment.doctor.specialization.name }}</small>
+        </div>
+        {% if appointment.slot %}
+        <div class="col-md-6">
+          <strong>Кабинет:</strong><br>
+          {{ appointment.slot.room.room_number }}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% if recipe %}
+    <!-- Результаты приема -->
+    <div class="card mb-3">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-file-medical"></i> Результаты приема</h5>
+      </div>
+      <div class="card-body">
+        <!-- Диагноз -->
+        <div class="mb-4">
+          <h6 class="fw-bold mb-2"><i class="bi bi-clipboard-pulse"></i> Диагноз</h6>
+          <div class="p-3 bg-light rounded">
+            {% if recipe.diagnosis %}
+              <strong>{{ recipe.diagnosis.name }}</strong>
+            {% else %}
+              <span class="text-muted">Не указан</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Жалобы -->
+        {% if recipe.complaints %}
+        <div class="mb-4">
+          <h6 class="fw-bold mb-2"><i class="bi bi-chat-left-text"></i> Жалобы пациента</h6>
+          <div class="p-3 bg-light rounded">
+            {{ recipe.complaints|linebreaks }}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Рекомендации -->
+        {% if recipe.recommendations %}
+        <div class="mb-4">
+          <h6 class="fw-bold mb-2"><i class="bi bi-file-text"></i> Лечение и рекомендации</h6>
+          <div class="p-3 bg-light rounded">
+            {{ recipe.recommendations|linebreaks }}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Повторный прием -->
+        {% if recipe.next_appointment_slot %}
+        <div class="mb-4">
+          <h6 class="fw-bold mb-2"><i class="bi bi-calendar-plus"></i> Повторный прием</h6>
+          <div class="p-3 bg-info bg-opacity-10 rounded">
+            <div class="row g-2">
+              <div class="col-md-6">
+                <strong>Дата и время:</strong><br>
+                {{ recipe.next_appointment_slot.time_from|date:"d.m.Y H:i" }}
+              </div>
+              <div class="col-md-6">
+                <strong>Кабинет:</strong><br>
+                {{ recipe.next_appointment_slot.room.room_number }}
+              </div>
+              <div class="col-12">
+                <strong>Врач:</strong><br>
+                {{ recipe.next_appointment_slot.doctor.lname }} {{ recipe.next_appointment_slot.doctor.fname }}
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Направление к другому специалисту -->
+        {% if recipe.referral_doctor %}
+        <div class="mb-4">
+          <h6 class="fw-bold mb-2"><i class="bi bi-arrow-right-circle"></i> Направление к специалисту</h6>
+          <div class="p-3 bg-warning bg-opacity-10 rounded">
+            <div class="row g-2">
+              <div class="col-md-6">
+                <strong>Специалист:</strong><br>
+                <a href="{% url 'clinic_admin:doctor_detail' recipe.referral_doctor.pk %}" class="text-decoration-none">
+                  {{ recipe.referral_doctor.lname }} {{ recipe.referral_doctor.fname }}
+                </a>
+                <br>
+                <small class="text-muted">
+                  {% if "терапевт" in recipe.referral_doctor.specialization.name|lower or "терапия" in recipe.referral_doctor.specialization.name|lower %}
+                    <i class="bi bi-heart-pulse me-1"></i>
+                  {% elif "кардиолог" in recipe.referral_doctor.specialization.name|lower or "кардиология" in recipe.referral_doctor.specialization.name|lower %}
+                    <i class="bi bi-heart me-1"></i>
+                  {% elif "невролог" in recipe.referral_doctor.specialization.name|lower or "неврология" in recipe.referral_doctor.specialization.name|lower %}
+                    <i class="bi bi-brain me-1"></i>
+                  {% elif "педиатр" in recipe.referral_doctor.specialization.name|lower or "педиатрия" in recipe.referral_doctor.specialization.name|lower %}
+                    <i class="bi bi-emoji-smile me-1"></i>
+                  {% elif "семейн" in recipe.referral_doctor.specialization.name|lower %}
+                    <i class="bi bi-people me-1"></i>
+                  {% elif "гинеколог" in recipe.referral_doctor.specialization.name|lower or "гинекология" in recipe.referral_doctor.specialization.name|lower %}
+                    <i class="bi bi-gender-female me-1"></i>
+                  {% elif "уролог" in recipe.referral_doctor.specialization.name|lower or "урология" in recipe.referral_doctor.specialization.name|lower %}
+                    <i class="bi bi-gender-male me-1"></i>
+                  {% elif "дерматолог" in recipe.referral_doctor.specialization.name|lower or "дерматология" in recipe.referral_doctor.specialization.name|lower %}
+                    <i class="bi bi-droplet me-1"></i>
+                  {% elif "офтальмолог" in recipe.referral_doctor.specialization.name|lower or "офтальмология" in recipe.referral_doctor.specialization.name|lower %}
+                    <i class="bi bi-eye me-1"></i>
+                  {% elif "отоларинголог" in recipe.referral_doctor.specialization.name|lower or "лор" in recipe.referral_doctor.specialization.name|lower %}
+                    <i class="bi bi-earbuds me-1"></i>
+                  {% elif "стоматолог" in recipe.referral_doctor.specialization.name|lower or "стоматология" in recipe.referral_doctor.specialization.name|lower %}
+                    <i class="bi bi-tooth me-1"></i>
+                  {% elif "хирург" in recipe.referral_doctor.specialization.name|lower or "хирургия" in recipe.referral_doctor.specialization.name|lower %}
+                    <i class="bi bi-scissors me-1"></i>
+                  {% elif "ортопед" in recipe.referral_doctor.specialization.name|lower or "ортопедия" in recipe.referral_doctor.specialization.name|lower %}
+                    <i class="bi bi-bone me-1"></i>
+                  {% elif "эндокринолог" in recipe.referral_doctor.specialization.name|lower or "эндокринология" in recipe.referral_doctor.specialization.name|lower %}
+                    <i class="bi bi-activity me-1"></i>
+                  {% elif "гастроэнтеролог" in recipe.referral_doctor.specialization.name|lower or "гастроэнтерология" in recipe.referral_doctor.specialization.name|lower %}
+                    <i class="bi bi-stomach me-1"></i>
+                  {% elif "психиатр" in recipe.referral_doctor.specialization.name|lower or "психиатрия" in recipe.referral_doctor.specialization.name|lower %}
+                    <i class="bi bi-headset me-1"></i>
+                  {% elif "диагностик" in recipe.referral_doctor.specialization.name|lower %}
+                    <i class="bi bi-clipboard2-pulse me-1"></i>
+                  {% else %}
+                    <i class="bi bi-hospital me-1"></i>
+                  {% endif %}
+                  {{ recipe.referral_doctor.specialization.name }}
+                </small>
+              </div>
+              {% if recipe.referral_slot %}
+              <div class="col-md-6">
+                <strong>Дата приема:</strong><br>
+                {{ recipe.referral_slot.time_from|date:"d.m.Y H:i" }}
+                <br>
+                <small class="text-muted">Кабинет {{ recipe.referral_slot.room.room_number }}</small>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <div class="text-muted small mt-3">
+          <i class="bi bi-clock"></i> Создано: {{ recipe.created_at|date:"d.m.Y H:i" }}
+          {% if recipe.updated_at != recipe.created_at %}
+            | Обновлено: {{ recipe.updated_at|date:"d.m.Y H:i" }}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <!-- Нет результатов -->
+    <div class="card">
+      <div class="card-body text-center py-5">
+        <i class="bi bi-file-x text-muted" style="font-size: 3rem;"></i>
+        <p class="text-muted mt-3 mb-0">Результаты приема еще не добавлены</p>
+        <p class="text-muted small">Результаты добавляются врачом после завершения приема</p>
+      </div>
+    </div>
+  {% endif %}
+</section>
+{% endblock %}
+

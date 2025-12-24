@@ -1,0 +1,1076 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Запись на приём | Clinic Sirius{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<style>
+  /* Стили для flatpickr календаря */
+  .flatpickr-calendar {
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border: 1px solid #dee2e6;
+    padding: 8px;
+    font-size: 13px;
+    width: 100%;
+    min-width: 320px;
+    max-width: 340px;
+    z-index: 1050 !important;
+  }
+  
+  .flatpickr-months {
+    margin-bottom: 6px;
+    padding: 0;
+  }
+  
+  .flatpickr-month {
+    padding: 6px 4px;
+    font-size: 14px;
+    font-weight: 600;
+    height: 32px;
+    line-height: 32px;
+    margin-bottom: 0;
+    position: relative;
+  }
+  
+  .flatpickr-current-month {
+    font-size: 14px;
+    font-weight: 600;
+    padding: 0;
+    height: auto;
+    line-height: 1.2;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 50%;
+    margin-top: -0.6em;
+  }
+  
+  .flatpickr-weekdays {
+    padding: 6px 0;
+    margin-bottom: 2px;
+    margin-top: 0;
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+  }
+  
+  .flatpickr-weekday {
+    font-size: 11px;
+    font-weight: 600;
+    color: #495057;
+    padding: 4px 2px;
+    line-height: 1.2;
+    display: table-cell;
+    text-align: center;
+    width: 14.28%;
+    overflow: visible;
+    white-space: nowrap;
+  }
+  
+  .flatpickr-days {
+    padding: 2px 0;
+    margin-top: 0;
+  }
+  
+  .flatpickr-calendar .flatpickr-innerContainer {
+    padding: 0;
+  }
+  
+  .flatpickr-day {
+    height: 32px;
+    line-height: 32px;
+    font-size: 13px;
+    margin: 1px;
+    border-radius: 6px;
+    width: calc(14.28% - 2px);
+    max-width: 42px;
+  }
+  
+  .flatpickr-day:hover {
+    background: #e7f1ff;
+    border-color: #e7f1ff;
+    cursor: pointer;
+  }
+  
+  .flatpickr-day.selected {
+    background: #0d6efd !important;
+    border-color: #0d6efd !important;
+    color: white !important;
+    font-weight: 600;
+  }
+  
+  .flatpickr-day.selected:hover {
+    background: #0a58ca !important;
+    border-color: #0a58ca !important;
+  }
+  
+  .flatpickr-day.today {
+    border: 2px solid #ffc107;
+    color: #000;
+    font-weight: 600;
+  }
+  
+  .flatpickr-day.today:hover {
+    background: #fff3cd;
+    border-color: #ffc107;
+  }
+  
+  .flatpickr-day.flatpickr-disabled,
+  .flatpickr-day.prevMonthDay,
+  .flatpickr-day.nextMonthDay {
+    color: #adb5bd;
+    opacity: 0.5;
+  }
+  
+  .flatpickr-prev-month,
+  .flatpickr-next-month {
+    padding: 4px 8px;
+    top: 6px;
+    height: 24px;
+    width: 24px;
+    border-radius: 4px;
+  }
+  
+  .flatpickr-prev-month:hover,
+  .flatpickr-next-month:hover {
+    background: #f8f9fa;
+  }
+  
+  .flatpickr-prev-month svg,
+  .flatpickr-next-month svg {
+    width: 12px;
+    height: 12px;
+  }
+  
+  .flatpickr-calendar.open {
+    display: block;
+    opacity: 1;
+    visibility: visible;
+  }
+  
+  .input-group {
+    position: relative;
+  }
+  
+  .flatpickr-wrapper {
+    position: relative;
+  }
+  
+  /* Стили для шагов */
+  .step-indicator {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    position: relative;
+  }
+  
+  .step-indicator::before {
+    content: '';
+    position: absolute;
+    top: 20px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #dee2e6;
+    z-index: 0;
+  }
+  
+  .step-item {
+    flex: 1;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+  }
+  
+  .step-number {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid #dee2e6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 0.5rem;
+    font-weight: 600;
+    color: #6c757d;
+  }
+  
+  .step-item.active .step-number {
+    background: #0d6efd;
+    border-color: #0d6efd;
+    color: #fff;
+  }
+  
+  .step-item.completed .step-number {
+    background: #198754;
+    border-color: #198754;
+    color: #fff;
+  }
+  
+  .step-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+  }
+  
+  .step-item.active .step-label {
+    color: #0d6efd;
+    font-weight: 600;
+  }
+  
+  .step-item.completed .step-label {
+    color: #198754;
+  }
+  
+  .step-content {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  
+  .slot-card {
+    border: 2px solid #6c9b7a;
+    border-radius: 12px;
+    width: 100px;
+    height: 60px;
+    padding: 0;
+    margin: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    background: #e8f5e9;
+  }
+  
+  .slot-card:hover {
+    border-color: #5a8a6a;
+    background: #c8e6c9;
+    transform: scale(1.05);
+  }
+  
+  .slot-card.selected {
+    border-color: #4caf50;
+    background: #66bb6a;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.25);
+  }
+  
+  .slot-card input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    cursor: pointer;
+  }
+  
+  .slot-card .slot-content {
+    text-align: center;
+    pointer-events: none;
+  }
+  
+  .slot-card .slot-time {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #2e7d32;
+  }
+  
+  .slot-card.selected .slot-time {
+    color: #fff;
+  }
+  
+  .slots-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+  
+  .doctor-card {
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .doctor-card:hover {
+    border-color: #0d6efd;
+    background: #f8f9ff;
+  }
+  
+  .doctor-card.selected {
+    border-color: #0d6efd;
+    background: #e7f1ff;
+  }
+  
+  .doctor-card input[type="radio"] {
+    margin-right: 0.75rem;
+  }
+  
+  .specialization-card {
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 0;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .specialization-card:hover {
+    border-color: #0d6efd;
+    background: #f8f9ff;
+  }
+  
+  .specialization-card.selected {
+    border-color: #0d6efd;
+    background: #e7f1ff;
+  }
+  
+  .specialization-card input[type="radio"] {
+    display: none;
+  }
+  
+  .date-slots-group {
+    margin-bottom: 2rem;
+  }
+  
+  .date-header {
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    color: #495057;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="container py-5">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">Запись на приём</h2>
+      <p class="text-muted mb-0">Выберите специализацию → врача → дату и время → пациента</p>
+    </div>
+    <a class="btn btn-outline-secondary" href="{% url 'index' %}">На главную</a>
+  </div>
+
+  {% if request.GET.error %}
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      {{ request.GET.error }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  {% endif %}
+
+  <!-- Индикатор шагов -->
+  <div class="step-indicator">
+    <div class="step-item {% if step >= 1 %}active{% endif %} {% if step > 1 %}completed{% endif %}">
+      <div class="step-number">1</div>
+      <div class="step-label">Специализация</div>
+    </div>
+    <div class="step-item {% if step >= 2 %}active{% endif %} {% if step > 2 %}completed{% endif %}">
+      <div class="step-number">2</div>
+      <div class="step-label">Врач</div>
+    </div>
+    <div class="step-item {% if step >= 3 %}active{% endif %} {% if step > 3 %}completed{% endif %}">
+      <div class="step-number">3</div>
+      <div class="step-label">Дата и время</div>
+    </div>
+    <div class="step-item {% if step >= 4 %}active{% endif %}">
+      <div class="step-number">4</div>
+      <div class="step-label">Пациент</div>
+    </div>
+  </div>
+
+  <div class="step-content">
+    <!-- Шаг 1: Выбор специализации -->
+    {% if step == 1 %}
+    <div class="card">
+      <div class="card-body p-4">
+        <h4 class="card-title mb-4">Выберите специализацию</h4>
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="step1">
+          <div class="row g-3">
+            {% for spec in specializations %}
+            <div class="col-md-6 col-lg-4">
+              <label class="specialization-card d-flex flex-column h-100 {% if session_data.specialization_id == spec.id|stringformat:'s' %}selected{% endif %}">
+                <input type="radio" name="specialization_id" value="{{ spec.id }}" 
+                       {% if session_data.specialization_id == spec.id|stringformat:'s' %}checked{% endif %} required>
+                <div class="flex-grow-1 d-flex flex-column justify-content-center align-items-center">
+                  {% if "хирург" in spec.name|lower or "хирургия" in spec.name|lower %}
+                    <i class="bi bi-duffle fs-3 mb-2"></i>
+                  {% elif "офтальмолог" in spec.name|lower or "офтальмология" in spec.name|lower %}
+                    <i class="bi bi-eye fs-3 mb-2"></i>
+                  {% elif "кардиолог" in spec.name|lower or "кардиология" in spec.name|lower %}
+                    <i class="bi bi-heart-pulse fs-3 mb-2"></i>
+                  {% elif "невролог" in spec.name|lower or "неврология" in spec.name|lower %}
+                    <i class="bi bi-person fs-3 mb-2"></i>
+                  {% elif "педиатр" in spec.name|lower or "педиатрия" in spec.name|lower %}
+                    <i class="bi bi-person-walking fs-3 mb-2"></i>
+                  {% elif "дерматолог" in spec.name|lower or "дерматология" in spec.name|lower %}
+                    <i class="bi bi-droplet fs-3 mb-2"></i>
+                  {% elif "психиатр" in spec.name|lower or "психиатрия" in spec.name|lower %}
+                    <i class="bi bi-emoji-grimace fs-3 mb-2"></i>
+                  {% elif "ортопед" in spec.name|lower or "ортопедия" in spec.name|lower %}
+                    <i class="bi bi-universal-access fs-3 mb-2"></i>
+                  {% elif "эндокринолог" in spec.name|lower or "эндокринология" in spec.name|lower %}
+                    <i class="bi bi-capsule fs-3 mb-2"></i>
+                  {% elif "отоларинголог" in spec.name|lower or "лор" in spec.name|lower %}
+                    <i class="bi bi-earbuds fs-3 mb-2"></i>
+                  {% elif "стоматолог" in spec.name|lower or "стоматология" in spec.name|lower %}
+                    <i class="bi bi-tooth fs-3 mb-2"></i>
+                  {% elif "гастроэнтеролог" in spec.name|lower or "гастроэнтерология" in spec.name|lower %}
+                    <i class="bi bi-stomach fs-3 mb-2"></i>
+                  {% elif "семейн" in spec.name|lower %}
+                    <i class="bi bi-people fs-3 mb-2"></i>
+                  {% elif "гинеколог" in spec.name|lower or "гинекология" in spec.name|lower %}
+                    <i class="bi bi-gender-female fs-3 mb-2"></i>
+                  {% elif "уролог" in spec.name|lower or "урология" in spec.name|lower %}
+                    <i class="bi bi-gender-male fs-3 mb-2"></i>
+                  {% elif "терапевт" in spec.name|lower or "терапия" in spec.name|lower %}
+                    <i class="bi bi-prescription2 fs-3 mb-2"></i>
+                  {% elif "диагностик" in spec.name|lower %}
+                    <i class="bi bi-clipboard2-pulse fs-3 mb-2"></i>
+                  {% else %}
+                    <i class="bi bi-hospital fs-3 mb-2"></i>
+                  {% endif %}
+                  <div class="fw-semibold text-center">{{ spec.name }}</div>
+                </div>
+              </label>
+            </div>
+            {% empty %}
+            <div class="col-12">
+              <p class="text-muted">Специализации не найдены</p>
+            </div>
+            {% endfor %}
+          </div>
+          <div class="d-flex justify-content-end gap-2 mt-4">
+            <a href="{% url 'index' %}" class="btn btn-outline-secondary">Отмена</a>
+            <button type="submit" class="btn btn-primary">Далее</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Шаг 2: Выбор врача -->
+    {% if step == 2 %}
+    <div class="card">
+      <div class="card-body p-4">
+        <h4 class="card-title mb-4">Выберите врача</h4>
+        {% if session_data.specialization_id %}
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="step2">
+          <div>
+            {% for doctor in doctors %}
+            <label class="doctor-card d-block {% if session_data.doctor_id == doctor.id|stringformat:'s' %}selected{% endif %}">
+              <input type="radio" name="doctor_id" value="{{ doctor.id }}" 
+                     {% if session_data.doctor_id == doctor.id|stringformat:'s' %}checked{% endif %} required>
+              <div class="d-flex align-items-center">
+                <div class="flex-grow-1">
+                  <div class="fw-semibold">
+                    {{ doctor.lname }} 
+                    {% if doctor.fname %}{{ doctor.fname|first }}.{% endif %}
+                    {% if doctor.tname %}{{ doctor.tname|first }}.{% endif %}
+                  </div>
+                  <small class="text-muted">{{ doctor.specialization.name }}</small>
+                </div>
+              </div>
+            </label>
+            {% empty %}
+            <div class="alert alert-info">
+              <p class="mb-0">Врачи не найдены для выбранной специализации.</p>
+              <p class="mb-0 small mt-2">Проверьте, что в базе данных есть врачи с выбранной специализацией.</p>
+            </div>
+            {% endfor %}
+          </div>
+          <div class="d-flex justify-content-between gap-2 mt-4">
+            <a href="{% url 'scheduling:book_appointment' %}?step=1" class="btn btn-outline-secondary">Назад</a>
+            <button type="submit" class="btn btn-primary" {% if not doctors %}disabled{% endif %}>Далее</button>
+          </div>
+        </form>
+        {% else %}
+        <div class="alert alert-warning">
+          Сначала выберите специализацию
+        </div>
+        <a href="{% url 'scheduling:book_appointment' %}?step=1" class="btn btn-primary">Выбрать специализацию</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Шаг 3: Выбор даты и времени -->
+    {% if step == 3 %}
+    <div class="card">
+      <div class="card-body p-4">
+        <h4 class="card-title mb-4">Выберите дату и время</h4>
+        {% if doctor %}
+        <div class="mb-3">
+          <strong>Врач:</strong> 
+          {{ doctor.lname }} 
+          {% if doctor.fname %}{{ doctor.fname|first }}.{% endif %}
+          {% if doctor.tname %}{{ doctor.tname|first }}.{% endif %}
+        </div>
+        <form method="post" id="step3-form">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="step3">
+          <input type="hidden" name="slot_id" id="selected_slot_id" value="{{ selected_slot }}">
+          <input type="hidden" name="selected_date" id="selected_date" value="{{ selected_date }}">
+          
+          <!-- Календарь для выбора даты -->
+          <div class="mb-4">
+            <label class="form-label fw-semibold mb-2">Выберите дату</label>
+            <div class="input-group" style="position: relative; max-width: 340px;">
+              <input type="text" id="datepicker" class="form-control" autocomplete="off" placeholder="ДД.ММ.ГГГГ" 
+                     value="{{ selected_date|date:'d.m.Y' }}" readonly>
+              <span class="input-group-text" id="calendar-icon" style="cursor: pointer;"><i class="bi bi-calendar-week"></i></span>
+            </div>
+            <small class="text-muted d-block mt-2">Выберите дату в календаре, затем выберите время</small>
+          </div>
+          
+          <!-- Временные слоты для выбранной даты -->
+          <div id="time-slots-container" style="display: none;">
+            <label class="form-label fw-semibold mb-2">Выберите время</label>
+            <div id="slots-list" class="slots-grid"></div>
+          </div>
+          
+          <div id="no-slots-message" class="alert alert-info" style="display: none;">
+            На выбранную дату нет доступных временных слотов
+          </div>
+          
+          <div class="d-flex justify-content-between gap-2 mt-4">
+            <a href="{% url 'scheduling:book_appointment' %}?step=2" class="btn btn-outline-secondary">Назад</a>
+            <button type="submit" class="btn btn-primary" id="step3-submit" disabled>Далее</button>
+          </div>
+        </form>
+        {% else %}
+        <div class="alert alert-warning">
+          Сначала выберите врача
+        </div>
+        <a href="{% url 'scheduling:book_appointment' %}?step=2" class="btn btn-primary">Выбрать врача</a>
+        {% endif %}
+      </div>
+    </div>
+    
+    <!-- JavaScript для шага 3 -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>
+    <script>
+    (function() {
+      var slotsData = {{ slots_json|safe }};
+      var availableDates = {{ available_dates_json|safe }};
+      var selectedSlotId = '{{ selected_slot }}';
+      var selectedDate = '{{ selected_date }}';
+      var serverNow = '{{ server_now|default:"" }}';
+      
+      var datepickerInput = document.getElementById('datepicker');
+      var calendarIcon = document.getElementById('calendar-icon');
+      var slotsContainer = document.getElementById('time-slots-container');
+      var slotsList = document.getElementById('slots-list');
+      var noSlotsMessage = document.getElementById('no-slots-message');
+      var submitButton = document.getElementById('step3-submit');
+      var selectedSlotInput = document.getElementById('selected_slot_id');
+      var selectedDateInput = document.getElementById('selected_date');
+      
+      // Преобразуем формат даты из yyyy-mm-dd в dd.mm.yyyy для отображения
+      function formatDateForDisplay(dateStr) {
+        if (!dateStr) return '';
+        var parts = dateStr.split('-');
+        if (parts.length === 3) {
+          return parts[2] + '.' + parts[1] + '.' + parts[0];
+        }
+        return dateStr;
+      }
+      
+      // Преобразуем формат даты из dd.mm.yyyy в yyyy-mm-dd
+      function formatDateForSubmit(dateStr) {
+        if (!dateStr) return '';
+        var parts = dateStr.split('.');
+        if (parts.length === 3) {
+          return parts[2] + '-' + parts[1] + '-' + parts[0];
+        }
+        return dateStr;
+      }
+      
+      // Показываем слоты для выбранной даты
+      function showSlotsForDate(dateStr) {
+        // Используем время сервера, если доступно, иначе текущее время клиента
+        var now = serverNow ? new Date(serverNow) : new Date();
+        // Добавляем небольшую задержку (1 минута) для учета времени загрузки страницы
+        var nowWithMargin = new Date(now.getTime() - 60000);
+        
+        var slotsForDate = slotsData.filter(function(slot) {
+          // Фильтруем по дате
+          if (slot.date !== dateStr) {
+            return false;
+          }
+          // Фильтруем прошедшие слоты
+          if (slot.time_from) {
+            try {
+              var slotTime = new Date(slot.time_from);
+              // Проверяем, что слот еще не прошел
+              if (slotTime <= nowWithMargin) {
+                return false;
+              }
+            } catch (e) {
+              // Если не удалось распарсить дату, пропускаем слот
+              console.warn('Не удалось распарсить дату слота:', slot.time_from);
+              return false;
+            }
+          } else {
+            // Если нет времени начала, пропускаем слот
+            return false;
+          }
+          return true;
+        });
+        
+        if (slotsForDate.length === 0) {
+          slotsContainer.style.display = 'none';
+          noSlotsMessage.style.display = 'block';
+          submitButton.disabled = true;
+          return;
+        }
+        
+        noSlotsMessage.style.display = 'none';
+        slotsContainer.style.display = 'block';
+        
+        // Сортируем слоты по времени
+        slotsForDate.sort(function(a, b) {
+          return a.time_from_str.localeCompare(b.time_from_str);
+        });
+        
+        // Очищаем список
+        slotsList.innerHTML = '';
+        
+        // Создаем круглые окошки слотов
+        slotsForDate.forEach(function(slot) {
+          var label = document.createElement('label');
+          label.className = 'slot-card';
+          if (selectedSlotId == slot.id) {
+            label.classList.add('selected');
+          }
+          
+          var radio = document.createElement('input');
+          radio.type = 'radio';
+          radio.name = 'slot_id';
+          radio.value = slot.id;
+          radio.required = true;
+          if (selectedSlotId == slot.id) {
+            radio.checked = true;
+          }
+          
+          radio.addEventListener('change', function() {
+            selectedSlotInput.value = slot.id;
+            selectedDateInput.value = dateStr;
+            submitButton.disabled = false;
+            // Убираем выделение с других карточек
+            document.querySelectorAll('.slot-card').forEach(function(card) {
+              card.classList.remove('selected');
+            });
+            label.classList.add('selected');
+          });
+          
+          var content = document.createElement('div');
+          content.className = 'slot-content';
+          
+          var timeSpan = document.createElement('div');
+          timeSpan.className = 'slot-time';
+          timeSpan.textContent = slot.time_from_str;
+          
+          content.appendChild(timeSpan);
+          
+          label.appendChild(radio);
+          label.appendChild(content);
+          
+          // Клик по карточке выбирает слот
+          label.addEventListener('click', function(e) {
+            if (e.target.tagName !== 'INPUT') {
+              radio.checked = true;
+              radio.dispatchEvent(new Event('change'));
+            }
+          });
+          
+          slotsList.appendChild(label);
+        });
+        
+        // Если был выбран слот, активируем кнопку
+        if (selectedSlotId && selectedDate === dateStr) {
+          submitButton.disabled = false;
+        }
+      }
+      
+      // Фильтруем доступные даты, оставляя только те, где есть будущие слоты
+      // Используем время сервера, если доступно, иначе текущее время клиента
+      var now = serverNow ? new Date(serverNow) : new Date();
+      var nowWithMargin = new Date(now.getTime() - 60000);
+      var filteredAvailableDates = availableDates.filter(function(dateStr) {
+        // Проверяем, есть ли хотя бы один будущий слот на эту дату
+        return slotsData.some(function(slot) {
+          if (slot.date !== dateStr) {
+            return false;
+          }
+          if (slot.time_from) {
+            try {
+              var slotTime = new Date(slot.time_from);
+              return slotTime > nowWithMargin;
+            } catch (e) {
+              return false;
+            }
+          }
+          return false;
+        });
+      });
+      
+      // Инициализация flatpickr
+      var flatpickrInstance = null;
+      try {
+        flatpickrInstance = flatpickr(datepickerInput, {
+          dateFormat: 'd.m.Y',
+          locale: 'ru',
+          minDate: 'today',
+          defaultDate: selectedDate ? formatDateForDisplay(selectedDate) : null,
+          allowInput: false,
+          clickOpens: true,
+          animate: true,
+          enable: filteredAvailableDates.map(function(date) {
+            return formatDateForDisplay(date);
+          }),
+          onChange: function(selectedDates, dateStr, instance) {
+            var dateStrISO = formatDateForSubmit(dateStr);
+            selectedDateInput.value = dateStrISO;
+            showSlotsForDate(dateStrISO);
+            datepickerInput.blur();
+          },
+          onClose: function(selectedDates, dateStr, instance) {
+            datepickerInput.blur();
+          }
+        });
+        
+        // Если есть выбранная дата, показываем слоты (только если дата не в прошлом)
+        if (selectedDate) {
+          var selectedDateObj = new Date(selectedDate + 'T00:00:00');
+          var today = new Date();
+          today.setHours(0, 0, 0, 0);
+          if (selectedDateObj >= today) {
+            showSlotsForDate(selectedDate);
+          } else {
+            // Если выбранная дата в прошлом, очищаем выбор
+            selectedDateInput.value = '';
+            selectedSlotInput.value = '';
+            submitButton.disabled = true;
+          }
+        }
+      } catch (e) {
+        console.error('Ошибка при инициализации flatpickr:', e);
+      }
+      
+      // Обработчик клика на иконку календаря
+      if (calendarIcon && flatpickrInstance) {
+        calendarIcon.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          flatpickrInstance.open();
+          return false;
+        });
+      }
+      
+      // Обработчик клика на поле даты
+      if (flatpickrInstance) {
+        datepickerInput.addEventListener('click', function(e) {
+          flatpickrInstance.open();
+        });
+      }
+    })();
+    </script>
+    {% endif %}
+
+    <!-- Шаг 4: Выбор/создание пациента -->
+    {% if step == 4 %}
+    <div class="card">
+      <div class="card-body p-4">
+        <h4 class="card-title mb-4">Выберите пациента</h4>
+        <form method="post" id="step4-form">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="step4">
+          
+          {% if is_authenticated %}
+            <!-- Для авторизованных пользователей: выбор себя, членов семьи или нового пациента -->
+            
+            <!-- Выбор существующего пациента -->
+            {% if all_patients %}
+            <div class="mb-4">
+              <label class="form-label fw-semibold mb-3">Выбрать из списка</label>
+              <div>
+                {% for patient in all_patients %}
+                  {% if forloop.first %}
+                    <!-- Первый пациент - это сам пользователь -->
+                    <label class="doctor-card d-block {% if session_data.patient_id == patient.id|stringformat:'s' %}selected{% endif %}">
+                      <input type="radio" name="patient_id" value="{{ patient.id }}" 
+                             {% if session_data.patient_id == patient.id|stringformat:'s' %}checked{% endif %}
+                             onchange="var newPatientRadio = document.getElementById('create_new_patient'); if (newPatientRadio) { newPatientRadio.checked = false; } toggleNewPatientForm();">
+                      <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                          <div class="fw-semibold">
+                            {{ patient.lname }} 
+                            {% if patient.fname %}{{ patient.fname|first }}.{% endif %}
+                            {% if patient.tname %}{{ patient.tname|first }}.{% endif %}
+                          </div>
+                          <small class="text-muted">
+                            <i class="bi bi-person-check"></i> Вы ({% if patient.bdate %}{{ patient.bdate|date:"d.m.Y" }}{% endif %})
+                          </small>
+                        </div>
+                      </div>
+                    </label>
+                  {% else %}
+                    <!-- Остальные - члены семьи -->
+                    <label class="doctor-card d-block {% if session_data.patient_id == patient.id|stringformat:'s' %}selected{% endif %}">
+                      <input type="radio" name="patient_id" value="{{ patient.id }}" 
+                             {% if session_data.patient_id == patient.id|stringformat:'s' %}checked{% endif %}
+                             onchange="var newPatientRadio = document.getElementById('create_new_patient'); if (newPatientRadio) { newPatientRadio.checked = false; } toggleNewPatientForm();">
+                      <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                          <div class="fw-semibold">
+                            {{ patient.lname }} 
+                            {% if patient.fname %}{{ patient.fname|first }}.{% endif %}
+                            {% if patient.tname %}{{ patient.tname|first }}.{% endif %}
+                          </div>
+                          <small class="text-muted">
+                            <i class="bi bi-people"></i> Член семьи ({% if patient.bdate %}{{ patient.bdate|date:"d.m.Y" }}{% endif %})
+                          </small>
+                        </div>
+                      </div>
+                    </label>
+                  {% endif %}
+                {% endfor %}
+              </div>
+            </div>
+            {% endif %}
+
+            <!-- Создание нового пациента -->
+            <div class="mb-4">
+              <label class="doctor-card d-block {% if session_data.create_new_patient %}selected{% endif %}">
+                <input type="radio" name="create_new_patient" value="true" id="create_new_patient" 
+                       {% if session_data.create_new_patient %}checked{% endif %}
+                       onchange="toggleNewPatientForm(); var patientRadios = document.querySelectorAll('input[name=patient_id]'); patientRadios.forEach(function(r) { r.checked = false; var card = r.closest('.doctor-card'); if (card) { card.classList.remove('selected'); } });">
+                <div class="d-flex align-items-center">
+                  <div class="flex-grow-1">
+                    <div class="fw-semibold">
+                      <i class="bi bi-person-plus"></i> Добавить нового пациента
+                    </div>
+                    <small class="text-muted">Создать запись для нового пациента</small>
+                  </div>
+                </div>
+              </label>
+              
+              <div id="new_patient_form" class="mt-3" style="display: {% if session_data.create_new_patient %}block{% else %}none{% endif %};">
+                <div class="card bg-light">
+                  <div class="card-body">
+                    <div class="row g-3">
+                      <div class="col-md-4">
+                        <label class="form-label">Фамилия <span class="text-danger">*</span></label>
+                        <input type="text" name="lname" class="form-control" placeholder="Иванов">
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label">Имя <span class="text-danger">*</span></label>
+                        <input type="text" name="fname" class="form-control" placeholder="Иван">
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label">Отчество</label>
+                        <input type="text" name="tname" class="form-control" placeholder="Иванович">
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label">Дата рождения <span class="text-danger">*</span></label>
+                        <input type="text" name="bdate" class="form-control" placeholder="ДД.ММ.ГГГГ" pattern="\d{2}\.\d{2}\.\d{4}">
+                        <small class="text-muted">Формат: ДД.ММ.ГГГГ (например, 25.12.1990)</small>
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label">Телефон</label>
+                        <input type="text" name="phone_number" class="form-control" placeholder="+7">
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" class="form-control" placeholder="you@example.com">
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label">СНИЛС <span class="text-danger">*</span></label>
+                        <input type="text" name="snils" class="form-control" placeholder="00000000000">
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label">Полис ОМС <span class="text-danger">*</span></label>
+                        <input type="text" name="oms" class="form-control" placeholder="0000000000000000">
+                      </div>
+                    </div>
+                    {% if is_authenticated %}
+                    <div class="form-check mt-3">
+                      <input class="form-check-input" type="checkbox" name="add_to_family" id="add_to_family" checked>
+                      <label class="form-check-label" for="add_to_family">
+                        Добавить нового пациента в семью
+                      </label>
+                    </div>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% else %}
+            <!-- Для неавторизованных пользователей: только создание нового пациента -->
+            <div class="alert alert-info mb-4">
+              <i class="bi bi-info-circle"></i> Для записи на приём необходимо указать данные пациента
+            </div>
+            
+            <div class="mb-4">
+              <input type="hidden" name="create_new_patient" value="true">
+              <div id="new_patient_form" style="display: block;">
+                <div class="card bg-light">
+                  <div class="card-body">
+                    <div class="row g-3">
+                      <div class="col-md-4">
+                        <label class="form-label">Фамилия <span class="text-danger">*</span></label>
+                        <input type="text" name="lname" class="form-control" placeholder="Иванов">
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label">Имя <span class="text-danger">*</span></label>
+                        <input type="text" name="fname" class="form-control" placeholder="Иван">
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label">Отчество</label>
+                        <input type="text" name="tname" class="form-control" placeholder="Иванович">
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label">Дата рождения <span class="text-danger">*</span></label>
+                        <input type="text" name="bdate" class="form-control" placeholder="ДД.ММ.ГГГГ" pattern="\d{2}\.\d{2}\.\d{4}">
+                        <small class="text-muted">Формат: ДД.ММ.ГГГГ (например, 25.12.1990)</small>
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label">Телефон</label>
+                        <input type="text" name="phone_number" class="form-control" placeholder="+7">
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" class="form-control" placeholder="you@example.com">
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label">СНИЛС <span class="text-danger">*</span></label>
+                        <input type="text" name="snils" class="form-control" placeholder="00000000000">
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label">Полис ОМС <span class="text-danger">*</span></label>
+                        <input type="text" name="oms" class="form-control" placeholder="0000000000000000">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endif %}
+
+          <div class="d-flex justify-content-between gap-2 mt-4">
+            <a href="{% url 'scheduling:book_appointment' %}?step=3" class="btn btn-outline-secondary">Назад</a>
+            <button type="submit" class="btn btn-primary">Записаться</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<script>
+function toggleNewPatientForm() {
+  var radio = document.getElementById('create_new_patient');
+  var form = document.getElementById('new_patient_form');
+  var patientRadios = document.querySelectorAll('input[name="patient_id"]');
+  
+  if (!form) return; // Если форма не найдена, выходим
+  
+  if (radio && radio.checked) {
+    // Показываем форму
+    form.style.display = 'block';
+    
+    // Снимаем выделение с других карточек пациентов
+    patientRadios.forEach(function(patientRadio) {
+      patientRadio.checked = false;
+      var card = patientRadio.closest('.doctor-card');
+      if (card) {
+        card.classList.remove('selected');
+      }
+    });
+    
+    // Добавляем выделение к карточке создания нового пациента
+    var newPatientCard = radio.closest('.doctor-card');
+    if (newPatientCard) {
+      newPatientCard.classList.add('selected');
+    }
+    
+    // Делаем поля формы обязательными
+    var requiredFields = form.querySelectorAll('input[name="lname"], input[name="fname"], input[name="bdate"], input[name="snils"], input[name="oms"]');
+    requiredFields.forEach(function(field) {
+      field.required = true;
+    });
+  } else {
+    // Скрываем форму
+    form.style.display = 'none';
+    
+    // Убираем выделение с карточки создания нового пациента
+    var newPatientCard = radio ? radio.closest('.doctor-card') : null;
+    if (newPatientCard) {
+      newPatientCard.classList.remove('selected');
+    }
+    
+    // Убираем обязательность с полей формы
+    var requiredFields = form.querySelectorAll('input[name="lname"], input[name="fname"], input[name="bdate"], input[name="snils"], input[name="oms"]');
+    requiredFields.forEach(function(field) {
+      field.required = false;
+    });
+  }
+}
+
+// Автоматически выбираем карточку при клике
+document.addEventListener('DOMContentLoaded', function() {
+  var cards = document.querySelectorAll('.specialization-card, .doctor-card, .slot-card');
+  cards.forEach(function(card) {
+    card.addEventListener('click', function(e) {
+      if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'A') {
+        var radio = card.querySelector('input[type="radio"]');
+        if (radio) {
+          radio.checked = true;
+          
+          // Если это карточка создания нового пациента, вызываем функцию показа формы
+          if (radio.id === 'create_new_patient') {
+            toggleNewPatientForm();
+          } else if (radio.name === 'patient_id') {
+            // Если выбрали существующего пациента, скрываем форму создания
+            var newPatientRadio = document.getElementById('create_new_patient');
+            var newPatientForm = document.getElementById('new_patient_form');
+            if (newPatientRadio && newPatientForm) {
+              newPatientRadio.checked = false;
+              toggleNewPatientForm();
+            }
+          }
+          
+          // Убираем выделение с других карточек
+          var allCards = document.querySelectorAll('.specialization-card, .doctor-card, .slot-card');
+          allCards.forEach(function(c) {
+            c.classList.remove('selected');
+          });
+          card.classList.add('selected');
+        }
+      }
+    });
+  });
+  
+  // Инициализация формы при загрузке страницы
+  var createNewPatientRadio = document.getElementById('create_new_patient');
+  if (createNewPatientRadio && createNewPatientRadio.checked) {
+    toggleNewPatientForm();
+  }
+});
+</script>
+{% endblock %}

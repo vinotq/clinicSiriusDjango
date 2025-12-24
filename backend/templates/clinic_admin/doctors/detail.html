@@ -1,0 +1,690 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load clinic_admin_extras %}
+
+{% block title %}{{ doctor.lname }} {{ doctor.fname }} | Clinic Sirius{% endblock %}
+
+{% block extra_head %}
+<style>
+.schedule-calendar {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.calendar-header {
+  background: linear-gradient(135deg, var(--brand-start) 0%, var(--brand-end) 100%);
+  color: white;
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.view-toggle {
+  display: flex;
+  gap: 0.5rem;
+  background: rgba(255,255,255,0.2);
+  border-radius: 8px;
+  padding: 0.25rem;
+}
+
+.view-toggle button {
+  background: transparent;
+  border: none;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.view-toggle button.active {
+  background: white;
+  color: var(--brand-start);
+}
+
+.view-toggle button:hover:not(.active) {
+  background: rgba(255,255,255,0.1);
+}
+
+.week-navigation {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.week-navigation button {
+  background: rgba(255,255,255,0.2);
+  border: none;
+  color: white;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.week-navigation button:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+.week-date {
+  font-size: 1.1rem;
+  font-weight: 600;
+  min-width: 200px;
+  text-align: center;
+}
+
+.today-btn {
+  background: rgba(255,255,255,0.2);
+  border: none;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.today-btn:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: 100px repeat(7, 1fr);
+  border-top: 1px solid #e5e7eb;
+}
+
+.calendar-grid.day-view {
+  grid-template-columns: 100px 1fr;
+}
+
+.time-column {
+  border-right: 1px solid #e5e7eb;
+  background: #f9fafb;
+  display: flex;
+  flex-direction: column;
+}
+
+.time-slot {
+  height: 30px;
+  min-height: 30px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  padding: 0 0.5rem;
+  font-size: 0.85rem;
+  color: #6b7280;
+  font-weight: 500;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.time-slot.major {
+  height: 30px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #374151;
+}
+
+.day-column {
+  border-right: 1px solid #e5e7eb;
+  position: relative;
+}
+
+.day-column:last-child {
+  border-right: none;
+}
+
+.day-header {
+  height: 100px;
+  border-bottom: 2px solid #e5e7eb;
+  padding: 1.25rem;
+  text-align: center;
+  background: #f9fafb;
+}
+
+.day-header.today {
+  background: linear-gradient(to bottom, rgba(48, 179, 84, 0.1), transparent);
+  border-bottom-color: var(--brand-start);
+}
+
+.day-name {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.day-date {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.day-date.today {
+  color: var(--brand-start);
+}
+
+.day-content {
+  position: relative;
+  height: 1440px;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 29px,
+    #e5e7eb 29px,
+    #e5e7eb 30px
+  );
+  box-sizing: border-box;
+}
+
+.slot-block {
+  position: absolute;
+  left: 1%;
+  width: 98%;
+  border-radius: 6px;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  z-index: 1;
+  overflow: hidden;
+  min-height: 30px;
+  box-sizing: border-box;
+  margin: 0;
+  color: white;
+}
+
+.slot-block[style*="left:"] {
+  right: auto;
+}
+
+.slot-block.available {
+  cursor: pointer;
+}
+
+.slot-block.booked,
+.slot-block.in-progress {
+  cursor: pointer;
+}
+
+.slot-block:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  z-index: 2;
+}
+
+.slot-block.available {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  color: white;
+}
+
+.slot-block.available * {
+  color: white !important;
+}
+
+.slot-block.booked {
+  background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%);
+  color: white;
+}
+
+.slot-block.booked * {
+  color: white !important;
+}
+
+.slot-block.in-progress {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+}
+
+.slot-block.in-progress * {
+  color: white !important;
+}
+
+.slot-block.completed {
+  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+  color: white;
+}
+
+.slot-block.completed * {
+  color: white !important;
+}
+
+.slot-time {
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: white;
+}
+
+.slot-room {
+  font-size: 0.75rem;
+  opacity: 0.95;
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: white;
+}
+
+.slot-patient {
+  font-weight: 500;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: white;
+}
+
+@media (max-width: 1200px) {
+  .calendar-grid {
+    grid-template-columns: 80px repeat(7, 1fr);
+  }
+  
+  .time-slot {
+    height: 30px;
+    min-height: 30px;
+    font-size: 0.8rem;
+    padding: 0 0.25rem;
+  }
+  
+  .time-slot.major {
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+  
+  .day-header {
+    height: 90px;
+    padding: 1rem 0.5rem;
+  }
+  
+  .day-content {
+    height: 1440px;
+  }
+  
+  .day-date {
+    font-size: 1rem;
+  }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="container py-5">
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+    <div>
+      <h2 class="fw-bold mb-0">Доктор {{ doctor.lname }} {{ doctor.fname }} {{ doctor.tname|default:"" }}</h2>
+      <p class="text-muted mb-0">{{ doctor.specialization.name }}</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a class="btn btn-primary" href="{% url 'clinic_admin:doctor_edit' doctor.pk %}">
+        <i class="bi bi-pencil"></i> Редактировать
+      </a>
+      <a class="btn btn-outline-secondary" href="{% url 'clinic_admin:doctor_list' %}">
+        <i class="bi bi-arrow-left"></i> Назад
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Календарь -->
+    <div class="col-lg-9">
+      <div class="schedule-calendar">
+        <div class="calendar-header">
+          <div class="view-toggle">
+            <a href="?view=day&date={{ selected_date_str|default:today }}" class="text-decoration-none">
+              <button type="button" {% if view_type == 'day' %}class="active"{% endif %}>День</button>
+            </a>
+            <a href="?view=week&week={{ week_start|date:'Y-m-d' }}" class="text-decoration-none">
+              <button type="button" {% if view_type == 'week' %}class="active"{% endif %}>Неделя</button>
+            </a>
+          </div>
+          
+          <div class="week-navigation">
+            {% if view_type == 'day' %}
+              <a href="?view=day&date={{ prev_day }}" class="text-decoration-none">
+                <button type="button">‹</button>
+              </a>
+              <div class="week-date">
+                {% if week_days %}
+                  {{ week_start|date:"d" }} {{ week_days.0.month_name }} {{ week_start|date:"Y" }}
+                {% else %}
+                  {{ week_start|date:"d.m.Y" }}
+                {% endif %}
+              </div>
+              <a href="?view=day&date={{ next_day }}" class="text-decoration-none">
+                <button type="button">›</button>
+              </a>
+            {% else %}
+              <a href="?view=week&week={{ prev_week }}" class="text-decoration-none">
+                <button type="button">‹</button>
+              </a>
+              <div class="week-date">
+                {% if week_days %}
+                  {% with last_day=week_days|last %}
+                    {{ week_start|date:"d" }} {{ week_days.0.month_name }} {{ week_start|date:"Y" }} – {{ week_end|date:"d" }} {% if week_days|length > 6 %}{{ week_days.6.month_name }}{% else %}{{ last_day.month_name }}{% endif %} {{ week_end|date:"Y" }}
+                  {% endwith %}
+                {% else %}
+                  {{ week_start|date:"d.m.Y" }} – {{ week_end|date:"d.m.Y" }}
+                {% endif %}
+              </div>
+              <a href="?view=week&week={{ next_week }}" class="text-decoration-none">
+                <button type="button">›</button>
+              </a>
+            {% endif %}
+          </div>
+          
+          {% if view_type == 'day' %}
+            <a href="?view=day&date={{ today }}" class="text-decoration-none">
+              <button class="today-btn">Сегодня</button>
+            </a>
+          {% else %}
+            <a href="?view=week&week={{ today }}" class="text-decoration-none">
+              <button class="today-btn">Сегодня</button>
+            </a>
+          {% endif %}
+        </div>
+
+        <div class="calendar-grid {% if view_type == 'day' %}day-view{% endif %}">
+          <!-- Временная колонка -->
+          <div class="time-column">
+            <div style="height: 100px; border-bottom: 2px solid #e5e7eb;"></div>
+            {% for hour in "6789012345678901234567"|make_list %}
+              {% if forloop.counter >= 1 and forloop.counter <= 17 %}
+                {% with h=forloop.counter|add:5 %}
+                  <div class="time-slot major">{{ h }}:00</div>
+                  <div class="time-slot">{{ h }}:20</div>
+                  <div class="time-slot">{{ h }}:40</div>
+                {% endwith %}
+              {% endif %}
+            {% endfor %}
+          </div>
+
+          <!-- Колонки дней -->
+          {% for day in week_days %}
+            <div class="day-column">
+              <div class="day-header {% if day.is_today %}today{% endif %}">
+                <div class="day-name">{{ day.day_name }}</div>
+                <div class="day-date {% if day.is_today %}today{% endif %}">{{ day.day_num }}</div>
+              </div>
+              
+              <div class="day-content">
+                {% for slot_data in day.slots %}
+                  {% with slot=slot_data.slot slot_height=slot_data.height %}
+                    <div class="slot-block {% if slot.appointment %}{% if slot.appointment.status == 'in_progress' %}in-progress{% elif slot.appointment.status == 'completed' %}completed{% else %}booked{% endif %}{% else %}available{% endif %}"
+                         style="top: {{ slot_data.top }}px; height: {{ slot_height }}px;{% if slot_data.left is not None %} left: {{ slot_data.left }}%; width: {{ slot_data.width }}%;{% endif %}"
+                         data-slot-height="{{ slot_height }}"
+                         {% if slot.appointment %}
+                           data-appointment-id="{{ slot.appointment.pk }}"
+                           data-appointment-status="{{ slot.appointment.status }}"
+                           title="{% format_name_short slot.appointment.patient.lname slot.appointment.patient.fname slot.appointment.patient.tname %} - {{ slot.time_from|time:'H:i' }}–{{ slot.time_to|time:'H:i' }} ({{ slot.appointment.get_status_display }})"
+                           {% if slot.appointment.status == 'completed' %}
+                             onclick="window.location.href='{% url 'clinic_admin:appointment_results' slot.appointment.pk %}'"
+                           {% else %}
+                             onclick="showStatusModal({{ slot.appointment.pk }}, '{{ slot.appointment.status }}', '{% format_name_short slot.appointment.patient.lname slot.appointment.patient.fname slot.appointment.patient.tname %}', '{{ slot.time_from|time:"H:i" }}–{{ slot.time_to|time:"H:i" }}')"
+                           {% endif %}
+                         {% else %}
+                           title="Свободно - {{ slot.time_from|time:'H:i' }}–{{ slot.time_to|time:'H:i' }}"
+                         {% endif %}>
+                      {% if slot_height >= 60 %}
+                        <div class="slot-time">{{ slot.time_from|time:"H:i" }} – {{ slot.time_to|time:"H:i" }}</div>
+                        {% if slot_height >= 90 %}
+                          <div class="slot-room">Каб. {{ slot.room.room_number }}</div>
+                          {% if slot.appointment %}
+                            <div class="slot-patient">{% format_name_short slot.appointment.patient.lname slot.appointment.patient.fname slot.appointment.patient.tname %}</div>
+                          {% endif %}
+                        {% endif %}
+                      {% else %}
+                        <div class="slot-time" style="margin: 0; line-height: 1.2; font-size: 0.75rem; color: white;">{{ slot.time_from|time:"H:i" }}–{{ slot.time_to|time:"H:i" }}</div>
+                      {% endif %}
+                    </div>
+                  {% endwith %}
+                {% endfor %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    
+    <!-- Легенда -->
+    <div class="col-lg-3">
+      <div class="d-flex flex-column gap-3">
+        <!-- Легенда -->
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <h5 class="fw-semibold mb-4 d-flex align-items-center gap-2">
+              <i class="bi bi-info-circle-fill text-info"></i>
+              Легенда
+            </h5>
+            <div class="d-flex flex-column gap-3">
+              <div class="d-flex align-items-center gap-3">
+                <div class="slot-block available" style="position: static; width: 48px; height: 24px; padding: 0; border-radius: 6px; flex-shrink: 0;"></div>
+                <div>
+                  <div class="fw-semibold small">Свободно</div>
+                  <div class="text-muted" style="font-size: 0.75rem;">Доступно для записи</div>
+                </div>
+              </div>
+              <div class="d-flex align-items-center gap-3">
+                <div class="slot-block booked" style="position: static; width: 48px; height: 24px; padding: 0; border-radius: 6px; flex-shrink: 0;"></div>
+                <div>
+                  <div class="fw-semibold small">Забронировано</div>
+                  <div class="text-muted" style="font-size: 0.75rem;">Запись подтверждена</div>
+                </div>
+              </div>
+              <div class="d-flex align-items-center gap-3">
+                <div class="slot-block in-progress" style="position: static; width: 48px; height: 24px; padding: 0; border-radius: 6px; flex-shrink: 0;"></div>
+                <div>
+                  <div class="fw-semibold small">В процессе</div>
+                  <div class="text-muted" style="font-size: 0.75rem;">Приём начат</div>
+                </div>
+              </div>
+              <div class="d-flex align-items-center gap-3">
+                <div class="slot-block completed" style="position: static; width: 48px; height: 24px; padding: 0; border-radius: 6px; flex-shrink: 0;"></div>
+                <div>
+                  <div class="fw-semibold small">Завершено</div>
+                  <div class="text-muted" style="font-size: 0.75rem;">Приём завершён</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+// Проверка и корректировка позиционирования блоков для предотвращения перекрытий
+document.addEventListener('DOMContentLoaded', function() {
+  // Получаем все колонки дней
+  const dayColumns = document.querySelectorAll('.day-column');
+  
+  dayColumns.forEach(function(column) {
+    const slotBlocks = column.querySelectorAll('.slot-block');
+    const blocks = Array.from(slotBlocks).map(function(block) {
+      const style = window.getComputedStyle(block);
+      const top = parseInt(block.style.top) || 0;
+      const height = parseInt(block.style.height) || 40;
+      const left = parseFloat(block.style.left) || 1;
+      const width = parseFloat(block.style.width) || 98;
+      
+      return {
+        element: block,
+        top: top,
+        height: height,
+        end: top + height,
+        left: left,
+        width: width,
+        endLeft: left + width
+      };
+    });
+    
+    // Сортируем по позиции сверху
+    blocks.sort(function(a, b) {
+      return a.top - b.top;
+    });
+    
+    // Проверяем и корректируем перекрытия
+    for (let i = 0; i < blocks.length; i++) {
+      const current = blocks[i];
+      
+      // Проверка границ дня (0-1440px для 6-22 часов)
+      if (current.top < 0) {
+        current.element.style.top = '0px';
+        current.top = 0;
+      }
+      if (current.end > 1440) {
+        const newHeight = 1440 - current.top;
+        current.element.style.height = newHeight + 'px';
+        current.height = newHeight;
+        current.end = current.top + newHeight;
+      }
+      
+      // Минимальная высота для читаемости
+      if (current.height < 30) {
+        current.element.style.minHeight = '30px';
+        current.element.style.overflow = 'visible';
+      }
+      
+      // Если блок слишком маленький, уменьшаем padding
+      if (current.height < 60) {
+        current.element.style.padding = '0.2rem 0.4rem';
+        current.element.style.fontSize = '0.75rem';
+        // Убеждаемся, что цвет текста белый
+        const textElements = current.element.querySelectorAll('.slot-time, .slot-room, .slot-patient');
+        textElements.forEach(function(el) {
+          el.style.color = 'white';
+        });
+      }
+    }
+  });
+});
+
+// Модальное окно для изменения статуса
+function showStatusModal(appointmentId, currentStatus, patientName, timeSlot) {
+  document.getElementById('statusAppointmentId').value = appointmentId;
+  document.getElementById('statusPatientName').textContent = patientName;
+  document.getElementById('statusTimeSlot').textContent = timeSlot;
+  
+  // Выделяем текущий статус
+  document.querySelectorAll('.status-option').forEach(option => {
+    option.classList.remove('active');
+    if (option.dataset.status === currentStatus) {
+      option.classList.add('active');
+    }
+  });
+  
+  const modal = new bootstrap.Modal(document.getElementById('statusModal'));
+  modal.show();
+}
+
+function updateAppointmentStatus(newStatus) {
+  const appointmentId = document.getElementById('statusAppointmentId').value;
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = '{% url "clinic_admin:appointment_update_status" %}';
+  
+  const csrfToken = document.createElement('input');
+  csrfToken.type = 'hidden';
+  csrfToken.name = 'csrfmiddlewaretoken';
+  csrfToken.value = '{{ csrf_token }}';
+  form.appendChild(csrfToken);
+  
+  const appointmentIdInput = document.createElement('input');
+  appointmentIdInput.type = 'hidden';
+  appointmentIdInput.name = 'appointment_id';
+  appointmentIdInput.value = appointmentId;
+  form.appendChild(appointmentIdInput);
+  
+  const statusInput = document.createElement('input');
+  statusInput.type = 'hidden';
+  statusInput.name = 'status';
+  statusInput.value = newStatus;
+  form.appendChild(statusInput);
+  
+  document.body.appendChild(form);
+  form.submit();
+}
+</script>
+
+<!-- Modal для изменения статуса приема -->
+<div class="modal fade" id="statusModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Изменение статуса приема</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <div class="small text-muted mb-2">
+            <span id="statusPatientName"></span> · <span id="statusTimeSlot"></span>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Выберите новый статус:</label>
+          <div class="d-flex flex-column gap-2">
+            <div class="status-option p-3 rounded cursor-pointer" data-status="booked" onclick="updateAppointmentStatus('booked')" style="background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%); color: white; cursor: pointer; border: 1px solid rgba(255, 255, 255, 0.2);">
+              <strong>Записан</strong>
+              <div class="small">Прием запланирован</div>
+            </div>
+            <div class="status-option p-3 rounded cursor-pointer" data-status="in_progress" onclick="updateAppointmentStatus('in_progress')" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; cursor: pointer; border: 1px solid rgba(255, 255, 255, 0.2);">
+              <strong>В процессе</strong>
+              <div class="small">Прием начат</div>
+            </div>
+            <div class="status-option p-3 rounded cursor-pointer" data-status="completed" onclick="updateAppointmentStatus('completed')" style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); color: white; cursor: pointer; border: 1px solid rgba(255, 255, 255, 0.2);">
+              <strong>Завершен</strong>
+              <div class="small">Прием завершен</div>
+            </div>
+            <div class="status-option p-3 rounded cursor-pointer" data-status="cancelled" onclick="updateAppointmentStatus('cancelled')" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; cursor: pointer; border: 1px solid rgba(255, 255, 255, 0.2);">
+              <strong>Отменить запись</strong>
+              <div class="small">Отменить прием</div>
+            </div>
+          </div>
+        </div>
+        <input type="hidden" id="statusAppointmentId">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.status-option {
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.status-option:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+.status-option.active {
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+}
+</style>
+{% endblock %}
+

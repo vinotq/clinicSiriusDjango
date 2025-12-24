@@ -1,0 +1,1898 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Расписание — {{ doctor.lname }} {{ doctor.fname }} | Clinic Sirius{% endblock %}
+
+{% block extra_head %}
+<style>
+.schedule-calendar {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.calendar-header {
+  background: linear-gradient(135deg, var(--brand-start) 0%, var(--brand-end) 100%);
+  color: white;
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.view-toggle {
+  display: flex;
+  gap: 0.5rem;
+  background: rgba(255,255,255,0.2);
+  border-radius: 8px;
+  padding: 0.25rem;
+}
+
+.view-toggle button {
+  background: transparent;
+  border: none;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.view-toggle button.active {
+  background: white;
+  color: var(--brand-start);
+}
+
+.view-toggle button:hover:not(.active) {
+  background: rgba(255,255,255,0.1);
+}
+
+.week-navigation {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.week-navigation button {
+  background: rgba(255,255,255,0.2);
+  border: none;
+  color: white;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.week-navigation button:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+.week-date {
+  font-size: 1.1rem;
+  font-weight: 600;
+  min-width: 200px;
+  text-align: center;
+}
+
+.today-btn {
+  background: rgba(255,255,255,0.2);
+  border: none;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.today-btn:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: 100px repeat(7, 1fr);
+  border-top: 1px solid #e5e7eb;
+}
+
+.calendar-grid.day-view {
+  grid-template-columns: 100px 1fr;
+}
+
+.time-column {
+  border-right: 1px solid #e5e7eb;
+  background: #f9fafb;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  height: 1540px; /* 100px заголовок + 1440px контент, как в day-column */
+}
+
+.current-time-indicator {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: rgba(239, 68, 68, 0.4);
+  z-index: 0;
+  pointer-events: none;
+  box-shadow: 0 0 2px rgba(239, 68, 68, 0.3);
+}
+
+.current-time-indicator::before {
+  content: '';
+  position: absolute;
+  left: -6px;
+  top: -4px;
+  width: 10px;
+  height: 10px;
+  background: rgba(239, 68, 68, 0.5);
+  border-radius: 50%;
+  box-shadow: 0 0 2px rgba(239, 68, 68, 0.3);
+}
+
+.time-slot {
+  height: 30px;
+  min-height: 30px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  padding: 0 0.5rem;
+  font-size: 0.85rem;
+  color: #6b7280;
+  font-weight: 500;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.time-slot.major {
+  height: 30px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #374151;
+}
+
+.day-column {
+  border-right: 1px solid #e5e7eb;
+  position: relative;
+}
+
+.day-column:last-child {
+  border-right: none;
+}
+
+.day-header {
+  height: 100px;
+  border-bottom: 2px solid #e5e7eb;
+  padding: 1.25rem;
+  text-align: center;
+  background: #f9fafb;
+}
+
+.day-header.today {
+  background: linear-gradient(to bottom, rgba(48, 179, 84, 0.1), transparent);
+  border-bottom-color: var(--brand-start);
+}
+
+.day-name {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.day-date {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.day-date.today {
+  color: var(--brand-start);
+}
+
+.day-content {
+  position: relative;
+  height: 1440px;  /* 16 часов (6-22) * 60 минут / 20 минут * 30px = 1440px */
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 29px,
+    #e5e7eb 29px,
+    #e5e7eb 30px
+  );
+  box-sizing: border-box;
+}
+
+/* Индикатор времени убран из колонок дней */
+
+.slot-block {
+  position: absolute;
+  left: 1%;
+  width: 98%;
+  border-radius: 6px;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  z-index: 10;
+  overflow: hidden;
+  min-height: 30px;
+  box-sizing: border-box;
+  margin: 0;
+  cursor: pointer;
+}
+
+.slot-block > * {
+  pointer-events: none;
+}
+
+.slot-block.available {
+  cursor: pointer;
+}
+
+.slot-block.available:hover {
+  opacity: 0.9;
+}
+
+/* Когда заданы left и width через inline стили, используем их */
+.slot-block[style*="left:"] {
+  right: auto;
+}
+
+.slot-block.available {
+  cursor: pointer;
+  pointer-events: auto !important;
+}
+
+.slot-block.booked,
+.slot-block.in-progress {
+  cursor: pointer;
+  pointer-events: auto !important;
+}
+
+.slot-block.past {
+  pointer-events: auto !important;
+}
+
+.slot-block:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  z-index: 2;
+}
+
+.slot-block.available {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.slot-block.booked {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+}
+
+.slot-block.in-progress {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+}
+
+.slot-block.completed {
+  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+  color: white;
+}
+
+.slot-time {
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.slot-room {
+  font-size: 0.75rem;
+  opacity: 0.9;
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Стили для searchable-select */
+.searchable-select-wrapper {
+  position: relative;
+}
+
+.searchable-select-input {
+  width: 100%;
+  cursor: pointer;
+  background: white;
+}
+
+.searchable-select-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 1055;
+  background: white;
+  border: 1px solid #ced4da;
+  border-radius: 0.375rem;
+  max-height: 300px;
+  overflow-y: auto;
+  display: none;
+  margin-top: 0.25rem;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.searchable-select-dropdown.show {
+  display: block;
+}
+
+.searchable-select-option {
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  border-bottom: 1px solid #f8f9fa;
+  font-size: 0.875rem;
+}
+
+.searchable-select-option:hover,
+.searchable-select-option.selected {
+  background-color: #e7f1ff;
+}
+
+.searchable-select-option:last-child {
+  border-bottom: none;
+}
+
+.searchable-select-search {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #dee2e6;
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 1;
+}
+
+.searchable-select-search input {
+  width: 100%;
+  border: 1px solid #ced4da;
+  border-radius: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+}
+
+.slot-patient {
+  font-weight: 500;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.slot-empty {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.9);
+  text-align: center;
+  padding: 0.25rem;
+}
+
+@media (max-width: 1200px) {
+  .calendar-grid {
+    grid-template-columns: 80px repeat(7, 1fr);
+  }
+  
+  .time-slot {
+    height: 30px;
+    min-height: 30px;
+    font-size: 0.8rem;
+    padding: 0 0.25rem;
+  }
+  
+  .time-slot.major {
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+  
+  .day-header {
+    height: 90px;
+    padding: 1rem 0.5rem;
+  }
+  
+  .day-content {
+    height: 1440px;
+  }
+  
+  .day-date {
+    font-size: 1rem;
+  }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="container-fluid py-5" style="max-width: 98%; margin: 0 auto;">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">Расписание врача</h2>
+      <p class="text-muted mb-0">{{ doctor.lname }} {{ doctor.fname }} · {{ doctor.specialization.name }}</p>
+    </div>
+    <div class="d-flex gap-2">
+      {% if user.is_authenticated and user.role == 'doctor' and user.doctor_profile.id == doctor.id %}
+        <a class="btn btn-primary" href="{% url 'scheduling:add_timeslot' doctor.id %}">Добавить окно</a>
+        <a class="btn btn-outline-primary" href="{% url 'staff:doctor_home' %}">На главную</a>
+      {% else %}
+        <a class="btn btn-primary" href="{% url 'scheduling:book_appointment' %}?doctor={{ doctor.id }}">Записаться</a>
+        <a class="btn btn-outline-primary" href="{% url 'staff:doctor_detail' doctor.id %}">О враче</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Календарь -->
+    <div class="col-lg-9">
+      <div class="schedule-calendar">
+        <div class="calendar-header">
+          <div class="view-toggle">
+            <a href="?view=day{% if view_type == 'day' %}&date={{ selected_date_str|default:today }}{% endif %}" class="text-decoration-none">
+              <button type="button" {% if view_type == 'day' %}class="active"{% endif %}>День</button>
+            </a>
+            <a href="?view=week{% if view_type == 'week' %}&week={{ week_start|date:'Y-m-d' }}{% endif %}" class="text-decoration-none">
+              <button type="button" {% if view_type == 'week' %}class="active"{% endif %}>Неделя</button>
+            </a>
+          </div>
+          
+          <div class="week-navigation">
+            {% if view_type == 'day' %}
+              <a href="?view=day&date={{ prev_day }}" class="text-decoration-none">
+                <button type="button">‹</button>
+              </a>
+              <div class="week-date">
+                {{ week_start|date:"d" }} {{ week_days.0.month_name }} {{ week_start|date:"Y" }}
+              </div>
+              <a href="?view=day&date={{ next_day }}" class="text-decoration-none">
+                <button type="button">›</button>
+              </a>
+            {% else %}
+              <a href="?view=week&week={{ prev_week }}" class="text-decoration-none">
+                <button type="button">‹</button>
+              </a>
+              <div class="week-date">
+                {{ week_start|date:"d" }} {{ week_days.0.month_name }} {{ week_start|date:"Y" }} – {{ week_end|date:"d" }} {{ week_days.6.month_name }} {{ week_end|date:"Y" }}
+              </div>
+              <a href="?view=week&week={{ next_week }}" class="text-decoration-none">
+                <button type="button">›</button>
+              </a>
+            {% endif %}
+          </div>
+          
+          <a href="?view={{ view_type|default:'week' }}{% if view_type == 'day' %}&date={{ today }}{% else %}&week={{ today }}{% endif %}" class="text-decoration-none">
+            <button class="today-btn">Сегодня</button>
+          </a>
+        </div>
+
+        <div class="calendar-grid {% if view_type == 'day' %}day-view{% endif %}">
+          <!-- Временная колонка -->
+          <div class="time-column" id="time-column">
+            <div style="height: 100px; border-bottom: 2px solid #e5e7eb;"></div>
+            <div style="height: 1440px; display: flex; flex-direction: column;">
+              {% for hour in "6789012345678901234567"|make_list %}
+                {% if forloop.counter >= 1 and forloop.counter <= 16 %}
+                  {% with h=forloop.counter|add:5 %}
+                    <div class="time-slot major">{{ h }}:00</div>
+                    <div class="time-slot">{{ h }}:20</div>
+                    <div class="time-slot">{{ h }}:40</div>
+                  {% endwith %}
+                {% endif %}
+              {% endfor %}
+            </div>
+            <div class="current-time-indicator" id="current-time-indicator" style="display: none;"></div>
+          </div>
+
+          <!-- Колонки дней -->
+          {% for day in week_days %}
+            <div class="day-column">
+              <div class="day-header {% if day.is_today %}today{% endif %}">
+                <div class="day-name">{{ day.day_name }}</div>
+                <div class="day-date {% if day.is_today %}today{% endif %}">{{ day.day_num }}</div>
+              </div>
+              
+              <div class="day-content">
+                {% for slot_data in day.slots %}
+                  {% with slot=slot_data.slot slot_height=slot_data.height %}
+                    <div class="slot-block {% if slot.appointment %}{% if slot.appointment.status == 'in_progress' %}in-progress{% elif slot.appointment.status == 'completed' %}completed{% else %}booked{% endif %}{% else %}available{% endif %}{% if slot_data.is_past %} past{% endif %}"
+                         style="top: {{ slot_data.top }}px; height: {{ slot_height }}px;{% if slot_data.left is not None %} left: {{ slot_data.left }}%; width: {{ slot_data.width }}%;{% endif %}"
+                         data-slot-height="{{ slot_height }}"
+                         data-slot-time="{{ slot.time_from.isoformat }}"
+                         data-slot-date="{{ slot.time_from|date:'Y-m-d' }}"
+                         {% if slot_data.is_past %}data-is-past="true"{% endif %}
+                         {% if slot.appointment %}
+                           title="{{ slot.appointment.patient.lname }} {{ slot.appointment.patient.fname }} - {{ slot.time_from|time:'H:i' }}–{{ slot.time_to|time:'H:i' }}"
+                           {% if user.is_authenticated and user.role == 'doctor' and user.doctor_profile.id == doctor.id %}
+                             {% if slot.appointment.status == 'booked' %}
+                               data-appointment-id="{{ slot.appointment.id }}"
+                               data-appointment-patient="{{ slot.appointment.patient.lname|escapejs }} {{ slot.appointment.patient.fname|escapejs }}"
+                               data-appointment-time-from="{{ slot.time_from|time:'H:i' }}"
+                               data-appointment-time-to="{{ slot.time_to|time:'H:i' }}"
+                               data-appointment-status="booked"
+                               onclick="event.stopPropagation(); showChangeBookedAppointmentModal({{ slot.appointment.id }}, '{{ slot.appointment.patient.lname|escapejs }} {{ slot.appointment.patient.fname|escapejs }}', '{{ slot.time_from|time:"H:i" }}', '{{ slot.time_to|time:"H:i" }}'); return false;"
+                             {% elif slot.appointment.status == 'in_progress' %}
+                               data-appointment-id="{{ slot.appointment.id }}"
+                               data-appointment-status="in_progress"
+                               onclick="event.stopPropagation(); window.location.href='{% url 'scheduling:appointment_detail' slot.appointment.id %}'; return false;"
+                             {% elif slot.appointment.status == 'completed' %}
+                               data-appointment-id="{{ slot.appointment.id }}"
+                               data-appointment-status="completed"
+                               onclick="event.stopPropagation(); window.location.href='{% url 'scheduling:appointment_detail' slot.appointment.id %}'; return false;"
+                             {% endif %}
+                           {% endif %}
+                         {% else %}
+                           title="Свободно - {{ slot.time_from|time:'H:i' }}–{{ slot.time_to|time:'H:i' }}{% if slot_data.is_past %} (время прошло){% endif %}"
+                           {% if slot_data.is_past %}
+                             onclick="event.stopPropagation(); alert('Нельзя записаться на прошедшее время'); return false;"
+                           {% elif user.is_authenticated and user.role == 'doctor' and user.doctor_profile.id == doctor.id %}
+                             data-slot-id="{{ slot.id }}"
+                             data-slot-time-from="{{ slot.time_from|time:'H:i' }}"
+                             data-slot-time-to="{{ slot.time_to|time:'H:i' }}"
+                             data-slot-room="{{ slot.room.room_number }}"
+                             onclick="event.stopPropagation(); showBookSlotModal({{ slot.id }}, '{{ slot.time_from|time:"H:i" }}', '{{ slot.time_to|time:"H:i" }}', '{{ slot.room.room_number }}'); return false;"
+                           {% elif user.is_authenticated and user.role != 'doctor' %}
+                             data-slot-id="{{ slot.id }}"
+                             onclick="event.stopPropagation(); window.location.href='{% url 'scheduling:book_appointment' %}?doctor={{ doctor.id }}&date={{ slot.time_from|date:'Y-m-d' }}&slot={{ slot.id }}'; return false;"
+                           {% endif %}
+                         {% endif %}>
+                      {% if slot_height >= 60 %}
+                        <div class="slot-time">{{ slot.time_from|time:"H:i" }} – {{ slot.time_to|time:"H:i" }}</div>
+                        {% if slot_height >= 90 %}
+                          <div class="slot-room">Каб. {{ slot.room.room_number }}</div>
+                        {% endif %}
+                      {% else %}
+                        <div class="slot-time" style="margin: 0; line-height: 1.2; font-size: 0.75rem;">{{ slot.time_from|time:"H:i" }}–{{ slot.time_to|time:"H:i" }}</div>
+                      {% endif %}
+                    </div>
+                  {% endwith %}
+                {% endfor %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    
+    <!-- Статистика и легенда -->
+    <div class="col-lg-3">
+      <div class="d-flex flex-column gap-3">
+        <!-- Легенда -->
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <h5 class="fw-semibold mb-4 d-flex align-items-center gap-2">
+              <i class="bi bi-info-circle-fill text-info"></i>
+              Легенда
+            </h5>
+            <div class="d-flex flex-column gap-3">
+              <div class="d-flex align-items-center gap-3">
+                <div class="slot-block available" style="position: static; width: 48px; height: 24px; padding: 0; border-radius: 6px; flex-shrink: 0;"></div>
+                <div>
+                  <div class="fw-semibold small">Свободно</div>
+                  <div class="text-muted" style="font-size: 0.75rem;">Доступно для записи</div>
+                </div>
+              </div>
+              <div class="d-flex align-items-center gap-3">
+                <div class="slot-block booked" style="position: static; width: 48px; height: 24px; padding: 0; border-radius: 6px; flex-shrink: 0;"></div>
+                <div>
+                  <div class="fw-semibold small">Забронировано</div>
+                  <div class="text-muted" style="font-size: 0.75rem;">Запись подтверждена</div>
+                </div>
+              </div>
+              <div class="d-flex align-items-center gap-3">
+                <div class="slot-block in-progress" style="position: static; width: 48px; height: 24px; padding: 0; border-radius: 6px; flex-shrink: 0;"></div>
+                <div>
+                  <div class="fw-semibold small">В процессе</div>
+                  <div class="text-muted" style="font-size: 0.75rem;">Приём начат</div>
+                </div>
+              </div>
+              <div class="d-flex align-items-center gap-3">
+                <div class="slot-block completed" style="position: static; width: 48px; height: 24px; padding: 0; border-radius: 6px; flex-shrink: 0;"></div>
+                <div>
+                  <div class="fw-semibold small">Завершено</div>
+                  <div class="text-muted" style="font-size: 0.75rem;">Приём завершён</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+// Серверное время для синхронизации
+const serverTimeISO = '{{ server_time|default:"" }}';
+const serverTimezone = '{{ server_timezone|default:"" }}';
+let serverTimeInitial = null;
+let serverTimeInitialClientTime = null;
+
+// Вычисляем разницу между серверным и клиентским временем
+if (serverTimeISO) {
+  // Парсим время сервера (уже в локальном часовом поясе)
+  serverTimeInitial = new Date(serverTimeISO);
+  serverTimeInitialClientTime = Date.now();
+  
+  // Вычисляем смещение часового пояса сервера относительно UTC
+  const serverTimeUTC = new Date(serverTimeISO.replace(/[+-]\d{2}:\d{2}$/, 'Z'));
+  const serverOffset = serverTimeInitial.getTime() - serverTimeUTC.getTime();
+  
+  console.log('Server time (local):', serverTimeInitial.toISOString());
+  console.log('Server timezone:', serverTimezone);
+  console.log('Client time (local):', new Date().toISOString());
+  console.log('Server timezone offset (ms):', serverOffset);
+}
+
+// Функция для получения актуального серверного времени в локальном часовом поясе
+function getServerTime() {
+  if (!serverTimeInitial || !serverTimeInitialClientTime) {
+    return new Date(); // Fallback если серверное время не передано
+  }
+  // Вычисляем текущее серверное время: начальное серверное время + прошедшее время с момента загрузки
+  const elapsed = Date.now() - serverTimeInitialClientTime;
+  return new Date(serverTimeInitial.getTime() + elapsed);
+}
+
+// Функция для обновления позиции индикатора текущего времени
+function updateCurrentTimeIndicator() {
+  const timeColumnIndicator = document.getElementById('current-time-indicator');
+  const now = getServerTime();
+  // Используем локальные часы и минуты сервера (уже в правильном часовом поясе)
+  const currentHour = now.getHours();
+  const currentMinute = now.getMinutes();
+  
+  // Вычисляем позицию: индикатор находится в .time-column, который имеет заголовок 100px
+  // Поэтому добавляем 100px для учета заголовка
+  // С 6:00 до текущего времени
+  const minutesFrom6AM = (currentHour - 6) * 60 + currentMinute;
+  const topPosition = 100 + (minutesFrom6AM / 20) * 30;
+  
+  // Обновляем индикатор в колонке времени
+  if (timeColumnIndicator) {
+    if (currentHour >= 6 && currentHour < 22) {
+      timeColumnIndicator.style.top = topPosition + 'px';
+      timeColumnIndicator.style.display = 'block';
+    } else {
+      timeColumnIndicator.style.display = 'none';
+    }
+  }
+  
+  // Индикатор времени отображается только в колонке времени, не в колонках дней
+}
+
+// Функция для проверки и отключения прошедших слотов
+function disablePastSlots() {
+  const now = getServerTime();
+  const currentTime = now.getTime();
+  
+  const slotBlocks = document.querySelectorAll('.slot-block[data-slot-time]');
+  slotBlocks.forEach(function(slotBlock) {
+    // Пропускаем уже помеченные как прошедшие
+    if (slotBlock.getAttribute('data-is-past') === 'true') {
+      return;
+    }
+    
+    const slotTimeStr = slotBlock.getAttribute('data-slot-time');
+    if (!slotTimeStr) return;
+    
+    try {
+      const slotTime = new Date(slotTimeStr);
+      // Оба времени должны быть в UTC для корректного сравнения
+      const slotTimeUTC = slotTime.getTime();
+      // currentTime уже является числом (timestamp), не нужно вызывать getTime()
+      const currentTimeUTC = currentTime;
+      
+      // Проверяем, прошел ли слот (без запаса, строгое сравнение)
+      if (slotTimeUTC < currentTimeUTC) {
+        // Слот прошел, отключаем его
+        slotBlock.classList.add('past');
+        slotBlock.setAttribute('data-is-past', 'true');
+        slotBlock.style.cursor = 'not-allowed';
+        
+        // Удаляем обработчики onclick для свободных слотов
+        const slotId = slotBlock.getAttribute('data-slot-id');
+        if (slotId) {
+          slotBlock.onclick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            alert('Нельзя записаться на прошедшее время');
+            return false;
+          };
+        }
+        
+        // Обновляем title
+        const originalTitle = slotBlock.getAttribute('title');
+        if (originalTitle && !originalTitle.includes('прошло')) {
+          slotBlock.setAttribute('title', originalTitle + ' (время прошло)');
+        }
+      }
+    } catch (e) {
+      console.error('Error parsing slot time:', e);
+    }
+  });
+}
+
+// Проверка и корректировка позиционирования блоков для предотвращения перекрытий
+document.addEventListener('DOMContentLoaded', function() {
+  // Обновляем индикатор текущего времени
+  updateCurrentTimeIndicator();
+  // Обновляем каждую минуту
+  setInterval(updateCurrentTimeIndicator, 60000);
+  
+  // Отключаем прошедшие слоты
+  disablePastSlots();
+  // Обновляем проверку прошедших слотов каждую минуту
+  setInterval(disablePastSlots, 60000);
+  
+  // Добавляем обработчики для слотов с data-атрибутами только если они не имеют встроенного onclick
+  // Это нужно для слотов, которые были загружены динамически
+  // Используем селектор :not([onclick]) чтобы исключить элементы с уже установленным onclick
+  const slotsWithData = document.querySelectorAll('.slot-block[data-slot-id]:not([onclick])');
+  slotsWithData.forEach(function(slotBlock) {
+    // Пропускаем слоты, которые помечены как прошедшие
+    if (slotBlock.classList.contains('past')) {
+      return;
+    }
+    
+    const slotId = slotBlock.getAttribute('data-slot-id');
+    const timeFrom = slotBlock.getAttribute('data-slot-time-from');
+    const timeTo = slotBlock.getAttribute('data-slot-time-to');
+    const room = slotBlock.getAttribute('data-slot-room');
+    
+    // Добавляем обработчик только если все необходимые данные есть
+    if (slotId && timeFrom && timeTo && room) {
+      slotBlock.addEventListener('click', function(e) {
+        e.stopPropagation();
+        e.preventDefault();
+        showBookSlotModal(parseInt(slotId), timeFrom, timeTo, room);
+        return false;
+      });
+    }
+  });
+  
+  // Добавляем обработчики для забронированных слотов через addEventListener
+  // Это обеспечивает надежную работу даже если onclick не срабатывает
+  const bookedSlots = document.querySelectorAll('.slot-block.booked[data-appointment-id]');
+  bookedSlots.forEach(function(slotBlock) {
+    const appointmentId = slotBlock.getAttribute('data-appointment-id');
+    const appointmentStatus = slotBlock.getAttribute('data-appointment-status');
+    
+    if (appointmentId && appointmentStatus === 'booked') {
+      // Добавляем обработчик для забронированных слотов
+      slotBlock.addEventListener('click', function(e) {
+        e.stopPropagation();
+        e.preventDefault();
+        
+        const patientName = slotBlock.getAttribute('data-appointment-patient') || '';
+        const timeFrom = slotBlock.getAttribute('data-appointment-time-from') || '';
+        const timeTo = slotBlock.getAttribute('data-appointment-time-to') || '';
+        
+        console.log('Booked slot clicked:', { appointmentId, patientName, timeFrom, timeTo });
+        showChangeBookedAppointmentModal(parseInt(appointmentId), patientName, timeFrom, timeTo);
+        return false;
+      });
+    } else if (appointmentId && (appointmentStatus === 'in_progress' || appointmentStatus === 'completed')) {
+      // Добавляем обработчик для слотов в процессе или завершенных
+      slotBlock.addEventListener('click', function(e) {
+        e.stopPropagation();
+        e.preventDefault();
+        window.location.href = '/scheduling/appointment/' + appointmentId + '/';
+        return false;
+      });
+    }
+  });
+  
+  // Получаем все колонки дней
+  const dayColumns = document.querySelectorAll('.day-column');
+  
+  dayColumns.forEach(function(column) {
+    const slotBlocks = column.querySelectorAll('.slot-block');
+    const blocks = Array.from(slotBlocks).map(function(block) {
+      const style = window.getComputedStyle(block);
+      const top = parseInt(block.style.top) || 0;
+      const height = parseInt(block.style.height) || 40;
+      const left = parseFloat(block.style.left) || 1;
+      const width = parseFloat(block.style.width) || 98;
+      
+      return {
+        element: block,
+        top: top,
+        height: height,
+        end: top + height,
+        left: left,
+        width: width,
+        endLeft: left + width
+      };
+    });
+    
+    // Сортируем по позиции сверху
+    blocks.sort(function(a, b) {
+      return a.top - b.top;
+    });
+    
+    // Проверяем и корректируем перекрытия
+    for (let i = 0; i < blocks.length; i++) {
+      const current = blocks[i];
+      
+      // Проверка границ дня (0-1440px для 6-22 часов, интервалы по 20 минут, высота ячейки 30px)
+      if (current.top < 0) {
+        current.element.style.top = '0px';
+        current.top = 0;
+      }
+      if (current.end > 1440) {
+        const newHeight = 1440 - current.top;
+        current.element.style.height = newHeight + 'px';
+        current.height = newHeight;
+        current.end = current.top + newHeight;
+      }
+      
+      // Проверяем перекрытия с другими блоками
+      for (let j = i + 1; j < blocks.length; j++) {
+        const other = blocks[j];
+        
+        // Если блоки перекрываются по времени
+        if (current.top < other.end && current.end > other.top) {
+          // Если блоки перекрываются по горизонтали (левая граница одного внутри другого)
+          if (current.left < other.endLeft && current.endLeft > other.left) {
+            // Корректируем позицию, если нужно
+            // Это не должно происходить, так как сервер уже распределил блоки,
+            // но на всякий случай проверяем
+            const overlap = Math.min(current.endLeft - other.left, other.endLeft - current.left);
+            if (overlap > 0 && overlap < 1) {
+              // Небольшая корректировка для предотвращения визуального перекрытия
+              if (current.top <= other.top) {
+                current.element.style.width = (current.width - 0.5) + '%';
+              }
+            }
+          }
+        }
+        
+        // Если блоки не перекрываются по времени, можно прекратить проверку
+        if (current.end <= other.top) {
+          break;
+        }
+      }
+      
+      // Минимальная высота для читаемости
+      if (current.height < 30) {
+        current.element.style.minHeight = '30px';
+        current.element.style.overflow = 'visible';
+      }
+      
+      // Если блок слишком маленький, уменьшаем padding
+      if (current.height < 60) {
+        current.element.style.padding = '0.2rem 0.4rem';
+        current.element.style.fontSize = '0.75rem';
+      }
+    }
+  });
+});
+
+// Функция для показа модального окна записи на свободный слот
+window.showBookSlotModal = function(slotId, timeFrom, timeTo, roomNumber) {
+  // Проверяем, не прошел ли слот
+  const slotBlock = document.querySelector(`.slot-block[data-slot-id="${slotId}"]`);
+  if (slotBlock) {
+    // Проверяем класс past
+    if (slotBlock.classList.contains('past')) {
+      alert('Нельзя записаться на прошедшее время');
+      return;
+    }
+    
+    // Дополнительная проверка по времени
+    const slotTimeStr = slotBlock.getAttribute('data-slot-time');
+    if (slotTimeStr) {
+      try {
+        const slotTime = new Date(slotTimeStr);
+        const now = getServerTime();
+        const slotTimeUTC = slotTime.getTime();
+        const nowUTC = now.getTime();
+        // Строгое сравнение без запаса
+        if (slotTimeUTC < nowUTC) {
+          alert('Нельзя записаться на прошедшее время');
+          return;
+        }
+      } catch (e) {
+        console.error('Error parsing slot time:', e);
+      }
+    }
+  }
+  if (typeof bootstrap === 'undefined') {
+    alert('Ошибка загрузки библиотеки. Пожалуйста, обновите страницу.');
+    return;
+  }
+  
+  // Загружаем форму через AJAX
+  const url = '/scheduling/slot/' + slotId + '/book/';
+  const modalElement = document.getElementById('bookSlotModal');
+  
+  if (!modalElement) {
+    console.error('Modal element not found');
+    alert('Ошибка: модальное окно не найдено');
+    return;
+  }
+  
+  const modalBody = modalElement.querySelector('.modal-body-content');
+  
+  if (!modalBody) {
+    console.error('Modal body not found');
+    alert('Ошибка: тело модального окна не найдено');
+    return;
+  }
+  
+  modalBody.innerHTML = '<div class="text-center py-4"><div class="spinner-border" role="status"><span class="visually-hidden">Загрузка...</span></div></div>';
+  
+  fetch(url)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('HTTP error! status: ' + response.status);
+      }
+      return response.text();
+    })
+    .then(html => {
+      modalBody.innerHTML = html;
+      
+      // Удаляем все <script> теги из загруженного HTML (они не должны выполняться)
+      const scripts = modalBody.querySelectorAll('script');
+      scripts.forEach(function(script) {
+        script.parentNode.removeChild(script);
+      });
+      
+      // Инициализируем форму после загрузки HTML
+      setTimeout(function() {
+        // Инициализируем поиск пациентов, если есть
+        let patientSelectContainer = modalBody.querySelector('.searchable-select-wrapper');
+        if (patientSelectContainer) {
+          console.log('Initializing patient select, container found:', !!patientSelectContainer);
+          if (typeof window.initPatientSelect === 'function') {
+            console.log('Calling window.initPatientSelect');
+            window.initPatientSelect(patientSelectContainer);
+          } else if (typeof initPatientSelect === 'function') {
+            console.log('Calling initPatientSelect (without window)');
+            initPatientSelect(patientSelectContainer);
+          } else {
+            console.error('initPatientSelect function not found');
+            // Пробуем еще раз через небольшую задержку
+            setTimeout(function() {
+              patientSelectContainer = modalBody.querySelector('.searchable-select-wrapper');
+              if (patientSelectContainer && typeof window.initPatientSelect === 'function') {
+                console.log('Calling window.initPatientSelect (retry)');
+                window.initPatientSelect(patientSelectContainer);
+              }
+            }, 200);
+          }
+        } else {
+          console.warn('Patient select container not found, retrying...');
+          // Пробуем еще раз через небольшую задержку
+          setTimeout(function() {
+            patientSelectContainer = modalBody.querySelector('.searchable-select-wrapper');
+            if (patientSelectContainer) {
+              console.log('Patient select container found on retry');
+              if (typeof window.initPatientSelect === 'function') {
+                window.initPatientSelect(patientSelectContainer);
+              }
+            } else {
+              console.error('Patient select container still not found after retry');
+            }
+          }, 200);
+        }
+        
+        // Инициализируем форму записи
+        if (typeof window.initBookSlotForm === 'function') {
+          console.log('Calling initBookSlotForm');
+          window.initBookSlotForm();
+        } else {
+          console.error('initBookSlotForm function not found after loading HTML');
+          // Пробуем еще раз через небольшую задержку
+          setTimeout(function() {
+            if (typeof window.initBookSlotForm === 'function') {
+              console.log('Calling initBookSlotForm (retry)');
+              window.initBookSlotForm();
+            } else {
+              console.error('initBookSlotForm still not found');
+            }
+          }, 200);
+        }
+      }, 100);
+      
+      // Показываем модальное окно
+      const modal = new bootstrap.Modal(modalElement);
+      modal.show();
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      modalBody.innerHTML = '<div class="alert alert-danger">Ошибка загрузки формы: ' + error.message + '</div>';
+    });
+}
+
+// Функция для показа модального окна изменения забронированного приема
+window.showChangeBookedAppointmentModal = function(appointmentId, patientName, timeFrom, timeTo) {
+  console.log('showChangeBookedAppointmentModal called with:', { appointmentId, patientName, timeFrom, timeTo });
+  
+  if (typeof bootstrap === 'undefined') {
+    alert('Ошибка загрузки библиотеки. Пожалуйста, обновите страницу.');
+    return;
+  }
+  
+  // Загружаем форму через AJAX
+  const url = '/scheduling/appointment/' + appointmentId + '/change-patient/';
+  console.log('Loading form from:', url);
+  
+  const modalElement = document.getElementById('changeAppointmentModal');
+  
+  if (!modalElement) {
+    console.error('Modal element not found');
+    alert('Ошибка: модальное окно не найдено');
+    return;
+  }
+  
+  const modalBody = modalElement.querySelector('.modal-body-content');
+  
+  if (!modalBody) {
+    console.error('Modal body not found');
+    alert('Ошибка: тело модального окна не найдено');
+    return;
+  }
+  
+  modalBody.innerHTML = '<div class="text-center py-4"><div class="spinner-border" role="status"><span class="visually-hidden">Загрузка...</span></div></div>';
+  
+  fetch(url)
+    .then(response => {
+      console.log('Response status:', response.status);
+      if (!response.ok) {
+        throw new Error('HTTP error! status: ' + response.status);
+      }
+      return response.text();
+    })
+    .then(html => {
+      console.log('Form HTML loaded, length:', html.length);
+      modalBody.innerHTML = html;
+      
+      // Удаляем все <script> теги из загруженного HTML (они не должны выполняться)
+      const scripts = modalBody.querySelectorAll('script');
+      scripts.forEach(function(script) {
+        script.parentNode.removeChild(script);
+      });
+      
+      // Инициализируем форму после загрузки HTML
+      setTimeout(function() {
+        // Инициализируем поиск пациентов, если есть
+        const patientSelectContainer = modalBody.querySelector('.searchable-select-wrapper');
+        if (patientSelectContainer) {
+          console.log('Initializing patient select for change appointment modal');
+          if (typeof window.initPatientSelect === 'function') {
+            window.initPatientSelect(patientSelectContainer);
+          } else if (typeof initPatientSelect === 'function') {
+            initPatientSelect(patientSelectContainer);
+          } else {
+            console.warn('initPatientSelect function not found');
+          }
+        }
+        
+        // Инициализируем формы и обработчики событий
+        if (typeof window.initChangeAppointmentForms === 'function') {
+          try {
+            window.initChangeAppointmentForms(modalBody);
+            console.log('initChangeAppointmentForms called successfully');
+          } catch (e) {
+            console.error('Error calling initChangeAppointmentForms:', e);
+          }
+        } else {
+          console.error('initChangeAppointmentForms function not found');
+        }
+      }, 100);
+      
+      // Показываем модальное окно
+      const modal = new bootstrap.Modal(modalElement);
+      modal.show();
+      console.log('Change appointment modal shown');
+    })
+    .catch(error => {
+      console.error('Error loading change appointment form:', error);
+      modalBody.innerHTML = '<div class="alert alert-danger">Ошибка загрузки формы: ' + error.message + '</div>';
+    });
+}
+
+// Функция инициализации форм изменения записи (заменяет initForms из change_appointment_patient.html)
+window.initChangeAppointmentForms = function(modalBody) {
+  const form = modalBody.querySelector('#change-appointment-form');
+  const createNewInput = modalBody.querySelector('#createNewPatient');
+  const selectPatientTab = modalBody.querySelector('#select-patient-tab');
+  const createPatientTab = modalBody.querySelector('#create-patient-tab');
+  
+  // Обработка переключения вкладок выбора/создания пациента
+  if (selectPatientTab) {
+    selectPatientTab.addEventListener('shown.bs.tab', function() {
+      if (createNewInput) createNewInput.value = 'false';
+    });
+  }
+  if (createPatientTab) {
+    createPatientTab.addEventListener('shown.bs.tab', function() {
+      if (createNewInput) createNewInput.value = 'true';
+    });
+  }
+  
+  // Обработка кнопки начала приема
+  const startAppointmentForm = modalBody.querySelector('#start-appointment-form');
+  const startBtn = modalBody.querySelector('#start-appointment-submit-btn');
+  console.log('initChangeAppointmentForms: startAppointmentForm:', startAppointmentForm, 'startBtn:', startBtn);
+  
+  if (startAppointmentForm && startBtn) {
+    startBtn.onclick = function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      console.log('Start appointment button clicked');
+      const form = startAppointmentForm;
+      if (!form) {
+        console.error('Form not found');
+        alert('Ошибка: форма не найдена');
+        return false;
+      }
+      
+      const formData = new FormData(form);
+      const action = form.action || form.getAttribute('data-action') || form.getAttribute('action');
+      const appointmentId = form.getAttribute('data-appointment-id');
+      
+      if (!appointmentId) {
+        console.error('Appointment ID not found');
+        alert('Ошибка: не указан ID приема');
+        return false;
+      }
+      
+      console.log('Form action:', action);
+      console.log('Appointment ID:', appointmentId);
+      console.log('Status:', formData.get('status'));
+      console.log('CSRF token:', formData.get('csrfmiddlewaretoken') ? 'present' : 'missing');
+      
+      // Отключаем кнопку на время отправки
+      const btn = this;
+      btn.disabled = true;
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Начинаем прием...';
+      
+      fetch(action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+        },
+        redirect: 'follow'
+      })
+      .then(response => {
+        console.log('Response status:', response.status, 'redirected:', response.redirected);
+        if (response.redirected) {
+          window.location.href = response.url;
+        } else if (response.ok) {
+          // Если ответ успешный, но нет редиректа, переходим на страницу приема
+          window.location.href = '/scheduling/appointment/' + appointmentId + '/';
+        } else {
+          return response.text().then(text => {
+            console.error('Error response:', text);
+            throw new Error('Ошибка при начале приема: ' + response.status);
+          });
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Ошибка при начале приема: ' + error.message);
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      });
+      
+      return false;
+    };
+    
+    // Также обрабатываем submit формы на случай, если кнопка type="submit"
+    startAppointmentForm.onsubmit = function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      startBtn.click();
+      return false;
+    };
+  } else {
+    console.warn('initChangeAppointmentForms: startAppointmentForm or startBtn not found');
+  }
+  
+  // Обработка кнопки "Сохранить" для изменения пациента
+  const saveChangePatientBtn = modalBody.querySelector('#save-change-patient-btn');
+  console.log('initChangeAppointmentForms: saveChangePatientBtn:', saveChangePatientBtn, 'form:', form);
+  let newSaveBtn = null;
+  if (saveChangePatientBtn && form) {
+    // Удаляем старые обработчики, клонируя элемент
+    newSaveBtn = saveChangePatientBtn.cloneNode(true);
+    saveChangePatientBtn.parentNode.replaceChild(newSaveBtn, saveChangePatientBtn);
+    
+    newSaveBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const formData = new FormData(form);
+      const action = form.action;
+      
+      // Добавляем action для изменения пациента
+      formData.append('action', 'change_patient');
+      
+      // Проверяем, активна ли вкладка создания нового пациента
+      const createPatientPanel = modalBody.querySelector('#create-patient-panel');
+      const selectPatientPanel = modalBody.querySelector('#select-patient-panel');
+      const isCreateNew = createPatientPanel && (createPatientPanel.classList.contains('active') || createPatientPanel.classList.contains('show'));
+      
+      // Удаляем все старые значения create_new_patient из FormData
+      const createNewPatientValues = formData.getAll('create_new_patient');
+      createNewPatientValues.forEach(function() {
+        formData.delete('create_new_patient');
+      });
+      
+      // Если создаем нового пациента, проверяем обязательные поля
+      if (isCreateNew) {
+        const requiredFields = ['lname', 'fname', 'bdate', 'snils', 'oms'];
+        let missingFields = [];
+        requiredFields.forEach(function(fieldName) {
+          const field = form.querySelector(`[name="${fieldName}"]`);
+          if (!field || !field.value || field.value.trim() === '') {
+            missingFields.push(fieldName);
+          }
+        });
+        if (missingFields.length > 0) {
+          alert('Пожалуйста, заполните все обязательные поля');
+          return false;
+        }
+        // Устанавливаем create_new_patient в true
+        formData.append('create_new_patient', 'true');
+      } else {
+        // Проверяем, выбран ли существующий пациент
+        const patientId = form.querySelector('#patientId');
+        if (!patientId || !patientId.value || patientId.value.trim() === '') {
+          alert('Пожалуйста, выберите пациента из списка');
+          const selectInput = form.querySelector('.searchable-select-input');
+          if (selectInput) {
+            selectInput.focus();
+            const dropdown = form.querySelector('.searchable-select-dropdown');
+            if (dropdown) {
+              dropdown.classList.add('show');
+            }
+          }
+          return false;
+        }
+        // Устанавливаем create_new_patient в false
+        formData.append('create_new_patient', 'false');
+        // Убеждаемся, что patient_id отправляется
+        if (patientId.value) {
+          formData.set('patient_id', patientId.value);
+        }
+      }
+      
+      // Логируем данные для отладки
+      console.log('Sending form data:', {
+        action: action,
+        create_new_patient: formData.get('create_new_patient'),
+        patient_id: formData.get('patient_id'),
+        isCreateNew: isCreateNew,
+        patientIdElement: form.querySelector('#patientId') ? {
+          exists: true,
+          value: form.querySelector('#patientId').value
+        } : { exists: false }
+      });
+      
+      // Выводим все данные формы для отладки
+      console.log('All form data entries:');
+      for (let pair of formData.entries()) {
+        console.log(pair[0] + ': ' + pair[1]);
+      }
+      
+      // Отключаем кнопку на время отправки
+      const btn = newSaveBtn;
+      btn.disabled = true;
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Сохраняем...';
+      
+      fetch(action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+        },
+        redirect: 'follow'
+      })
+      .then(response => {
+        if (response.redirected) {
+          window.location.href = response.url;
+        } else if (response.ok) {
+          window.location.reload();
+        } else {
+          return response.text().then(html => {
+            const modalBodyContent = document.querySelector('.modal-body-content');
+            if (modalBodyContent) {
+              modalBodyContent.innerHTML = html;
+              // Удаляем скрипты из нового HTML
+              const scripts = modalBodyContent.querySelectorAll('script');
+              scripts.forEach(function(script) {
+                script.parentNode.removeChild(script);
+              });
+              // Переинициализируем форму
+              if (typeof window.initChangeAppointmentForms === 'function') {
+                setTimeout(function() {
+                  window.initChangeAppointmentForms(modalBodyContent);
+                }, 100);
+              }
+            } else {
+              throw new Error('Ошибка при изменении пациента: ' + response.status);
+            }
+          });
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Ошибка при изменении пациента: ' + error.message);
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      });
+      
+      return false;
+    });
+  }
+  
+  // Обработка submit формы изменения пациента (fallback)
+  if (form) {
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (newSaveBtn) {
+        newSaveBtn.click();
+      }
+      return false;
+    });
+  }
+  
+  // Обработка кнопки "Отменить прием" в footer - открывает модальное окно подтверждения
+  const cancelAppointmentTriggerBtn = modalBody.closest('.modal').querySelector('#cancel-appointment-trigger-btn') || document.querySelector('#cancel-appointment-trigger-btn');
+  console.log('initChangeAppointmentForms: cancelAppointmentTriggerBtn:', cancelAppointmentTriggerBtn);
+  
+  if (cancelAppointmentTriggerBtn) {
+    // Удаляем старые обработчики, клонируя элемент
+    const newTriggerBtn = cancelAppointmentTriggerBtn.cloneNode(true);
+    cancelAppointmentTriggerBtn.parentNode.replaceChild(newTriggerBtn, cancelAppointmentTriggerBtn);
+    
+    newTriggerBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // Ищем модальное окно подтверждения (может быть в загруженном HTML или в document)
+      let cancelAppointmentConfirmModal = document.getElementById('cancelAppointmentConfirmModal');
+      
+      // Если не найдено в document, ищем в modalBody
+      if (!cancelAppointmentConfirmModal) {
+        cancelAppointmentConfirmModal = modalBody.querySelector('#cancelAppointmentConfirmModal');
+      }
+      
+      // Если все еще не найдено, ищем в родительском модальном окне
+      if (!cancelAppointmentConfirmModal) {
+        const parentModal = modalBody.closest('.modal');
+        if (parentModal) {
+          cancelAppointmentConfirmModal = parentModal.querySelector('#cancelAppointmentConfirmModal');
+        }
+      }
+      
+      console.log('cancelAppointmentConfirmModal found:', !!cancelAppointmentConfirmModal);
+      
+      if (cancelAppointmentConfirmModal) {
+        // Сохраняем ссылку на текущее модальное окно
+        const currentModalElement = document.getElementById('changeAppointmentModal');
+        const currentModal = bootstrap.Modal.getInstance(currentModalElement);
+        
+        // Создаем или получаем экземпляр модального окна подтверждения
+        let confirmModal = bootstrap.Modal.getInstance(cancelAppointmentConfirmModal);
+        if (!confirmModal) {
+          confirmModal = new bootstrap.Modal(cancelAppointmentConfirmModal);
+        }
+        
+        // При закрытии модального окна подтверждения (если не подтвердили), открываем обратно основное
+        const onConfirmModalHidden = function() {
+          if (currentModal && currentModalElement) {
+            // Небольшая задержка для корректного отображения
+            setTimeout(function() {
+              currentModal.show();
+            }, 100);
+          }
+        };
+        
+        cancelAppointmentConfirmModal.addEventListener('hidden.bs.modal', onConfirmModalHidden, { once: true });
+        
+        // Показываем модальное окно подтверждения
+        confirmModal.show();
+      } else {
+        console.error('Модальное окно подтверждения не найдено');
+        alert('Ошибка: модальное окно подтверждения не найдено');
+      }
+      
+      return false;
+    });
+  }
+  
+  // Обработка кнопки подтверждения отмены в модальном окне
+  const cancelAppointmentConfirmBtn = document.querySelector('#cancel-appointment-confirm-btn');
+  const cancelAppointmentForm = document.querySelector('#cancel-appointment-form');
+  console.log('initChangeAppointmentForms: cancelAppointmentConfirmBtn:', cancelAppointmentConfirmBtn, 'cancelAppointmentForm:', cancelAppointmentForm);
+  
+  if (cancelAppointmentConfirmBtn && cancelAppointmentForm) {
+    // Удаляем старые обработчики, клонируя элемент
+    const newConfirmBtn = cancelAppointmentConfirmBtn.cloneNode(true);
+    cancelAppointmentConfirmBtn.parentNode.replaceChild(newConfirmBtn, cancelAppointmentConfirmBtn);
+    
+    newConfirmBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const formData = new FormData(cancelAppointmentForm);
+      const action = cancelAppointmentForm.action;
+      
+      // Отключаем кнопку на время отправки
+      const btn = newConfirmBtn;
+      btn.disabled = true;
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Отменяем...';
+      
+      fetch(action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+        },
+        redirect: 'follow'
+      })
+      .then(response => {
+        if (response.redirected) {
+          window.location.href = response.url;
+        } else if (response.ok) {
+          window.location.reload();
+        } else {
+          throw new Error('Ошибка при отмене приема: ' + response.status);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Ошибка при отмене приема: ' + error.message);
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      });
+      
+      return false;
+    });
+  }
+  
+  // Обработка переключения вкладок для показа/скрытия кнопки "Сохранить"
+  const changePatientTab = modalBody.querySelector('#change-patient-tab');
+  const startAppointmentTab = modalBody.querySelector('#start-appointment-tab');
+  
+  // Используем newSaveBtn если он существует, иначе ищем элемент заново
+  const saveBtnForTabs = newSaveBtn || modalBody.querySelector('#save-change-patient-btn');
+  
+  if (changePatientTab && saveBtnForTabs) {
+    changePatientTab.addEventListener('shown.bs.tab', function() {
+      saveBtnForTabs.style.display = 'inline-block';
+    });
+  }
+  
+  if (startAppointmentTab && saveBtnForTabs) {
+    startAppointmentTab.addEventListener('shown.bs.tab', function() {
+      saveBtnForTabs.style.display = 'none';
+    });
+  }
+  
+  console.log('initChangeAppointmentForms completed');
+};
+
+// Функция инициализации формы записи на слот (заменяет initBookSlotForm из book_slot.html)
+window.initBookSlotForm = function() {
+  const form = document.getElementById('book-slot-form');
+  const submitBtn = document.getElementById('book-slot-submit-btn');
+  const createNewInput = document.getElementById('createNewPatient');
+  const createNewInputHidden = document.getElementById('createNewPatientHidden');
+  const selectTab = document.getElementById('select-tab');
+  const createTab = document.getElementById('create-tab');
+  
+  if (!form || !submitBtn) {
+    console.error('Form or submit button not found', { form: !!form, submitBtn: !!submitBtn });
+    return;
+  }
+  
+  console.log('Initializing book slot form');
+  
+  // Удаляем старые обработчики onclick, если они есть
+  submitBtn.onclick = null;
+  form.onsubmit = null;
+  
+  // Обработка переключения вкладок
+  if (selectTab) {
+    selectTab.addEventListener('shown.bs.tab', function() {
+      if (createNewInput) createNewInput.value = 'false';
+      if (createNewInputHidden) createNewInputHidden.value = 'false';
+    });
+  }
+  if (createTab) {
+    createTab.addEventListener('shown.bs.tab', function() {
+      if (createNewInput) createNewInput.value = 'true';
+      if (createNewInputHidden) createNewInputHidden.value = 'true';
+    });
+  }
+  
+  // Обработка кнопки "Записать"
+  submitBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    console.log('Submit button clicked');
+    
+    // Сохраняем ссылку на кнопку
+    const btn = this;
+    const originalText = btn.innerHTML;
+    
+    // Проверка выбора пациента
+    const patientId = form.querySelector('#patientId') || form.querySelector('input[name="patient_id"]');
+    const createNewPatient = form.querySelector('#createNewPatient');
+    const createNewPatientHidden = form.querySelector('#createNewPatientHidden');
+    
+    // Определяем, создается ли новый пациент (проверяем активную вкладку)
+    const createTabEl = document.getElementById('create-tab');
+    const isCreateNew = createTabEl && createTabEl.classList.contains('active');
+    
+    console.log('Patient ID:', patientId ? patientId.value : 'not found');
+    console.log('Create new:', isCreateNew);
+    console.log('Patient ID element:', patientId);
+    
+    // Устанавливаем правильное значение для create_new_patient
+    if (isCreateNew) {
+      if (createNewPatient) createNewPatient.value = 'true';
+      if (createNewPatientHidden) createNewPatientHidden.value = 'true';
+    } else {
+      if (createNewPatient) createNewPatient.value = 'false';
+      if (createNewPatientHidden) createNewPatientHidden.value = 'false';
+    }
+    
+    if (!isCreateNew) {
+      if (!patientId || !patientId.value || patientId.value.trim() === '') {
+        alert('Пожалуйста, выберите пациента из списка');
+        const selectInput = form.querySelector('.searchable-select-input');
+        if (selectInput) {
+          selectInput.focus();
+          const dropdown = form.querySelector('.searchable-select-dropdown');
+          if (dropdown) {
+            dropdown.classList.add('show');
+          }
+        }
+        return false;
+      }
+    }
+    
+    const formData = new FormData(form);
+    // Используем action формы, который уже содержит правильный URL
+    const action = form.getAttribute('action') || form.action;
+    
+    if (!action) {
+      console.error('Form action not found');
+      alert('Ошибка: не указан URL для отправки формы');
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+      return false;
+    }
+    
+    console.log('Submitting form to:', action);
+    console.log('Form data entries:');
+    for (let [key, value] of formData.entries()) {
+      console.log(`  ${key}: ${value}`);
+    }
+    
+    // Отключаем кнопку на время отправки
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Записываем...';
+    
+    fetch(action, {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+      },
+      redirect: 'follow'
+    })
+    .then(response => {
+      console.log('Response status:', response.status, 'redirected:', response.redirected, 'url:', response.url);
+      
+      // Закрываем модальное окно
+      const modalElement = document.getElementById('bookSlotModal');
+      if (modalElement && typeof bootstrap !== 'undefined') {
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) {
+          modal.hide();
+        }
+      }
+      
+      // Проверяем статус ответа
+      if (response.status >= 200 && response.status < 300) {
+        // Успешный ответ - всегда перезагружаем страницу для обновления статуса
+        console.log('Appointment created successfully, reloading page...');
+        // Небольшая задержка для закрытия модального окна
+        setTimeout(function() {
+          // Если есть редирект, переходим по новому URL, иначе просто перезагружаем
+          if (response.redirected && response.url) {
+            window.location.href = response.url;
+          } else {
+            window.location.reload();
+          }
+        }, 150);
+        return;
+      } else if (response.status >= 300 && response.status < 400) {
+        // Редирект - переходим по новому URL
+        if (response.redirected && response.url) {
+          window.location.href = response.url;
+        } else {
+          window.location.reload();
+        }
+        return;
+      } else {
+        // Ошибка - показываем форму с ошибками
+        return response.text().then(html => {
+          const modalBodyContent = document.querySelector('.modal-body-content');
+          if (modalBodyContent) {
+            modalBodyContent.innerHTML = html;
+            // Удаляем скрипты из нового HTML
+            const scripts = modalBodyContent.querySelectorAll('script');
+            scripts.forEach(function(script) {
+              script.parentNode.removeChild(script);
+            });
+            // Переинициализируем форму
+            if (window.initBookSlotForm) {
+              setTimeout(window.initBookSlotForm, 100);
+            }
+            // Показываем модальное окно снова
+            const modalElement = document.getElementById('bookSlotModal');
+            if (modalElement && typeof bootstrap !== 'undefined') {
+              const modal = new bootstrap.Modal(modalElement);
+              modal.show();
+            }
+          } else {
+            throw new Error('Ошибка при записи на прием: ' + response.status);
+          }
+        });
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('Ошибка при записи на прием: ' + error.message);
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+    });
+    
+    return false;
+  });
+  
+  // Также обрабатываем submit формы на случай, если кнопка type="submit"
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('Form submit event');
+    submitBtn.click();
+    return false;
+  });
+  
+  console.log('Book slot form initialized');
+};
+
+// Инициализация поиска пациентов
+window.initPatientSelect = function(container) {
+  console.log('initPatientSelect called with container:', container);
+  
+  if (!container) {
+    console.warn('Container is null or undefined');
+    return;
+  }
+  
+  const selectInput = container.querySelector('.searchable-select-input');
+  if (!selectInput) {
+    console.warn('selectInput not found in container');
+    return;
+  }
+  
+  // Проверяем, не инициализирован ли уже этот контейнер
+  if (selectInput.dataset.initialized === 'true') {
+    console.log('Patient select already initialized, skipping');
+    return;
+  }
+  
+  const hiddenInput = container.querySelector('input[type="hidden"][id$="patientId"], input[type="hidden"][name="patient_id"]');
+  const dropdown = container.querySelector('.searchable-select-dropdown');
+  const searchInput = container.querySelector('#patientSearch, .searchable-select-search input');
+  const optionsContainer = container.querySelector('#patientOptions') || 
+                          (container.querySelector('.searchable-select-option') ? container.querySelector('.searchable-select-option').parentElement : null);
+  
+  console.log('Elements found:', {
+    selectInput: !!selectInput,
+    hiddenInput: !!hiddenInput,
+    dropdown: !!dropdown,
+    searchInput: !!searchInput,
+    optionsContainer: !!optionsContainer
+  });
+  
+  if (!selectInput || !hiddenInput || !dropdown || !searchInput || !optionsContainer) {
+    console.warn('Some required elements not found', {
+      selectInput: !!selectInput,
+      hiddenInput: !!hiddenInput,
+      dropdown: !!dropdown,
+      searchInput: !!searchInput,
+      optionsContainer: !!optionsContainer
+    });
+    return;
+  }
+  
+  // Помечаем как инициализированный
+  selectInput.dataset.initialized = 'true';
+  
+  let allOptions = Array.from(optionsContainer.querySelectorAll('.searchable-select-option'));
+  
+  function filterOptions(query) {
+    const lowerQuery = query.toLowerCase();
+    allOptions.forEach(option => {
+      const text = option.getAttribute('data-text');
+      if (text) {
+        const textLower = text.toLowerCase();
+        option.style.display = textLower.includes(lowerQuery) ? 'block' : 'none';
+      }
+    });
+  }
+  
+  function selectOption(option) {
+    const value = option.getAttribute('data-value');
+    const text = option.getAttribute('data-text');
+    if (hiddenInput && value) {
+      hiddenInput.value = value;
+      console.log('Patient selected, ID set to:', value);
+    }
+    if (selectInput && text) {
+      selectInput.value = text.split('(')[0].trim();
+    }
+    if (dropdown) {
+      dropdown.classList.remove('show');
+    }
+    allOptions.forEach(opt => opt.classList.remove('selected'));
+    option.classList.add('selected');
+    
+    // Триггерим событие изменения для других обработчиков
+    if (hiddenInput) {
+      hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  }
+  
+  // Обработчик клика на поле ввода
+  const clickHandler = function(e) {
+    e.stopPropagation();
+    if (dropdown) {
+      dropdown.classList.toggle('show');
+      if (dropdown.classList.contains('show') && searchInput) {
+        searchInput.focus();
+      }
+    }
+  };
+  selectInput.addEventListener('click', clickHandler);
+  
+  // Обработчик поиска
+  const searchHandler = function(e) {
+    filterOptions(e.target.value);
+  };
+  searchInput.addEventListener('input', searchHandler);
+  
+  // Обработчики клика на опции
+  allOptions.forEach(option => {
+    const optionClickHandler = function() {
+      selectOption(this);
+    };
+    option.addEventListener('click', optionClickHandler);
+  });
+  
+  // Обработчик клика вне контейнера для закрытия выпадающего списка
+  const documentClickHandler = function(e) {
+    if (!container.contains(e.target)) {
+      if (dropdown) {
+        dropdown.classList.remove('show');
+      }
+    }
+  };
+  document.addEventListener('click', documentClickHandler);
+  
+  console.log('Patient select initialized successfully');
+}
+
+// Инициализация обработчиков после загрузки DOM
+document.addEventListener('DOMContentLoaded', function() {
+  // Обработка формы начала приема
+  const startAppointmentForm = document.getElementById('start-appointment-form');
+  if (startAppointmentForm) {
+    startAppointmentForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const form = this;
+      const formData = new FormData(form);
+      const appointmentId = formData.get('appointment_id');
+      
+      if (!appointmentId) {
+        alert('Ошибка: не указан ID приема');
+        return;
+      }
+      
+      // Устанавливаем action формы перед отправкой
+      const statusUrl = '/scheduling/appointment/' + appointmentId + '/status/';
+      
+      // Отправляем POST запрос
+      fetch(statusUrl, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+        },
+        redirect: 'follow'
+      })
+      .then(response => {
+        if (response.redirected) {
+          window.location.href = response.url;
+        } else if (response.ok) {
+          // Если ответ успешный, но нет редиректа, переходим на страницу приема
+          window.location.href = '/scheduling/appointment/' + appointmentId + '/';
+        } else {
+          return response.text().then(text => {
+            throw new Error('Ошибка при обновлении статуса: ' + text);
+          });
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Произошла ошибка при начале приема. Попробуйте обновить страницу.');
+      });
+    });
+  }
+});
+</script>
+
+<!-- Модальное окно для записи на свободный слот -->
+<div class="modal fade" id="bookSlotModal" tabindex="-1" aria-labelledby="bookSlotModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="bookSlotModalLabel">Запись на прием</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body modal-body-content">
+        <!-- Контент загружается через AJAX -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно для изменения забронированного приема -->
+<div class="modal fade" id="changeAppointmentModal" tabindex="-1" aria-labelledby="changeAppointmentModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="changeAppointmentModalLabel">Изменить запись</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body modal-body-content">
+        <!-- Контент загружается через AJAX -->
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

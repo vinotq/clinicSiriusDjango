@@ -1,0 +1,282 @@
+{% extends 'base.html' %}
+
+{% block title %}Кабинет пациента | Clinic Sirius{% endblock %}
+
+{% block content %}
+<section class="container py-5">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+      <h2 class="fw-bold mb-0">Мои записи</h2>
+      <p class="text-muted mb-0">Управляйте визитами, семьёй и профилем в одном месте.</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <a class="btn btn-outline-primary" href="{% url 'accounts:settings' %}">Настройки аккаунта</a>
+      <a class="btn btn-primary" href="{% url 'patients:patient_manage_html' %}">Семья</a>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="widget">
+        <div class="widget-header">
+          <h5 class="mb-0">Ближайшие</h5>
+          <div class="widget-icon primary"><i class="bi bi-clock"></i></div>
+        </div>
+        <div class="h4 mb-0">{{ upcoming_count|default:0 }}</div>
+        <small class="text-muted">Запланированные визиты</small>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="widget">
+        <div class="widget-header">
+          <h5 class="mb-0">Завершено</h5>
+          <div class="widget-icon success"><i class="bi bi-check-circle"></i></div>
+        </div>
+        <div class="h4 mb-0">{{ completed_count|default:0 }}</div>
+        <small class="text-muted">Приёмы завершены</small>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="widget">
+        <div class="widget-header">
+          <h5 class="mb-0">Семья</h5>
+          <div class="widget-icon info"><i class="bi bi-people"></i></div>
+        </div>
+        <div class="h4 mb-0">{{ family_count|default:0 }}</div>
+        <small class="text-muted">Членов семьи</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h5 class="fw-semibold mb-0">Ближайшие приёмы</h5>
+                <small class="text-muted">Ваши записи и записи членов семьи</small>
+              </div>
+              <small class="text-muted">Сегодня: {{ now|date:"d.m.Y" }}</small>
+            </div>
+          {% if request.GET.success %}
+          <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+            {{ request.GET.success }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+          {% endif %}
+          {% if upcoming_appointments %}
+            <div class="list-group list-group-flush">
+              {% for appt in upcoming_appointments %}
+                <div class="list-group-item">
+                  <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                      <!-- Специализация с иконкой -->
+                      <h5 class="mb-2 fw-bold text-dark">
+                        {% if "хирург" in appt.doctor.specialization.name|lower or "хирургия" in appt.doctor.specialization.name|lower %}
+                          <i class="bi bi-duffle me-2"></i>
+                        {% elif "офтальмолог" in appt.doctor.specialization.name|lower or "офтальмология" in appt.doctor.specialization.name|lower %}
+                          <i class="bi bi-eye me-2"></i>
+                        {% elif "кардиолог" in appt.doctor.specialization.name|lower or "кардиология" in appt.doctor.specialization.name|lower %}
+                          <i class="bi bi-heart-pulse me-2"></i>
+                        {% elif "невролог" in appt.doctor.specialization.name|lower or "неврология" in appt.doctor.specialization.name|lower %}
+                          <i class="bi bi-person me-2"></i>
+                        {% elif "педиатр" in appt.doctor.specialization.name|lower or "педиатрия" in appt.doctor.specialization.name|lower %}
+                          <i class="bi bi-person-walking me-2"></i>
+                        {% elif "дерматолог" in appt.doctor.specialization.name|lower or "дерматология" in appt.doctor.specialization.name|lower %}
+                          <i class="bi bi-droplet me-2"></i>
+                        {% elif "психиатр" in appt.doctor.specialization.name|lower or "психиатрия" in appt.doctor.specialization.name|lower %}
+                          <i class="bi bi-emoji-grimace me-2"></i>
+                        {% elif "ортопед" in appt.doctor.specialization.name|lower or "ортопедия" in appt.doctor.specialization.name|lower %}
+                          <i class="bi bi-universal-access me-2"></i>
+                        {% elif "эндокринолог" in appt.doctor.specialization.name|lower or "эндокринология" in appt.doctor.specialization.name|lower %}
+                          <i class="bi bi-capsule me-2"></i>
+                        {% elif "отоларинголог" in appt.doctor.specialization.name|lower or "лор" in appt.doctor.specialization.name|lower %}
+                          <i class="bi bi-earbuds me-2"></i>
+                        {% elif "стоматолог" in appt.doctor.specialization.name|lower or "стоматология" in appt.doctor.specialization.name|lower %}
+                          <i class="bi bi-tooth me-2"></i>
+                        {% elif "гастроэнтеролог" in appt.doctor.specialization.name|lower or "гастроэнтерология" in appt.doctor.specialization.name|lower %}
+                          <i class="bi bi-stomach me-2"></i>
+                        {% elif "семейн" in appt.doctor.specialization.name|lower %}
+                          <i class="bi bi-people me-2"></i>
+                        {% elif "гинеколог" in appt.doctor.specialization.name|lower or "гинекология" in appt.doctor.specialization.name|lower %}
+                          <i class="bi bi-gender-female me-2"></i>
+                        {% elif "уролог" in appt.doctor.specialization.name|lower or "урология" in appt.doctor.specialization.name|lower %}
+                          <i class="bi bi-gender-male me-2"></i>
+                        {% elif "терапевт" in appt.doctor.specialization.name|lower or "терапия" in appt.doctor.specialization.name|lower %}
+                          <i class="bi bi-prescription2 me-2"></i>
+                        {% elif "диагностик" in appt.doctor.specialization.name|lower %}
+                          <i class="bi bi-clipboard2-pulse me-2"></i>
+                        {% else %}
+                          <i class="bi bi-hospital me-2"></i>
+                        {% endif %}
+                        {{ appt.doctor.specialization.name }}
+                      </h5>
+                      
+                      <!-- Дата и время -->
+                      <div class="mb-2">
+                        <span class="fw-bold me-2" style="color: #000;">
+                          <i class="bi bi-calendar"></i> {{ appt.date|date:"d.m.Y" }}
+                        </span>
+                        <span class="fw-bold" style="color: #000;">
+                          <i class="bi bi-clock"></i> {{ appt.date|time:"H:i" }}
+                        </span>
+                      </div>
+                      
+                      <!-- Врач -->
+                      <p class="mb-2">
+                        <span class="text-muted small">Врач:</span>
+                        <span class="fw-semibold ms-1">
+                          {{ appt.doctor.lname }} {{ appt.doctor.fname }}
+                          {% if appt.doctor.tname %}{{ appt.doctor.tname }}{% endif %}
+                        </span>
+                      </p>
+                      
+                      <!-- Пациент с бейджем -->
+                      <p class="mb-0">
+                        <span class="text-muted small">Пациент:</span>
+                        <span class="fw-semibold ms-1">
+                          {{ appt.patient.lname }} {{ appt.patient.fname }}
+                          {% if appt.patient.tname %}{{ appt.patient.tname }}{% endif %}
+                        </span>
+                        {% if appt.patient != patient %}
+                          <span class="badge bg-light text-primary ms-2">Член семьи</span>
+                        {% endif %}
+                      </p>
+                    </div>
+                    <div class="d-flex flex-column gap-2 ms-3">
+                      <form method="post" action="{% url 'scheduling:cancel_appointment' appt.pk %}" class="d-inline" onsubmit="return confirm('Вы уверены, что хотите отменить эту запись?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                          <i class="bi bi-x-circle"></i> Отменить
+                        </button>
+                      </form>
+                      <a href="{% url 'scheduling:update_appointment_patient' appt.pk %}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-pencil"></i> Изменить
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="text-muted mb-0">Запланированные визиты отсутствуют.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- История записей -->
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+            <div>
+              <h5 class="fw-semibold mb-0">История записей</h5>
+              <small class="text-muted">Завершенные и прошедшие записи</small>
+            </div>
+            <form method="get" class="d-flex gap-2">
+              <input type="text" name="search" class="form-control form-control-sm" placeholder="Поиск по врачу или пациенту..." value="{{ search_query|default:'' }}" style="min-width: 250px;">
+              <button type="submit" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-search"></i>
+              </button>
+              {% if search_query %}
+              <a href="{% url 'index' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-x"></i>
+              </a>
+              {% endif %}
+            </form>
+          </div>
+          {% if completed_appointments %}
+            <div class="list-group list-group-flush">
+              {% for appt in completed_appointments %}
+                <div class="list-group-item appointment-row" style="cursor: pointer;" onclick="window.location.href='{% url 'scheduling:appointment_info' appt.pk %}'" onmouseover="this.style.backgroundColor='#f8f9fa'" onmouseout="this.style.backgroundColor=''">
+                  <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                      <!-- Специализация с иконкой -->
+                      <h5 class="mb-2 fw-bold text-dark">
+                        {% if "хирург" in appt.doctor.specialization.name|lower or "хирургия" in appt.doctor.specialization.name|lower %}
+                          <i class="bi bi-duffle me-2"></i>
+                        {% elif "офтальмолог" in appt.doctor.specialization.name|lower or "офтальмология" in appt.doctor.specialization.name|lower %}
+                          <i class="bi bi-eye me-2"></i>
+                        {% elif "кардиолог" in appt.doctor.specialization.name|lower or "кардиология" in appt.doctor.specialization.name|lower %}
+                          <i class="bi bi-heart-pulse me-2"></i>
+                        {% elif "невролог" in appt.doctor.specialization.name|lower or "неврология" in appt.doctor.specialization.name|lower %}
+                          <i class="bi bi-person me-2"></i>
+                        {% elif "педиатр" in appt.doctor.specialization.name|lower or "педиатрия" in appt.doctor.specialization.name|lower %}
+                          <i class="bi bi-person-walking me-2"></i>
+                        {% elif "дерматолог" in appt.doctor.specialization.name|lower or "дерматология" in appt.doctor.specialization.name|lower %}
+                          <i class="bi bi-droplet me-2"></i>
+                        {% elif "психиатр" in appt.doctor.specialization.name|lower or "психиатрия" in appt.doctor.specialization.name|lower %}
+                          <i class="bi bi-emoji-grimace me-2"></i>
+                        {% elif "ортопед" in appt.doctor.specialization.name|lower or "ортопедия" in appt.doctor.specialization.name|lower %}
+                          <i class="bi bi-universal-access me-2"></i>
+                        {% elif "эндокринолог" in appt.doctor.specialization.name|lower or "эндокринология" in appt.doctor.specialization.name|lower %}
+                          <i class="bi bi-capsule me-2"></i>
+                        {% elif "отоларинголог" in appt.doctor.specialization.name|lower or "лор" in appt.doctor.specialization.name|lower %}
+                          <i class="bi bi-earbuds me-2"></i>
+                        {% elif "стоматолог" in appt.doctor.specialization.name|lower or "стоматология" in appt.doctor.specialization.name|lower %}
+                          <i class="bi bi-tooth me-2"></i>
+                        {% elif "гастроэнтеролог" in appt.doctor.specialization.name|lower or "гастроэнтерология" in appt.doctor.specialization.name|lower %}
+                          <i class="bi bi-stomach me-2"></i>
+                        {% elif "семейн" in appt.doctor.specialization.name|lower %}
+                          <i class="bi bi-people me-2"></i>
+                        {% elif "гинеколог" in appt.doctor.specialization.name|lower or "гинекология" in appt.doctor.specialization.name|lower %}
+                          <i class="bi bi-gender-female me-2"></i>
+                        {% elif "уролог" in appt.doctor.specialization.name|lower or "урология" in appt.doctor.specialization.name|lower %}
+                          <i class="bi bi-gender-male me-2"></i>
+                        {% elif "терапевт" in appt.doctor.specialization.name|lower or "терапия" in appt.doctor.specialization.name|lower %}
+                          <i class="bi bi-prescription2 me-2"></i>
+                        {% elif "диагностик" in appt.doctor.specialization.name|lower %}
+                          <i class="bi bi-clipboard2-pulse me-2"></i>
+                        {% else %}
+                          <i class="bi bi-hospital me-2"></i>
+                        {% endif %}
+                        {{ appt.doctor.specialization.name }}
+                      </h5>
+                      
+                      <!-- Дата и время -->
+                      <div class="mb-2">
+                        <span class="fw-bold me-2" style="color: #000;">
+                          <i class="bi bi-calendar"></i> {{ appt.date|date:"d.m.Y" }}
+                        </span>
+                        <span class="fw-bold" style="color: #000;">
+                          <i class="bi bi-clock"></i> {{ appt.date|time:"H:i" }}
+                        </span>
+                      </div>
+                      
+                      <!-- Врач -->
+                      <p class="mb-2">
+                        <span class="text-muted small">Врач:</span>
+                        <span class="fw-semibold ms-1">
+                          {{ appt.doctor.lname }} {{ appt.doctor.fname }}
+                          {% if appt.doctor.tname %}{{ appt.doctor.tname }}{% endif %}
+                        </span>
+                      </p>
+                      
+                      <!-- Пациент с бейджем -->
+                      <p class="mb-0">
+                        <span class="text-muted small">Пациент:</span>
+                        <span class="fw-semibold ms-1">
+                          {{ appt.patient.lname }} {{ appt.patient.fname }}
+                          {% if appt.patient.tname %}{{ appt.patient.tname }}{% endif %}
+                        </span>
+                        {% if appt.patient != patient %}
+                          <span class="badge bg-light text-primary ms-2">Член семьи</span>
+                        {% endif %}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="text-muted mb-0">История записей пуста.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+

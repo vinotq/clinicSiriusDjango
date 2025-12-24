@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}Удаление аккаунта | Clinic Sirius{% endblock %}
+
+{% block content %}
+<section class="container py-5" style="max-width: 720px;">
+  <div class="card">
+    <div class="card-body">
+      <h3 class="fw-bold mb-2 text-danger">Удалить аккаунт</h3>
+      <p class="text-muted mb-4">Действие необратимо: данные учётной записи и сессия будут удалены.</p>
+      {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+      {% endif %}
+      <form method="post" class="d-grid gap-3">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-danger">Подтвердить удаление</button>
+        <a href="{% url 'accounts:settings' %}" class="btn btn-outline-secondary">Отмена</a>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}
+

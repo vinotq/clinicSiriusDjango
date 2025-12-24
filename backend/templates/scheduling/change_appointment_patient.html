@@ -1,0 +1,183 @@
+{% load static %}
+<div>
+  {% if error %}
+  <div class="alert alert-danger">{{ error }}</div>
+  {% endif %}
+  
+  <div class="mb-3">
+    <p class="mb-2"><strong>Текущий пациент:</strong> {{ appointment.patient.lname }} {{ appointment.patient.fname }}</p>
+    <p class="mb-2"><strong>Время:</strong> {{ appointment.slot.time_from|time:"H:i" }} – {{ appointment.slot.time_to|time:"H:i" }}</p>
+    <p class="mb-3"><strong>Кабинет:</strong> {{ appointment.slot.room.room_number }}</p>
+  </div>
+  
+  <div class="mb-3">
+    <ul class="nav nav-tabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="start-appointment-tab" data-bs-toggle="tab" data-bs-target="#start-appointment-panel" type="button" role="tab">
+          Начать прием
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="change-patient-tab" data-bs-toggle="tab" data-bs-target="#change-patient-panel" type="button" role="tab">
+          Изменить пациента
+        </button>
+      </li>
+    </ul>
+    
+    <div class="tab-content mt-3">
+      <!-- Начать прием -->
+      <div class="tab-pane fade show active" id="start-appointment-panel" role="tabpanel">
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle"></i> Нажмите кнопку ниже, чтобы начать прием для пациента <strong>{{ appointment.patient.lname }} {{ appointment.patient.fname }}</strong>
+        </div>
+        <form method="post" id="start-appointment-form" action="{% url 'scheduling:update_status' appointment.pk %}" data-appointment-id="{{ appointment.pk }}">
+          {% csrf_token %}
+          <input type="hidden" name="status" value="in_progress">
+          <div class="d-grid gap-2">
+            <button type="button" class="btn btn-primary btn-lg" id="start-appointment-submit-btn">
+              <i class="bi bi-play-circle"></i> Начать прием
+            </button>
+          </div>
+        </form>
+      </div>
+      
+      <!-- Изменение пациента -->
+      <div class="tab-pane fade" id="change-patient-panel" role="tabpanel">
+        <form method="post" id="change-appointment-form" action="{% url 'scheduling:change_appointment_patient' appointment.id %}">
+          {% csrf_token %}
+        <div class="mb-3">
+          <ul class="nav nav-pills mb-3" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="select-patient-tab" data-bs-toggle="tab" data-bs-target="#select-patient-panel" type="button" role="tab">
+                Выбрать пациента
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="create-patient-tab" data-bs-toggle="tab" data-bs-target="#create-patient-panel" type="button" role="tab">
+                Создать нового
+              </button>
+            </li>
+          </ul>
+          
+          <div class="tab-content">
+            <!-- Выбор существующего пациента -->
+            <div class="tab-pane fade show active" id="select-patient-panel" role="tabpanel">
+              <div class="mb-3">
+                <label class="form-label">Выберите пациента</label>
+                <div class="searchable-select-wrapper">
+                  <input type="text" class="form-control searchable-select-input" id="patientSelect" 
+                         placeholder="Начните вводить ФИО пациента..." 
+                         autocomplete="off" readonly>
+                  <input type="hidden" name="patient_id" id="patientId">
+                  <input type="hidden" name="create_new_patient" value="false" id="createNewPatient">
+                  <div class="searchable-select-dropdown" id="patientDropdown">
+                    <div class="searchable-select-search">
+                      <input type="text" placeholder="Поиск по ФИО, email..." id="patientSearch" autocomplete="off">
+                    </div>
+                    <div id="patientOptions">
+                      {% for p in all_patients %}
+                        <div class="searchable-select-option" data-value="{{ p.pk }}" 
+                             data-text="{{ p.lname }} {{ p.fname }} {% if p.tname %}{{ p.tname }} {% endif %}{% if p.email %}({{ p.email }}){% endif %}">
+                          {{ p.lname }} {{ p.fname }}{% if p.tname %} {{ p.tname }}{% endif %}{% if p.email %} ({{ p.email }}){% endif %}
+                        </div>
+                      {% endfor %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Создание нового пациента -->
+            <div class="tab-pane fade" id="create-patient-panel" role="tabpanel">
+              <input type="hidden" name="create_new_patient" value="true">
+              <div class="row">
+                <div class="col-md-4 mb-3">
+                  <label class="form-label">Фамилия <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="lname" required>
+                </div>
+                <div class="col-md-4 mb-3">
+                  <label class="form-label">Имя <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="fname" required>
+                </div>
+                <div class="col-md-4 mb-3">
+                  <label class="form-label">Отчество</label>
+                  <input type="text" class="form-control" name="tname">
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-4 mb-3">
+                  <label class="form-label">Дата рождения <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="bdate" placeholder="дд.мм.гггг" required>
+                </div>
+                <div class="col-md-4 mb-3">
+                  <label class="form-label">Телефон</label>
+                  <input type="text" class="form-control" name="phone_number" placeholder="+7 (999) 999-99-99">
+                </div>
+                <div class="col-md-4 mb-3">
+                  <label class="form-label">Email</label>
+                  <input type="email" class="form-control" name="email">
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">СНИЛС <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="snils" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">ОМС <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="oms" required>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="d-flex gap-2 justify-content-end mt-3">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+          <button type="button" class="btn btn-primary" id="save-change-patient-btn">Сохранить</button>
+        </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  
+  <div class="modal-footer mt-4 d-flex justify-content-between">
+    <button type="button" class="btn btn-danger" id="cancel-appointment-trigger-btn">
+      <i class="bi bi-x-circle"></i> Отменить прием
+    </button>
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+  </div>
+</div>
+
+<!-- Модальное окно подтверждения отмены приема -->
+<div class="modal fade" id="cancelAppointmentConfirmModal" tabindex="-1" aria-labelledby="cancelAppointmentConfirmModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title" id="cancelAppointmentConfirmModalLabel">
+          <i class="bi bi-exclamation-triangle text-warning me-2"></i>Подтверждение отмены
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-warning mb-0">
+          <p class="mb-2">Вы уверены, что хотите отменить прием для пациента:</p>
+          <p class="mb-0"><strong>{{ appointment.patient.lname }} {{ appointment.patient.fname }}</strong></p>
+          <p class="mb-0 text-muted small mt-2">
+            <i class="bi bi-clock"></i> {{ appointment.slot.time_from|time:"H:i" }} – {{ appointment.slot.time_to|time:"H:i" }}
+            <span class="ms-3"><i class="bi bi-door-open"></i> Кабинет {{ appointment.slot.room.room_number }}</span>
+          </p>
+        </div>
+        <form method="post" id="cancel-appointment-form" action="{% url 'scheduling:update_status' appointment.pk %}">
+          {% csrf_token %}
+          <input type="hidden" name="status" value="cancelled">
+        </form>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Нет, оставить</button>
+        <button type="button" class="btn btn-danger" id="cancel-appointment-confirm-btn">
+          <i class="bi bi-x-circle"></i> Да, отменить прием
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
