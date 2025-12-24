@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Прием — {{ appointment.patient.lname }} {{ appointment.patient.fname }} | Clinic Sirius{% endblock %}
+{% block title %}Прием - {{ appointment.patient.lname }} {{ appointment.patient.fname }} | Clinic Sirius{% endblock %}
 
 {% block extra_head %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -471,7 +471,7 @@
   <form method="post" id="appointment-form" action="{% url 'scheduling:update_status' appointment.pk %}" {% if appointment.status == 'completed' or appointment.status == 'in_progress' %}style="display: none;"{% endif %}>
     {% csrf_token %}
     
-    <!-- Диагноз -->
+    
     <div class="form-section">
       <div class="form-section-title">Диагноз</div>
       <div class="diagnosis-autocomplete">
@@ -492,19 +492,19 @@
       </div>
     </div>
 
-    <!-- Жалобы -->
+    
     <div class="form-section">
       <div class="form-section-title">Жалобы пациента</div>
       <textarea name="complaints" class="form-control" rows="4" placeholder="Опишите жалобы пациента..." {% if appointment.status == 'completed' %}readonly{% endif %}>{% if recipe %}{{ recipe.complaints|default:"" }}{% endif %}</textarea>
     </div>
 
-    <!-- Лечение и рекомендации -->
+    
     <div class="form-section">
       <div class="form-section-title">Лечение и рекомендации</div>
       <textarea name="recommendations" class="form-control" rows="6" placeholder="Опишите назначенное лечение и рекомендации..." {% if appointment.status == 'completed' %}readonly{% endif %}>{% if recipe %}{{ recipe.recommendations|default:"" }}{% endif %}</textarea>
     </div>
 
-    <!-- Повторный прием у того же врача -->
+    
     {% if appointment.status != 'completed' %}
     <div class="form-section">
       <div class="checkbox-section">
@@ -517,7 +517,7 @@
       <div id="next-appointment-section" class="hidden-section">
         <p class="text-muted small mb-3">Выберите дату и время для повторного приема у вас</p>
         
-        <!-- Календарь для выбора даты -->
+        
         <div class="mb-4">
           <label class="form-label fw-semibold mb-2">Выберите дату</label>
           <div class="input-group" style="position: relative; max-width: 340px;">
@@ -528,7 +528,7 @@
           <small class="text-muted d-block mt-2">Выберите дату в календаре, затем выберите время</small>
         </div>
         
-        <!-- Временные слоты для выбранной даты -->
+        
         <div id="next-time-slots-container" style="display: none;">
           <label class="form-label fw-semibold mb-2">Выберите время</label>
           <div id="next-slots-list" class="slots-grid"></div>
@@ -546,7 +546,7 @@
     </div>
     {% endif %}
 
-    <!-- Направление к другому специалисту -->
+    
     {% if appointment.status != 'completed' %}
     <div class="form-section">
       <div class="checkbox-section">
@@ -558,7 +558,7 @@
       </div>
       <div id="referral-section" class="hidden-section">
         
-        <!-- Выбор специализации -->
+        
         <div class="mb-3">
           <label class="form-label fw-semibold mb-2">Выберите специализацию</label>
           {% if specializations %}
@@ -626,7 +626,7 @@
           {% endif %}
         </div>
         
-        <!-- Выбор врача -->
+        
         <div class="mb-3" id="referral-doctor-section" style="display: {% if referral_specialization_id %}block{% else %}none{% endif %};">
           <label class="form-label fw-semibold mb-2">Выберите врача</label>
           <div class="row g-3" id="referral-doctors-container">
@@ -732,9 +732,9 @@
           </div>
         </div>
 
-        <!-- Календарь и слоты для направления -->
+        
         <div id="referral-slots-section" style="display: {% if referral_doctor_id %}block{% else %}none{% endif %};">
-          <!-- Календарь для выбора даты -->
+          
           <div class="mb-4">
             <label class="form-label fw-semibold mb-2">Выберите дату</label>
             <div class="input-group" style="position: relative; max-width: 340px;">
@@ -745,7 +745,7 @@
             <small class="text-muted d-block mt-2">Выберите дату в календаре, затем выберите время</small>
           </div>
           
-          <!-- Временные слоты для выбранной даты -->
+          
           <div id="referral-time-slots-container" style="display: none;">
             <label class="form-label fw-semibold mb-2">Выберите время</label>
             <div id="referral-slots-list" class="slots-grid"></div>
@@ -774,10 +774,10 @@
     </div>
   </form>
 
-  <!-- Режим просмотра для завершенных приемов -->
+  
   {% if appointment.status == 'completed' %}
   <div id="view-mode" class="view-mode">
-    <!-- Диагноз -->
+    
     <div class="form-section">
       <div class="form-section-title">Диагноз</div>
       <div class="form-control-plaintext">
@@ -789,7 +789,7 @@
       </div>
     </div>
 
-    <!-- Жалобы -->
+    
     <div class="form-section">
       <div class="form-section-title">Жалобы пациента</div>
       <div class="form-control-plaintext">
@@ -801,7 +801,7 @@
       </div>
     </div>
 
-    <!-- Лечение и рекомендации -->
+    
     <div class="form-section">
       <div class="form-section-title">Лечение и рекомендации</div>
       <div class="form-control-plaintext">

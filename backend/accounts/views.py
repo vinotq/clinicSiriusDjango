@@ -17,56 +17,75 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from core.mixins import PatientRequiredMixin
 
 def validate_username(username):
+    """Валидация имени пользователя."""
     errors = []
-    
+
     if len(username) < 3:
         errors.append("Имя пользователя должно быть не менее 3 символов")
-    
+
     if not re.match(r'^[a-zA-Z0-9_]+$', username):
-        errors.append("Имя пользователя может содержать только буквы, цифры и подчеркивание")
-    
+        errors.append(
+            "Имя пользователя может содержать только буквы, "
+            "цифры и подчеркивание"
+        )
+
     return errors
 
+
 def validate_password(password):
+    """Валидация пароля."""
     errors = []
-    
+
     if len(password) < 8:
         errors.append("Пароль должен быть не менее 8 символов")
-    
+
     if not re.search(r'[A-Za-z]', password):
         errors.append("Пароль должен содержать хотя бы одну букву")
-    
+
     if not re.search(r'[0-9]', password):
         errors.append("Пароль должен содержать хотя бы одну цифру")
-    
+
     return errors
 
 class RegistrationAPIView(APIView):
+    """API представление для регистрации пользователя."""
+
     permission_classes = (AllowAny,)
     serializer_class = RegistrationSerializer
 
     def post(self, request):
+        """Обработка POST запроса на регистрацию."""
         user = request.data.get('user', {})
-        
-        serializer = self.serializer_class(data=user, context={'request': request})
+
+        serializer = self.serializer_class(
+            data=user,
+            context={'request': request}
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+
 class LoginAPIView(APIView):
+    """API представление для входа пользователя."""
+
     permission_classes = (AllowAny,)
     serializer_class = LoginSerializer
 
     def post(self, request):
+        """Обработка POST запроса на вход."""
         user = request.data.get('user', {})
 
-        serializer = self.serializer_class(data=user, context={'request': request})
+        serializer = self.serializer_class(
+            data=user,
+            context={'request': request}
+        )
         serializer.is_valid(raise_exception=True)
 
         email = user.get('email', '').strip().lower()
         password = user.get('password')
-        
+
         User = get_user_model()
         try:
             user_obj = User.objects.get(email__iexact=email)
@@ -79,9 +98,12 @@ class LoginAPIView(APIView):
 
 @method_decorator(require_http_methods(['GET', 'POST']), name='dispatch')
 class RegisterTemplateView(TemplateView):
+    """Представление для регистрации через шаблон."""
+
     template_name = 'clinic/register.html'
-    
+
     def get_context_data(self, **kwargs):
+        """Получение контекста для шаблона."""
         context = super().get_context_data(**kwargs)
         context['email'] = self.request.GET.get('email', '')
         return context
@@ -187,9 +209,12 @@ class RegisterTemplateView(TemplateView):
 
 @method_decorator(require_http_methods(['GET', 'POST']), name='dispatch')
 class LoginTemplateView(TemplateView):
+    """Представление для входа через шаблон."""
+
     template_name = 'clinic/login.html'
-    
+
     def get_context_data(self, **kwargs):
+        """Получение контекста для шаблона."""
         context = super().get_context_data(**kwargs)
         referer = self.request.META.get('HTTP_REFERER', '')
         anchor = ''
@@ -247,63 +272,73 @@ class LoginTemplateView(TemplateView):
         return self.render_to_response(context)
 
 class LogoutTemplateView(View):
+    """Представление для выхода из системы."""
+
     def get(self, request, *args, **kwargs):
+        """Обработка GET запроса на выход."""
         logout(request)
         return redirect('index')
-    
+
     def post(self, request, *args, **kwargs):
+        """Обработка POST запроса на выход."""
         logout(request)
         return redirect('index')
 
 class ProfileTemplateView(LoginRequiredMixin, TemplateView):
+    """Представление профиля пользователя."""
+
     template_name = 'accounts/profile.html'
     login_url = 'accounts:login'
-    
+
     def get_template_names(self):
-        """Выбираем шаблон в зависимости от роли пользователя"""
+        """Выбор шаблона в зависимости от роли пользователя."""
         user = self.request.user
         role = getattr(user, 'role', None)
-        
+
         if role == 'doctor':
             return ['accounts/doctor_profile.html', 'accounts/profile.html']
         elif role == 'admin':
             return ['accounts/admin_profile.html', 'accounts/profile.html']
         else:
             return ['accounts/profile.html']
-    
+
     def get_context_data(self, **kwargs):
+        """Получение контекста для шаблона профиля."""
         context = super().get_context_data(**kwargs)
         user = self.request.user
         role = getattr(user, 'role', None)
         context['user'] = user
         context['role'] = role
-        
-        # Для пациентов
+
         if role == 'patient' and hasattr(user, 'patient_profile'):
             context['patient'] = user.patient_profile
             context['family_members'] = user.patient_profile.children()
             try:
-                context['invites'] = list(user.patient_profile.invites.filter(used=False))
+                context['invites'] = list(
+                    user.patient_profile.invites.filter(used=False)
+                )
             except (ProgrammingError, OperationalError):
                 context['invites'] = []
-        
-        # Для докторов
+
         elif role == 'doctor' and hasattr(user, 'doctor_profile'):
             from scheduling.models import Appointment
             from django.utils import timezone
             doctor = user.doctor_profile
             context['doctor'] = doctor
-            context['total_appointments'] = Appointment.objects.filter(doctor=doctor).count()
-            context['upcoming_appointments_count'] = Appointment.objects.filter(
-                doctor=doctor,
-                date__gte=timezone.now()
-            ).exclude(status='cancelled').count()
+            context['total_appointments'] = Appointment.objects.filter(
+                doctor=doctor
+            ).count()
+            context['upcoming_appointments_count'] = (
+                Appointment.objects.filter(
+                    doctor=doctor,
+                    date__gte=timezone.now()
+                ).exclude(status='cancelled').count()
+            )
             context['completed_appointments'] = Appointment.objects.filter(
                 doctor=doctor,
                 status='completed'
             ).count()
-        
-        # Для админов
+
         elif role == 'admin':
             from patients.models import Patient
             from staff.models import Doctor
@@ -311,12 +346,12 @@ class ProfileTemplateView(LoginRequiredMixin, TemplateView):
             context['total_patients'] = Patient.objects.count()
             context['total_doctors'] = Doctor.objects.count()
             context['total_appointments'] = Appointment.objects.count()
-        
+
         return context
 
     def post(self, request, *args, **kwargs):
+        """Обработка POST запроса для обновления профиля."""
         user = request.user
-
 
         patient = getattr(user, 'patient_profile', None)
         if 'delete_patient' in request.POST and patient:
@@ -359,8 +394,8 @@ class ProfileTemplateView(LoginRequiredMixin, TemplateView):
                 context['error'] = 'Дата рождения обязательна для заполнения'
                 return self.render_to_response(context)
 
-                patient.fname = fname
-                patient.lname = lname
+            patient.fname = fname
+            patient.lname = lname
             patient.tname = tname if tname else None
             
             if phone:
@@ -403,10 +438,13 @@ class ProfileTemplateView(LoginRequiredMixin, TemplateView):
         return self.render_to_response(context)
 
 class SettingsTemplateView(LoginRequiredMixin, TemplateView):
+    """Представление настроек пользователя."""
+
     template_name = 'accounts/settings.html'
     login_url = 'accounts:login'
-    
+
     def get_context_data(self, **kwargs):
+        """Получение контекста для шаблона настроек."""
         context = super().get_context_data(**kwargs)
         context['user'] = self.request.user
         return context
@@ -498,9 +536,12 @@ class SettingsTemplateView(LoginRequiredMixin, TemplateView):
         return self.render_to_response(context)
     
 class ChangeLoginView(TemplateView):
+    """Представление для изменения логина."""
+
     template_name = 'accounts/change_login.html'
-    
+
     def dispatch(self, request, *args, **kwargs):
+        """Проверка аутентификации перед обработкой запроса."""
         if not request.user.is_authenticated:
             return redirect('accounts:login')
         return super().dispatch(request, *args, **kwargs)
@@ -543,9 +584,12 @@ class ChangeLoginView(TemplateView):
         return self.render_to_response(context)
     
 class DeleteAccountView(TemplateView):
+    """Представление для удаления аккаунта."""
+
     template_name = 'accounts/delete_account.html'
-    
+
     def dispatch(self, request, *args, **kwargs):
+        """Проверка аутентификации перед обработкой запроса."""
         if not request.user.is_authenticated:
             return redirect('accounts:login')
         return super().dispatch(request, *args, **kwargs)
@@ -566,20 +610,26 @@ class DeleteAccountView(TemplateView):
 
 
 class EditFamilyMemberView(PatientRequiredMixin, View):
+    """Представление для редактирования члена семьи."""
+
     login_url = 'accounts:login'
     template_name = 'accounts/edit_family_member.html'
-    
+
     def get(self, request, member_id):
+        """Обработка GET запроса для редактирования члена семьи."""
         user = request.user
         if not hasattr(user, 'patient_profile'):
             return redirect('accounts:profile')
-        
+
         patient = user.patient_profile
         member = get_object_or_404(Patient, pk=member_id)
-        
-        if not PatientGroup.objects.filter(parent=patient, child=member).exists():
+
+        if not PatientGroup.objects.filter(
+            parent=patient,
+            child=member
+        ).exists():
             return redirect('accounts:profile')
-        
+
         context = {
             'member': member,
             'patient': patient,
@@ -587,14 +637,18 @@ class EditFamilyMemberView(PatientRequiredMixin, View):
         return render(request, self.template_name, context)
     
     def post(self, request, member_id):
+        """Обработка POST запроса для сохранения изменений члена семьи."""
         user = request.user
         if not hasattr(user, 'patient_profile'):
             return redirect('accounts:profile')
-        
+
         patient = user.patient_profile
         member = get_object_or_404(Patient, pk=member_id)
-        
-        if not PatientGroup.objects.filter(parent=patient, child=member).exists():
+
+        if not PatientGroup.objects.filter(
+            parent=patient,
+            child=member
+        ).exists():
             return redirect('accounts:profile')
         
         fname = request.POST.get('fname', '').strip()

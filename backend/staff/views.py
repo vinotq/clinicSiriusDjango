@@ -16,38 +16,59 @@ from patients.models import Patient
 from scheduling.models import Appointment
 
 class DoctorViewSet(viewsets.ModelViewSet):
+    """ViewSet для работы с врачами."""
+
     queryset = Doctor.objects.all()
     serializer_class = DoctorSerializer
     permission_classes = [IsDoctorOrStaff]
-    
+
     def get_queryset(self):
-        queryset = Doctor.objects.all().select_related('user', 'specialization')
-        
+        """Получение queryset с фильтрацией по специализации."""
+        queryset = Doctor.objects.all().select_related(
+            'user',
+            'specialization'
+        )
+
         specialization_id = self.request.query_params.get('specialization')
         if specialization_id:
             queryset = queryset.filter(specialization_id=specialization_id)
         return queryset.order_by('lname')
-    
-    @action(detail=False, methods=['get'], url_path='me', permission_classes=[IsAuthenticated])
+
+    @action(
+        detail=False,
+        methods=['get'],
+        url_path='me',
+        permission_classes=[IsAuthenticated]
+    )
     def me(self, request):
+        """Получение профиля текущего пользователя-врача."""
         doctor_profile = getattr(request.user, 'doctor_profile', None)
         if not doctor_profile:
-            return Response({'detail': 'No doctor profile for current user'}, status=status.HTTP_404_NOT_FOUND)
-        serializer = DoctorSerializer(doctor_profile, context={'request': request})
+            return Response(
+                {'detail': 'No doctor profile for current user'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        serializer = DoctorSerializer(
+            doctor_profile,
+            context={'request': request}
+        )
         return Response(serializer.data)
 
 
 class SpecializationViewSet(viewsets.ModelViewSet):
+    """ViewSet для работы со специализациями."""
+
     queryset = Specialization.objects.all()
     serializer_class = SpecializationSerializer
     permission_classes = [IsAuthenticatedReadOnlyOrRoleWrite]
-    
+
     @action(detail=False, methods=['get'])
     def with_doctors(self, request):
+        """Получение специализаций с врачами."""
         specializations = Specialization.objects.all().prefetch_related(
             'doctor_set'
         ).order_by('name')
-        
+
         result = []
         for spec in specializations:
             doctors = spec.doctor_set.all().order_by('lname', 'fname')
@@ -60,20 +81,26 @@ class SpecializationViewSet(viewsets.ModelViewSet):
                         'fname': doctor.fname,
                         'lname': doctor.lname,
                         'tname': doctor.tname or '',
-                        'full_name': f"{doctor.lname} {doctor.fname}" + (f" {doctor.tname}" if doctor.tname else ""),
+                        'full_name': (
+                            f"{doctor.lname} {doctor.fname}" +
+                            (f" {doctor.tname}" if doctor.tname else "")
+                        ),
                         'email': doctor.email,
                     }
                     for doctor in doctors
                 ]
             })
-        
+
         return Response(result)
 
 
 class DoctorHomeView(DoctorRequiredMixin, TemplateView):
+    """Главная страница врача."""
+
     template_name = 'clinic/doctor_home.html'
 
     def get_context_data(self, **kwargs):
+        """Получение контекста для главной страницы врача."""
         context = super().get_context_data(**kwargs)
         user = self.request.user
         doctor = user.doctor_profile
@@ -82,65 +109,94 @@ class DoctorHomeView(DoctorRequiredMixin, TemplateView):
         from scheduling.models import Appointment, AppointmentSchedule
         from django.utils import timezone
         from datetime import timedelta
-        
+
         now = timezone.now()
-        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        today_start = now.replace(
+            hour=0,
+            minute=0,
+            second=0,
+            microsecond=0
+        )
         today_end = today_start + timedelta(days=1)
-        
+
         context['today_count'] = Appointment.objects.filter(
             doctor=doctor,
             date__gte=today_start,
             date__lt=today_end
         ).count()
-        
+
         tomorrow_end = today_end + timedelta(days=1)
         context['upcoming_appointments'] = Appointment.objects.filter(
             doctor=doctor,
             date__gte=now,
             date__lt=tomorrow_end
-        ).select_related('patient', 'slot', 'slot__room').order_by('date')[:5]
-        
-        context['available_slots_today'] = AppointmentSchedule.objects.filter(
-            doctor=doctor,
-            appointment__isnull=True,
-            time_from__gte=now,
-            time_from__date=today_start.date()
-        ).select_related('room').order_by('time_from')[:5]
-        
-        context['patients_count'] = Appointment.objects.filter(doctor=doctor).values('patient').distinct().count()
-        context['total_appointments'] = Appointment.objects.filter(doctor=doctor).count()
-        context['available_slots_count'] = AppointmentSchedule.objects.filter(
-            doctor=doctor,
-            appointment__isnull=True,
-            time_from__gte=now
-        ).count()
-        
+        ).select_related(
+            'patient',
+            'slot',
+            'slot__room'
+        ).order_by('date')[:5]
+
+        context['available_slots_today'] = (
+            AppointmentSchedule.objects.filter(
+                doctor=doctor,
+                appointment__isnull=True,
+                time_from__gte=now,
+                time_from__date=today_start.date()
+            ).select_related('room').order_by('time_from')[:5]
+        )
+
+        context['patients_count'] = (
+            Appointment.objects.filter(doctor=doctor)
+            .values('patient')
+            .distinct()
+            .count()
+        )
+        context['total_appointments'] = (
+            Appointment.objects.filter(doctor=doctor).count()
+        )
+        context['available_slots_count'] = (
+            AppointmentSchedule.objects.filter(
+                doctor=doctor,
+                appointment__isnull=True,
+                time_from__gte=now
+            ).count()
+        )
+
         return context
 
 
 class DoctorProfileView(DoctorRequiredMixin, TemplateView):
+    """Профиль врача."""
+
     template_name = 'staff/doctor_profile.html'
-    
+
     def get_context_data(self, **kwargs):
+        """Получение контекста для профиля врача."""
         context = super().get_context_data(**kwargs)
         user = self.request.user
         doctor = user.doctor_profile
         context['doctor'] = doctor
-        
+
         from scheduling.models import Appointment
         from django.utils import timezone
-        
+
         now = timezone.now()
-        context['total_appointments'] = Appointment.objects.filter(doctor=doctor).count()
-        context['upcoming_appointments_count'] = Appointment.objects.filter(
-            doctor=doctor,
-            date__gte=now
-        ).count()
-        context['completed_appointments'] = Appointment.objects.filter(
-            doctor=doctor,
-            status='completed'
-        ).count()
-        
+        context['total_appointments'] = (
+            Appointment.objects.filter(doctor=doctor).count()
+        )
+        context['upcoming_appointments_count'] = (
+            Appointment.objects.filter(
+                doctor=doctor,
+                date__gte=now
+            ).count()
+        )
+        context['completed_appointments'] = (
+            Appointment.objects.filter(
+                doctor=doctor,
+                status='completed'
+            ).count()
+        )
+
         return context
 
 class DoctorPatientsListView(DoctorRequiredMixin, TemplateView):

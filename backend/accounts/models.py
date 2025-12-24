@@ -1,18 +1,26 @@
 import jwt
 from datetime import datetime, timedelta
-from django.conf import settings 
-from django.contrib.auth.models import 	AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.conf import settings
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
 
+
 class UserManager(BaseUserManager):
+    """Менеджер для управления пользователями."""
+
     def create_user(self, username, email, password=None, role='patient'):
+        """Создает обычного пользователя."""
         if username is None:
             raise TypeError('Users must have a username.')
 
         if email is None:
             raise TypeError('Users must have an email address.')
 
-        user = self.model(username=username, email=self.normalize_email(email), role=role)
+        user = self.model(
+            username=username,
+            email=self.normalize_email(email),
+            role=role
+        )
         user.set_password(password)
         user.save()
 
@@ -30,7 +38,10 @@ class UserManager(BaseUserManager):
 
         return user
 
+
 class User(AbstractBaseUser, PermissionsMixin):
+    """Модель пользователя системы."""
+
     username = models.CharField(db_index=True, max_length=255, unique=True)
     email = models.EmailField(db_index=True, unique=True)
     phone = models.CharField(max_length=8)
@@ -47,7 +58,11 @@ class User(AbstractBaseUser, PermissionsMixin):
         (ROLE_ADMIN, 'Administrator'),
     )
 
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default=ROLE_PATIENT)
+    role = models.CharField(
+        max_length=20,
+        choices=ROLE_CHOICES,
+        default=ROLE_PATIENT
+    )
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)

@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Расписание — {{ doctor.lname }} {{ doctor.fname }} | Clinic Sirius{% endblock %}
+{% block title %}Расписание - {{ doctor.lname }} {{ doctor.fname }} | Clinic Sirius{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -438,7 +438,6 @@
   </div>
 
   <div class="row g-4">
-    <!-- Календарь -->
     <div class="col-lg-9">
       <div class="schedule-calendar">
         <div class="calendar-header">
@@ -467,7 +466,7 @@
                 <button type="button">‹</button>
               </a>
               <div class="week-date">
-                {{ week_start|date:"d" }} {{ week_days.0.month_name }} {{ week_start|date:"Y" }} – {{ week_end|date:"d" }} {{ week_days.6.month_name }} {{ week_end|date:"Y" }}
+                {{ week_start|date:"d" }} {{ week_days.0.month_name }} {{ week_start|date:"Y" }} - {{ week_end|date:"d" }} {{ week_days.6.month_name }} {{ week_end|date:"Y" }}
               </div>
               <a href="?view=week&week={{ next_week }}" class="text-decoration-none">
                 <button type="button">›</button>
@@ -481,7 +480,6 @@
         </div>
 
         <div class="calendar-grid {% if view_type == 'day' %}day-view{% endif %}">
-          <!-- Временная колонка -->
           <div class="time-column" id="time-column">
             <div style="height: 100px; border-bottom: 2px solid #e5e7eb;"></div>
             <div style="height: 1440px; display: flex; flex-direction: column;">
@@ -498,7 +496,6 @@
             <div class="current-time-indicator" id="current-time-indicator" style="display: none;"></div>
           </div>
 
-          <!-- Колонки дней -->
           {% for day in week_days %}
             <div class="day-column">
               <div class="day-header {% if day.is_today %}today{% endif %}">
@@ -516,7 +513,7 @@
                          data-slot-date="{{ slot.time_from|date:'Y-m-d' }}"
                          {% if slot_data.is_past %}data-is-past="true"{% endif %}
                          {% if slot.appointment %}
-                           title="{{ slot.appointment.patient.lname }} {{ slot.appointment.patient.fname }} - {{ slot.time_from|time:'H:i' }}–{{ slot.time_to|time:'H:i' }}"
+                           title="{{ slot.appointment.patient.lname }} {{ slot.appointment.patient.fname }} - {{ slot.time_from|time:'H:i' }}-{{ slot.time_to|time:'H:i' }}"
                            {% if user.is_authenticated and user.role == 'doctor' and user.doctor_profile.id == doctor.id %}
                              {% if slot.appointment.status == 'booked' %}
                                data-appointment-id="{{ slot.appointment.id }}"
@@ -536,7 +533,7 @@
                              {% endif %}
                            {% endif %}
                          {% else %}
-                           title="Свободно - {{ slot.time_from|time:'H:i' }}–{{ slot.time_to|time:'H:i' }}{% if slot_data.is_past %} (время прошло){% endif %}"
+                           title="Свободно - {{ slot.time_from|time:'H:i' }}-{{ slot.time_to|time:'H:i' }}{% if slot_data.is_past %} (время прошло){% endif %}"
                            {% if slot_data.is_past %}
                              onclick="event.stopPropagation(); alert('Нельзя записаться на прошедшее время'); return false;"
                            {% elif user.is_authenticated and user.role == 'doctor' and user.doctor_profile.id == doctor.id %}
@@ -551,12 +548,12 @@
                            {% endif %}
                          {% endif %}>
                       {% if slot_height >= 60 %}
-                        <div class="slot-time">{{ slot.time_from|time:"H:i" }} – {{ slot.time_to|time:"H:i" }}</div>
+                        <div class="slot-time">{{ slot.time_from|time:"H:i" }} - {{ slot.time_to|time:"H:i" }}</div>
                         {% if slot_height >= 90 %}
                           <div class="slot-room">Каб. {{ slot.room.room_number }}</div>
                         {% endif %}
                       {% else %}
-                        <div class="slot-time" style="margin: 0; line-height: 1.2; font-size: 0.75rem;">{{ slot.time_from|time:"H:i" }}–{{ slot.time_to|time:"H:i" }}</div>
+                        <div class="slot-time" style="margin: 0; line-height: 1.2; font-size: 0.75rem;">{{ slot.time_from|time:"H:i" }}-{{ slot.time_to|time:"H:i" }}</div>
                       {% endif %}
                     </div>
                   {% endwith %}
@@ -568,10 +565,8 @@
       </div>
     </div>
     
-    <!-- Статистика и легенда -->
     <div class="col-lg-3">
       <div class="d-flex flex-column gap-3">
-        <!-- Легенда -->
         <div class="card border-0 shadow-sm">
           <div class="card-body">
             <h5 class="fw-semibold mb-4 d-flex align-items-center gap-2">
@@ -1865,7 +1860,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<!-- Модальное окно для записи на свободный слот -->
 <div class="modal fade" id="bookSlotModal" tabindex="-1" aria-labelledby="bookSlotModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
@@ -1874,13 +1868,11 @@ document.addEventListener('DOMContentLoaded', function() {
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body modal-body-content">
-        <!-- Контент загружается через AJAX -->
       </div>
     </div>
   </div>
 </div>
 
-<!-- Модальное окно для изменения забронированного приема -->
 <div class="modal fade" id="changeAppointmentModal" tabindex="-1" aria-labelledby="changeAppointmentModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
@@ -1889,7 +1881,6 @@ document.addEventListener('DOMContentLoaded', function() {
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body modal-body-content">
-        <!-- Контент загружается через AJAX -->
       </div>
     </div>
   </div>

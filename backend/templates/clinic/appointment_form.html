@@ -367,7 +367,7 @@
     </div>
   {% endif %}
 
-  <!-- Индикатор шагов -->
+  
   <div class="step-indicator">
     <div class="step-item {% if step >= 1 %}active{% endif %} {% if step > 1 %}completed{% endif %}">
       <div class="step-number">1</div>
@@ -388,7 +388,7 @@
   </div>
 
   <div class="step-content">
-    <!-- Шаг 1: Выбор специализации -->
+    
     {% if step == 1 %}
     <div class="card">
       <div class="card-body p-4">
@@ -459,7 +459,7 @@
     </div>
     {% endif %}
 
-    <!-- Шаг 2: Выбор врача -->
+    
     {% if step == 2 %}
     <div class="card">
       <div class="card-body p-4">
@@ -506,7 +506,7 @@
     </div>
     {% endif %}
 
-    <!-- Шаг 3: Выбор даты и времени -->
+    
     {% if step == 3 %}
     <div class="card">
       <div class="card-body p-4">
@@ -524,7 +524,7 @@
           <input type="hidden" name="slot_id" id="selected_slot_id" value="{{ selected_slot }}">
           <input type="hidden" name="selected_date" id="selected_date" value="{{ selected_date }}">
           
-          <!-- Календарь для выбора даты -->
+          
           <div class="mb-4">
             <label class="form-label fw-semibold mb-2">Выберите дату</label>
             <div class="input-group" style="position: relative; max-width: 340px;">
@@ -535,7 +535,7 @@
             <small class="text-muted d-block mt-2">Выберите дату в календаре, затем выберите время</small>
           </div>
           
-          <!-- Временные слоты для выбранной даты -->
+          
           <div id="time-slots-container" style="display: none;">
             <label class="form-label fw-semibold mb-2">Выберите время</label>
             <div id="slots-list" class="slots-grid"></div>
@@ -559,7 +559,7 @@
       </div>
     </div>
     
-    <!-- JavaScript для шага 3 -->
+    
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>
     <script>
@@ -791,7 +791,7 @@
     </script>
     {% endif %}
 
-    <!-- Шаг 4: Выбор/создание пациента -->
+    
     {% if step == 4 %}
     <div class="card">
       <div class="card-body p-4">
@@ -801,16 +801,16 @@
           <input type="hidden" name="action" value="step4">
           
           {% if is_authenticated %}
-            <!-- Для авторизованных пользователей: выбор себя, членов семьи или нового пациента -->
             
-            <!-- Выбор существующего пациента -->
+            
+            
             {% if all_patients %}
             <div class="mb-4">
               <label class="form-label fw-semibold mb-3">Выбрать из списка</label>
               <div>
                 {% for patient in all_patients %}
                   {% if forloop.first %}
-                    <!-- Первый пациент - это сам пользователь -->
+                    
                     <label class="doctor-card d-block {% if session_data.patient_id == patient.id|stringformat:'s' %}selected{% endif %}">
                       <input type="radio" name="patient_id" value="{{ patient.id }}" 
                              {% if session_data.patient_id == patient.id|stringformat:'s' %}checked{% endif %}
@@ -829,7 +829,7 @@
                       </div>
                     </label>
                   {% else %}
-                    <!-- Остальные - члены семьи -->
+                    
                     <label class="doctor-card d-block {% if session_data.patient_id == patient.id|stringformat:'s' %}selected{% endif %}">
                       <input type="radio" name="patient_id" value="{{ patient.id }}" 
                              {% if session_data.patient_id == patient.id|stringformat:'s' %}checked{% endif %}
@@ -853,7 +853,7 @@
             </div>
             {% endif %}
 
-            <!-- Создание нового пациента -->
+            
             <div class="mb-4">
               <label class="doctor-card d-block {% if session_data.create_new_patient %}selected{% endif %}">
                 <input type="radio" name="create_new_patient" value="true" id="create_new_patient" 
@@ -920,7 +920,7 @@
               </div>
             </div>
           {% else %}
-            <!-- Для неавторизованных пользователей: только создание нового пациента -->
+            
             <div class="alert alert-info mb-4">
               <i class="bi bi-info-circle"></i> Для записи на приём необходимо указать данные пациента
             </div>

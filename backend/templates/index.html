@@ -1,11 +1,10 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Clinic Sirius — современная клиника{% endblock %}
+{% block title %}Clinic Sirius - современная клиника{% endblock %}
 
 {% block content %}
 {% if user.is_authenticated and user.role != 'doctor' %}
-  <!-- Главная страница для авторизованных пациентов -->
   <section class="container py-5">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
       <div>
@@ -17,7 +16,6 @@
       </a>
     </div>
 
-    <!-- Статистика -->
     <div class="row g-3 mb-4">
       <div class="col-md-4">
         <div class="card border-primary">
@@ -47,7 +45,6 @@
       </div>
     </div>
 
-    <!-- Ближайшие записи -->
     {% if upcoming_appointments %}
     <div class="card mb-4">
       <div class="card-header bg-primary text-white">
@@ -65,7 +62,6 @@
           <div class="list-group-item">
             <div class="d-flex justify-content-between align-items-start">
               <div class="flex-grow-1">
-                <!-- Специализация (акцент) -->
                 <h5 class="mb-2 fw-bold text-dark">
                   {% if "хирург" in appt.doctor.specialization.name|lower or "хирургия" in appt.doctor.specialization.name|lower %}
                     <i class="bi bi-duffle me-2"></i>
@@ -107,7 +103,6 @@
                   {{ appt.doctor.specialization.name }}
                 </h5>
                 
-                <!-- Дата и время (акцент) -->
                 <div class="mb-2">
                   <span class="fw-bold me-2" style="color: #000;">
                     <i class="bi bi-calendar"></i> {{ appt.date|date:"d.m.Y" }}
@@ -117,7 +112,6 @@
                   </span>
                 </div>
                 
-                <!-- Полное ФИО врача (под специализацией) -->
                 <p class="mb-2">
                   <span class="text-muted small">Врач:</span>
                   <span class="fw-semibold ms-1">
@@ -126,7 +120,6 @@
                   </span>
                 </p>
                 
-                <!-- ФИО пациента (в конце) -->
                 {% if appt.patient %}
                 <small class="text-muted d-block">
                   Пациент: {{ appt.patient.lname }} {{ appt.patient.fname }}
@@ -170,7 +163,6 @@
     </div>
     {% endif %}
 
-    <!-- Быстрые действия -->
     <div class="row g-3">
       <div class="col-md-6">
         <div class="card h-100">
@@ -197,7 +189,6 @@
     </div>
   </section>
 {% else %}
-  <!-- Главная страница для неавторизованных пользователей -->
 <section class="container py-5" id="hero">
   <div class="row align-items-center g-4">
     <div class="col-lg-6">
@@ -435,7 +426,7 @@
               <div class="info-dot bg-primary"></div>
               <div>
                 <div class="fw-semibold">Цифровые карты пациента</div>
-                <small class="text-muted">История визитов, назначения и документы — в одном месте.</small>
+                <small class="text-muted">История визитов, назначения и документы - в одном месте.</small>
               </div>
             </div>
             <div class="info-row">
@@ -449,7 +440,7 @@
               <div class="info-dot bg-info"></div>
               <div>
                 <div class="fw-semibold">Простые способы связи</div>
-                <small class="text-muted">Телефон, мессенджеры или почта — выбирайте то, что удобнее.</small>
+                <small class="text-muted">Телефон, мессенджеры или почта - выбирайте то, что удобнее.</small>
               </div>
             </div>
           </div>
@@ -462,7 +453,7 @@
 <section class="container pb-5" id="booking">
   <div class="section-header mb-3">
     <h2 class="fw-bold mb-0">Выберите удобный способ</h2>
-    <p class="text-muted mb-0">Позвоните или напишите нам — подберём время и врача. Или используйте онлайн-форму</p>
+    <p class="text-muted mb-0">Позвоните или напишите нам - подберём время и врача. Или используйте онлайн-форму</p>
   </div>
   <div class="row g-4">
     <div class="col-lg-7">
@@ -477,7 +468,7 @@
                 <div class="h5 text-primary mb-2">8 (800) 707-56-27</div>
                 <div class="text-muted mb-2" style="font-size: 0.875rem;">или</div>
                 <div class="text-dark fw-semibold mb-1">+7 (862) 444-01-03</div>
-                <small class="text-muted">Пн — Сб: 08:00–20:00, Вс: 08:00–15:00</small>
+                <small class="text-muted">Пн - Сб: 08:00-20:00, Вс: 08:00-15:00</small>
               </div>
             </div>
           </div>
@@ -498,8 +489,8 @@
             </div>
             <div>
               <div class="fw-semibold text-dark mb-1">График</div>
-              <small class="text-muted d-block">Пн — Сб: 08:00–20:00</small>
-              <small class="text-muted d-block">Воскресенье: 08:00–15:00</small>
+              <small class="text-muted d-block">Пн - Сб: 08:00-20:00</small>
+              <small class="text-muted d-block">Воскресенье: 08:00-15:00</small>
             </div>
             <div>
             </div>
@@ -523,7 +514,7 @@
         <div class="text-dark fw-semibold mb-1">8 (800) 707-56-27</div>
         <div class="text-muted mb-2" style="font-size: 0.875rem;">или</div>
         <div class="text-dark fw-semibold">+7 (862) 444-01-03</div>
-        <small class="text-muted">Пн — Сб: 08:00–20:00, Вс: 08:00–15:00</small>
+        <small class="text-muted">Пн - Сб: 08:00-20:00, Вс: 08:00-15:00</small>
       </div>
     </div>
     <div class="col-md-6">

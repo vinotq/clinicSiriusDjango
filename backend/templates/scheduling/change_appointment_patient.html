@@ -6,7 +6,7 @@
   
   <div class="mb-3">
     <p class="mb-2"><strong>Текущий пациент:</strong> {{ appointment.patient.lname }} {{ appointment.patient.fname }}</p>
-    <p class="mb-2"><strong>Время:</strong> {{ appointment.slot.time_from|time:"H:i" }} – {{ appointment.slot.time_to|time:"H:i" }}</p>
+    <p class="mb-2"><strong>Время:</strong> {{ appointment.slot.time_from|time:"H:i" }} - {{ appointment.slot.time_to|time:"H:i" }}</p>
     <p class="mb-3"><strong>Кабинет:</strong> {{ appointment.slot.room.room_number }}</p>
   </div>
   
@@ -25,7 +25,7 @@
     </ul>
     
     <div class="tab-content mt-3">
-      <!-- Начать прием -->
+      
       <div class="tab-pane fade show active" id="start-appointment-panel" role="tabpanel">
         <div class="alert alert-info">
           <i class="bi bi-info-circle"></i> Нажмите кнопку ниже, чтобы начать прием для пациента <strong>{{ appointment.patient.lname }} {{ appointment.patient.fname }}</strong>
@@ -41,7 +41,7 @@
         </form>
       </div>
       
-      <!-- Изменение пациента -->
+      
       <div class="tab-pane fade" id="change-patient-panel" role="tabpanel">
         <form method="post" id="change-appointment-form" action="{% url 'scheduling:change_appointment_patient' appointment.id %}">
           {% csrf_token %}
@@ -60,7 +60,7 @@
           </ul>
           
           <div class="tab-content">
-            <!-- Выбор существующего пациента -->
+            
             <div class="tab-pane fade show active" id="select-patient-panel" role="tabpanel">
               <div class="mb-3">
                 <label class="form-label">Выберите пациента</label>
@@ -87,7 +87,7 @@
               </div>
             </div>
             
-            <!-- Создание нового пациента -->
+            
             <div class="tab-pane fade" id="create-patient-panel" role="tabpanel">
               <input type="hidden" name="create_new_patient" value="true">
               <div class="row">
@@ -148,7 +148,7 @@
   </div>
 </div>
 
-<!-- Модальное окно подтверждения отмены приема -->
+
 <div class="modal fade" id="cancelAppointmentConfirmModal" tabindex="-1" aria-labelledby="cancelAppointmentConfirmModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -163,7 +163,7 @@
           <p class="mb-2">Вы уверены, что хотите отменить прием для пациента:</p>
           <p class="mb-0"><strong>{{ appointment.patient.lname }} {{ appointment.patient.fname }}</strong></p>
           <p class="mb-0 text-muted small mt-2">
-            <i class="bi bi-clock"></i> {{ appointment.slot.time_from|time:"H:i" }} – {{ appointment.slot.time_to|time:"H:i" }}
+            <i class="bi bi-clock"></i> {{ appointment.slot.time_from|time:"H:i" }} - {{ appointment.slot.time_to|time:"H:i" }}
             <span class="ms-3"><i class="bi bi-door-open"></i> Кабинет {{ appointment.slot.room.room_number }}</span>
           </p>
         </div>

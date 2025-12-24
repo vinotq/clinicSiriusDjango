@@ -28,7 +28,7 @@
     </div>
   </div>
 
-  <!-- Информация о приеме -->
+  
   <div class="card mb-3">
     <div class="card-header">
       <h5 class="mb-0"><i class="bi bi-calendar-check"></i> Информация о приеме</h5>
@@ -70,13 +70,13 @@
   </div>
 
   {% if recipe %}
-    <!-- Результаты приема -->
+    
     <div class="card mb-3">
       <div class="card-header">
         <h5 class="mb-0"><i class="bi bi-file-medical"></i> Результаты приема</h5>
       </div>
       <div class="card-body">
-        <!-- Диагноз -->
+        
         <div class="mb-4">
           <h6 class="fw-bold mb-2"><i class="bi bi-clipboard-pulse"></i> Диагноз</h6>
           <div class="p-3 bg-light rounded">
@@ -88,7 +88,7 @@
           </div>
         </div>
 
-        <!-- Жалобы -->
+        
         {% if recipe.complaints %}
         <div class="mb-4">
           <h6 class="fw-bold mb-2"><i class="bi bi-chat-left-text"></i> Жалобы пациента</h6>
@@ -98,7 +98,7 @@
         </div>
         {% endif %}
 
-        <!-- Рекомендации -->
+        
         {% if recipe.recommendations %}
         <div class="mb-4">
           <h6 class="fw-bold mb-2"><i class="bi bi-file-text"></i> Лечение и рекомендации</h6>
@@ -108,7 +108,7 @@
         </div>
         {% endif %}
 
-        <!-- Повторный прием -->
+        
         {% if recipe.next_appointment_slot %}
         <div class="mb-4">
           <h6 class="fw-bold mb-2"><i class="bi bi-calendar-plus"></i> Повторный прием</h6>
@@ -131,7 +131,7 @@
         </div>
         {% endif %}
 
-        <!-- Направление к другому специалисту -->
+        
         {% if recipe.referral_doctor %}
         <div class="mb-4">
           <h6 class="fw-bold mb-2"><i class="bi bi-arrow-right-circle"></i> Направление к специалисту</h6>
@@ -206,7 +206,7 @@
       </div>
     </div>
   {% else %}
-    <!-- Нет результатов -->
+    
     <div class="card">
       <div class="card-body text-center py-5">
         <i class="bi bi-file-x text-muted" style="font-size: 3rem;"></i>

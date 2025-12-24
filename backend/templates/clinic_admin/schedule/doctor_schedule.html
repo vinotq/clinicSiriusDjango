@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Расписание — {{ doctor.lname }} {{ doctor.fname }} | Clinic Sirius{% endblock %}
+{% block title %}Расписание - {{ doctor.lname }} {{ doctor.fname }} | Clinic Sirius{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -323,7 +323,7 @@
   </div>
 
   <div class="row g-4">
-    <!-- Календарь -->
+    
     <div class="col-lg-9">
       <div class="schedule-calendar">
         <div class="calendar-header">
@@ -352,7 +352,7 @@
                 <button type="button">‹</button>
               </a>
               <div class="week-date">
-                {{ week_start|date:"d" }} {{ week_days.0.month_name }} {{ week_start|date:"Y" }} – {{ week_end|date:"d" }} {{ week_days.6.month_name }} {{ week_end|date:"Y" }}
+                {{ week_start|date:"d" }} {{ week_days.0.month_name }} {{ week_start|date:"Y" }} - {{ week_end|date:"d" }} {{ week_days.6.month_name }} {{ week_end|date:"Y" }}
               </div>
               <a href="?view=week&week={{ next_week }}" class="text-decoration-none">
                 <button type="button">›</button>
@@ -366,7 +366,7 @@
         </div>
 
         <div class="calendar-grid {% if view_type == 'day' %}day-view{% endif %}">
-          <!-- Временная колонка -->
+          
           <div class="time-column">
             <div style="height: 100px; border-bottom: 2px solid #e5e7eb;"></div>
             {% for hour in "6789012345678901234567"|make_list %}
@@ -380,7 +380,7 @@
             {% endfor %}
           </div>
 
-          <!-- Колонки дней -->
+          
           {% for day in week_days %}
             <div class="day-column">
               <div class="day-header {% if day.is_today %}today{% endif %}">
@@ -395,18 +395,18 @@
                          style="top: {{ slot_data.top }}px; height: {{ slot_height }}px;{% if slot_data.left is not None %} left: {{ slot_data.left }}%; width: {{ slot_data.width }}%;{% endif %}"
                          data-slot-height="{{ slot_height }}"
                          {% if slot.appointment %}
-                           title="{{ slot.appointment.patient.lname }} {{ slot.appointment.patient.fname }} - {{ slot.time_from|time:'H:i' }}–{{ slot.time_to|time:'H:i' }}"
+                           title="{{ slot.appointment.patient.lname }} {{ slot.appointment.patient.fname }} - {{ slot.time_from|time:'H:i' }}-{{ slot.time_to|time:'H:i' }}"
                            onclick="window.location.href='{% url 'clinic_admin:patient_detail' slot.appointment.patient.pk %}'"
                          {% else %}
-                           title="Свободно - {{ slot.time_from|time:'H:i' }}–{{ slot.time_to|time:'H:i' }}"
+                           title="Свободно - {{ slot.time_from|time:'H:i' }}-{{ slot.time_to|time:'H:i' }}"
                          {% endif %}>
                       {% if slot_height >= 60 %}
-                        <div class="slot-time">{{ slot.time_from|time:"H:i" }} – {{ slot.time_to|time:"H:i" }}</div>
+                        <div class="slot-time">{{ slot.time_from|time:"H:i" }} - {{ slot.time_to|time:"H:i" }}</div>
                         {% if slot_height >= 90 %}
                           <div class="slot-room">Каб. {{ slot.room.room_number }}</div>
                         {% endif %}
                       {% else %}
-                        <div class="slot-time" style="margin: 0; line-height: 1.2; font-size: 0.75rem; color: white;">{{ slot.time_from|time:"H:i" }}–{{ slot.time_to|time:"H:i" }}</div>
+                        <div class="slot-time" style="margin: 0; line-height: 1.2; font-size: 0.75rem; color: white;">{{ slot.time_from|time:"H:i" }}-{{ slot.time_to|time:"H:i" }}</div>
                       {% endif %}
                     </div>
                   {% endwith %}
@@ -418,10 +418,10 @@
       </div>
     </div>
     
-    <!-- Легенда -->
+    
     <div class="col-lg-3">
       <div class="d-flex flex-column gap-3">
-        <!-- Легенда -->
+        
         <div class="card border-0 shadow-sm">
           <div class="card-body">
             <h5 class="fw-semibold mb-4 d-flex align-items-center gap-2">

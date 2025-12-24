@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Добавить окна — {{ doctor.lname }} {{ doctor.fname }} | Clinic Sirius{% endblock %}
+{% block title %}Добавить окна - {{ doctor.lname }} {{ doctor.fname }} | Clinic Sirius{% endblock %}
 
 {% block extra_head %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -133,7 +133,7 @@
         {% csrf_token %}
         <input type="hidden" name="mode" id="mode-input" value="day">
 
-        <!-- Общие поля -->
+        
         <div class="mb-3">
           <label class="form-label">Дата</label>
           <div class="input-group">
@@ -155,7 +155,7 @@
           </div>
         </div>
 
-        <!-- Режим "Расписание на день" -->
+        
         <div id="day-mode-fields">
           <div class="row g-3 mb-3">
             <div class="col-6">
@@ -204,7 +204,7 @@
           </div>
         </div>
 
-        <!-- Режим "Одиночное окно" -->
+        
         <div id="single-mode-fields" style="display: none;">
           <div class="row g-3 mb-3">
             <div class="col-6">

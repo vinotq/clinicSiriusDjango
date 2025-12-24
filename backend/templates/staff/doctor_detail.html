@@ -95,7 +95,7 @@
                   {% for slot in schedule %}
                     <tr>
                       <td>{{ slot.time_from|date:"d.m.Y" }}</td>
-                      <td class="fw-semibold">{{ slot.time_from|time:"H:i" }}–{{ slot.time_to|time:"H:i" }}</td>
+                      <td class="fw-semibold">{{ slot.time_from|time:"H:i" }}-{{ slot.time_to|time:"H:i" }}</td>
                       <td>{{ slot.room.room_number }}</td>
                     </tr>
                   {% endfor %}

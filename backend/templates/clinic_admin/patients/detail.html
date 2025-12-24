@@ -526,11 +526,11 @@
             </div>
           <div class="mb-3">
               <strong>Телефон:</strong><br>
-              {{ patient.phone_number|default:"—" }}
+              {{ patient.phone_number|default:"-" }}
             </div>
           <div class="mb-3">
               <strong>Email:</strong><br>
-              {{ patient.email|default:"—" }}
+              {{ patient.email|default:"-" }}
             </div>
           <div class="mb-3">
               <strong>СНИЛС:</strong><br>
@@ -594,7 +594,7 @@
     </div>
   </div>
 
-  <!-- Календарь записей -->
+  
   <div class="mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h4 class="mb-0">Записи на прием</h4>
@@ -605,7 +605,7 @@
       </div>
     </div>
     
-    <!-- Список всех приёмов -->
+    
     <div class="card mb-4">
       <div class="card-header">
         <h5 class="mb-0">Все приёмы ({{ appointments|length }})</h5>
@@ -631,7 +631,7 @@
                       <div class="fw-semibold">{{ appt.date|date:"d.m.Y" }}</div>
                       <div class="text-muted small">
                         {% if appt.slot %}
-                          {{ appt.slot.time_from|time:"H:i" }} – {{ appt.slot.time_to|time:"H:i" }}
+                          {{ appt.slot.time_from|time:"H:i" }} - {{ appt.slot.time_to|time:"H:i" }}
                         {% else %}
                           {{ appt.date|time:"H:i" }}
                         {% endif %}
@@ -643,7 +643,7 @@
                       {% if appt.slot and appt.slot.room %}
                         Каб. {{ appt.slot.room.room_number }}
                       {% else %}
-                        <span class="text-muted">—</span>
+                        <span class="text-muted">-</span>
                       {% endif %}
                     </td>
                     <td>
@@ -704,7 +704,7 @@
               <button type="button">‹</button>
             </a>
             <div class="week-date">
-              {{ week_start|date:"d" }} {{ week_days.0.month_name }} {{ week_start|date:"Y" }} – {{ week_end|date:"d" }} {{ week_end_month_name }} {{ week_end|date:"Y" }}
+              {{ week_start|date:"d" }} {{ week_days.0.month_name }} {{ week_start|date:"Y" }} - {{ week_end|date:"d" }} {{ week_end_month_name }} {{ week_end|date:"Y" }}
             </div>
             <a href="?view=week&week={{ next_week }}">
               <button type="button">›</button>
@@ -718,7 +718,7 @@
       </div>
 
       <div class="calendar-grid {% if view_type == 'day' %}day-view{% endif %}">
-        <!-- Временная колонка -->
+        
         <div class="time-column">
           <div style="height: 100px; border-bottom: 2px solid #e5e7eb;"></div>
           {% for hour in "6789012345678901234567"|make_list %}
@@ -732,7 +732,7 @@
           {% endfor %}
         </div>
 
-        <!-- Колонки дней -->
+        
         {% for day in week_days %}
           <div class="day-column">
             <div class="day-header {% if day.is_today %}today{% endif %}">
@@ -750,7 +750,7 @@
                     {% if appt_height >= 60 %}
                       <div class="appointment-time">
                         {% if appt.slot %}
-                          {{ appt.slot.time_from|time:"H:i" }} – {{ appt.slot.time_to|time:"H:i" }}
+                          {{ appt.slot.time_from|time:"H:i" }} - {{ appt.slot.time_to|time:"H:i" }}
                         {% else %}
                           {{ appt.date|time:"H:i" }}
                         {% endif %}
@@ -765,7 +765,7 @@
                     {% else %}
                       <div class="appointment-time" style="margin: 0; line-height: 1.2; font-size: 0.75rem; color: white;">
                         {% if appt.slot %}
-                          {{ appt.slot.time_from|time:"H:i" }}–{{ appt.slot.time_to|time:"H:i" }}
+                          {{ appt.slot.time_from|time:"H:i" }}-{{ appt.slot.time_to|time:"H:i" }}
                         {% else %}
                           {{ appt.date|time:"H:i" }}
                         {% endif %}
@@ -781,7 +781,7 @@
     </div>
   </div>
   
-  <!-- Легенда -->
+  
   <div class="col-lg-3">
     <div class="card border-0 shadow-sm">
       <div class="card-body">
@@ -817,7 +817,7 @@
   </div>
 </section>
 
-<!-- Модальное окно для отмены записи -->
+
 <div class="modal fade" id="cancelAppointmentModal" tabindex="-1" aria-labelledby="cancelAppointmentModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -875,7 +875,7 @@ function showCancelAppointmentModal(appointmentId, doctorName, specialization, d
   modalDoctorName.textContent = doctorName;
   modalSpecialization.textContent = specialization;
   modalDate.textContent = date;
-  modalTime.textContent = timeTo ? timeFrom + ' – ' + timeTo : timeFrom;
+  modalTime.textContent = timeTo ? timeFrom + ' - ' + timeTo : timeFrom;
   
   const modal = new bootstrap.Modal(modalElement);
   modal.show();

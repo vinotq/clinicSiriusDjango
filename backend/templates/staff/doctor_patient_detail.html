@@ -29,11 +29,11 @@
           </div>
           <div class="mb-3">
             <strong>Телефон:</strong><br>
-            {{ patient.phone_number|default:"—" }}
+            {{ patient.phone_number|default:"-" }}
           </div>
           <div class="mb-3">
             <strong>Email:</strong><br>
-            {{ patient.email|default:"—" }}
+            {{ patient.email|default:"-" }}
           </div>
           <div class="mb-3">
             <strong>СНИЛС:</strong><br>
@@ -78,7 +78,7 @@
     </div>
   </div>
 
-  <!-- Список приёмов -->
+  
   <div class="card">
     <div class="card-header">
       <h5 class="mb-0">Все приёмы ({{ appointments_count }})</h5>
@@ -101,7 +101,7 @@
                     <div class="fw-semibold">{{ appt.date|date:"d.m.Y" }}</div>
                     <div class="text-muted small">
                       {% if appt.slot %}
-                        {{ appt.slot.time_from|time:"H:i" }} – {{ appt.slot.time_to|time:"H:i" }}
+                        {{ appt.slot.time_from|time:"H:i" }} - {{ appt.slot.time_to|time:"H:i" }}
                       {% else %}
                         {{ appt.date|time:"H:i" }}
                       {% endif %}
@@ -141,7 +141,7 @@
   </div>
 </section>
 
-<!-- Modal для просмотра результатов приема -->
+
 <div class="modal fade" id="appointmentModal" tabindex="-1" aria-labelledby="appointmentModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-scrollable">
     <div class="modal-content">

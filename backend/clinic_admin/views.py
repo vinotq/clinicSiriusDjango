@@ -28,59 +28,65 @@ from .views_doctors import (
 )
 
 class AdminDashboardView(AdminRequiredMixin, TemplateView):
+    """Главная панель администратора."""
+
     template_name = 'clinic_admin/dashboard.html'
 
     def get_context_data(self, **kwargs):
+        """Получение контекста для панели администратора."""
         context = super().get_context_data(**kwargs)
-        
+
         now = timezone.now()
-        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        today_start = now.replace(
+            hour=0,
+            minute=0,
+            second=0,
+            microsecond=0
+        )
         today_end = today_start + timedelta(days=1)
-        
-        # Базовая статистика
+
         context['patients_count'] = Patient.objects.count()
         context['doctors_count'] = Doctor.objects.count()
         context['today_appointments'] = Appointment.objects.filter(
             date__gte=today_start,
             date__lt=today_end
         ).count()
-        
+
         return context
 
 
 class AnalyticsView(AdminRequiredMixin, TemplateView):
+    """Представление аналитики клиники."""
+
     template_name = 'clinic_admin/analytics.html'
-    
+
     def get_context_data(self, **kwargs):
+        """Получение контекста для страницы аналитики."""
         context = super().get_context_data(**kwargs)
-        
+
         now = timezone.now()
         today = now.date()
-        
 
         start_date_str = self.request.GET.get('start_date', '').strip()
         end_date_str = self.request.GET.get('end_date', '').strip()
-        
 
         if start_date_str:
-            
             parsed_date = None
             try:
                 if '-' in start_date_str:
-                    
-                    parsed_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+                    parsed_date = datetime.strptime(
+                        start_date_str,
+                        '%Y-%m-%d'
+                    ).date()
                 else:
-                    
                     parsed_date = parse_date_ddmmyyyy(start_date_str)
             except (ValueError, TypeError):
                 pass
             if parsed_date:
                 start_date = parsed_date
             else:
-                
                 start_date = today - timedelta(days=30)
         else:
-            
             days_back_str = self.request.GET.get('days', '30')
             try:
                 days_back = int(days_back_str)
@@ -88,21 +94,20 @@ class AnalyticsView(AdminRequiredMixin, TemplateView):
                 days_back = 30
             start_date = today - timedelta(days=days_back)
         if end_date_str:
-            
             parsed_date = None
             try:
                 if '-' in end_date_str:
-                    
-                    parsed_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+                    parsed_date = datetime.strptime(
+                        end_date_str,
+                        '%Y-%m-%d'
+                    ).date()
                 else:
-                    
                     parsed_date = parse_date_ddmmyyyy(end_date_str)
             except (ValueError, TypeError):
                 pass
             if parsed_date:
                 end_date = parsed_date
             else:
-                
                 end_date = today
         else:
             end_date = today
@@ -131,14 +136,17 @@ class AnalyticsView(AdminRequiredMixin, TemplateView):
         if filter_doctor:
             status_base_qs = status_base_qs.filter(doctor_id=filter_doctor)
         if filter_specialization:
-            status_base_qs = status_base_qs.filter(doctor__specialization_id=filter_specialization)
+            status_base_qs = status_base_qs.filter(
+                doctor__specialization_id=filter_specialization
+            )
         context['total_appointments'] = appointments_qs.count()
         context['appointments_by_status'] = {
             'booked': status_base_qs.filter(status='booked').count(),
-            'in_progress': status_base_qs.filter(status='in_progress').count(),
+            'in_progress': status_base_qs.filter(
+                status='in_progress'
+            ).count(),
             'completed': status_base_qs.filter(status='completed').count(),
         }
-        
 
         appointments_by_day = defaultdict(int)
         
@@ -163,15 +171,19 @@ class AnalyticsView(AdminRequiredMixin, TemplateView):
                 chart_data.append(appointments_by_day.get(day_str, 0))
             except (ValueError, TypeError):
                 continue
-        context['appointments_chart_labels'] = json.dumps(formatted_days, ensure_ascii=False)
-        context['appointments_chart_data'] = json.dumps(chart_data, ensure_ascii=False)
-        
+        context['appointments_chart_labels'] = json.dumps(
+            formatted_days,
+            ensure_ascii=False
+        )
+        context['appointments_chart_data'] = json.dumps(
+            chart_data,
+            ensure_ascii=False
+        )
 
         doctors_appointments_qs = Appointment.objects.filter(
             date__date__gte=start_date,
             date__date__lte=end_date
         )
-        
 
         if filter_doctor:
             doctors_appointments_qs = doctors_appointments_qs.filter(doctor_id=filter_doctor)
@@ -219,77 +231,102 @@ class AnalyticsView(AdminRequiredMixin, TemplateView):
         if filter_status:
             specs_appointments_qs = specs_appointments_qs.filter(status=filter_status)
         if filter_specialization:
-            specs_appointments_qs = specs_appointments_qs.filter(doctor__specialization_id=filter_specialization)
+            specs_appointments_qs = specs_appointments_qs.filter(
+                doctor__specialization_id=filter_specialization
+            )
         specializations_stats = Specialization.objects.annotate(
             doctors_count=Count('doctor'),
-            appointments_count=Count('doctor__appointment', filter=Q(
-                doctor__appointment__in=specs_appointments_qs
-            ))
+            appointments_count=Count(
+                'doctor__appointment',
+                filter=Q(doctor__appointment__in=specs_appointments_qs)
+            )
         ).order_by('-appointments_count')
-        
+
         context['specializations_stats'] = specializations_stats
-        context['specs_chart_labels'] = json.dumps([s.name for s in specializations_stats[:10]])
-        context['specs_chart_data'] = json.dumps([s.appointments_count for s in specializations_stats[:10]])
-        
+        context['specs_chart_labels'] = json.dumps(
+            [s.name for s in specializations_stats[:10]]
+        )
+        context['specs_chart_data'] = json.dumps(
+            [s.appointments_count for s in specializations_stats[:10]]
+        )
 
         context['total_patients'] = Patient.objects.count()
-        
 
         days_in_period = (end_date - start_date).days
         if days_in_period > 0:
-            estimated_new = int(Patient.objects.count() * (days_in_period / 365))
-            context['new_patients_last_month'] = min(estimated_new, Patient.objects.count())
+            estimated_new = int(
+                Patient.objects.count() * (days_in_period / 365)
+            )
+            context['new_patients_last_month'] = min(
+                estimated_new,
+                Patient.objects.count()
+            )
         else:
             context['new_patients_last_month'] = 0
         rooms_appointments_qs = Appointment.objects.filter(
             date__date__gte=start_date,
             date__date__lte=end_date
         )
-        
 
         if filter_doctor:
             rooms_appointments_qs = rooms_appointments_qs.filter(doctor_id=filter_doctor)
         if filter_status:
             rooms_appointments_qs = rooms_appointments_qs.filter(status=filter_status)
         if filter_specialization:
-            rooms_appointments_qs = rooms_appointments_qs.filter(doctor__specialization_id=filter_specialization)
+            rooms_appointments_qs = rooms_appointments_qs.filter(
+                doctor__specialization_id=filter_specialization
+            )
         rooms_stats = Room.objects.annotate(
-            slots_count=Count('appointmentschedule_set', filter=Q(
-                appointmentschedule_set__time_from__date__gte=start_date,
-                appointmentschedule_set__time_from__date__lte=end_date
-            )),
-            booked_count=Count('appointmentschedule_set__appointment', filter=Q(
-                appointmentschedule_set__appointment__in=rooms_appointments_qs
-            ))
+            slots_count=Count(
+                'appointmentschedule_set',
+                filter=Q(
+                    appointmentschedule_set__time_from__date__gte=start_date,
+                    appointmentschedule_set__time_from__date__lte=end_date
+                )
+            ),
+            booked_count=Count(
+                'appointmentschedule_set__appointment',
+                filter=Q(
+                    appointmentschedule_set__appointment__in=rooms_appointments_qs
+                )
+            )
         ).order_by('-booked_count')
-        
+
         context['rooms_stats'] = rooms_stats
-        context['rooms_chart_labels'] = json.dumps([f"Кабинет {r.room_number}" for r in rooms_stats])
-        context['rooms_chart_data'] = json.dumps([r.booked_count for r in rooms_stats])
-        
+        context['rooms_chart_labels'] = json.dumps(
+            [f"Кабинет {r.room_number}" for r in rooms_stats]
+        )
+        context['rooms_chart_data'] = json.dumps(
+            [r.booked_count for r in rooms_stats]
+        )
 
         hour_counts = defaultdict(int)
         for appt in appointments_qs:
             hour = appt.date.hour
             hour_counts[hour] += 1
-        context['hours_chart_labels'] = json.dumps([f"{h}:00" for h in range(6, 22)])
-        context['hours_chart_data'] = json.dumps([hour_counts.get(h, 0) for h in range(6, 22)])
-        
+        context['hours_chart_labels'] = json.dumps(
+            [f"{h}:00" for h in range(6, 22)]
+        )
+        context['hours_chart_data'] = json.dumps(
+            [hour_counts.get(h, 0) for h in range(6, 22)]
+        )
 
         context['start_date'] = start_date
         context['end_date'] = end_date
         context['start_date_str'] = start_date.strftime('%d.%m.%Y')
         context['end_date_str'] = end_date.strftime('%d.%m.%Y')
-        
 
         context['filter_doctor'] = filter_doctor
         context['filter_status'] = filter_status
         context['filter_specialization'] = filter_specialization
-        
 
-        context['doctors_list'] = Doctor.objects.all().order_by('lname', 'fname')
-        context['specializations_list'] = Specialization.objects.all().order_by('name')
-        
+        context['doctors_list'] = Doctor.objects.all().order_by(
+            'lname',
+            'fname'
+        )
+        context['specializations_list'] = (
+            Specialization.objects.all().order_by('name')
+        )
 
         if 'appointments_chart_labels' not in context:
             context['appointments_chart_labels'] = json.dumps([], ensure_ascii=False)
@@ -315,34 +352,35 @@ class AnalyticsView(AdminRequiredMixin, TemplateView):
 
 
 class ClinicScheduleView(AdminRequiredMixin, TemplateView):
-    """Расписание клиники с фильтрацией"""
+    """Расписание клиники с фильтрацией."""
+
     template_name = 'clinic_admin/schedule/clinic_schedule.html'
 
     def get_context_data(self, **kwargs):
+        """Получение контекста для расписания клиники."""
         context = super().get_context_data(**kwargs)
-        
-        # Получаем параметры фильтров
+
         date_from_str = self.request.GET.get('date_from', '').strip()
         date_to_str = self.request.GET.get('date_to', '').strip()
         doctor_id = self.request.GET.get('doctor', '').strip()
         room_id = self.request.GET.get('room', '').strip()
         status = self.request.GET.get('status', '').strip()
         patient_search = self.request.GET.get('patient', '').strip()
-        
-        # Парсим даты
+
         date_from = None
         date_to = None
         if date_from_str:
             date_from = parse_date_ddmmyyyy(date_from_str)
         if date_to_str:
             date_to = parse_date_ddmmyyyy(date_to_str)
-        
-        # Получаем все окна врачей (слоты) в указанном диапазоне дат
+
         slots_qs = AppointmentSchedule.objects.all().select_related(
-            'doctor', 'doctor__specialization', 'room', 'appointment', 'appointment__patient'
+            'doctor',
+            'doctor__specialization',
+            'room',
+            'appointment',
+            'appointment__patient'
         )
-        
-        # Применяем фильтры к слотам
         if date_from:
             slots_qs = slots_qs.filter(time_from__date__gte=date_from)
         if date_to:
@@ -352,10 +390,8 @@ class ClinicScheduleView(AdminRequiredMixin, TemplateView):
         if room_id:
             slots_qs = slots_qs.filter(room_id=room_id)
         if status:
-            # Фильтр по статусу: показываем только слоты с записями нужного статуса
             slots_qs = slots_qs.filter(appointment__status=status)
         if patient_search:
-            # Фильтр по пациенту: показываем только слоты с записями, где пациент соответствует поиску
             slots_qs = slots_qs.filter(
                 Q(appointment__isnull=False) & (
                     Q(appointment__patient__lname__icontains=patient_search) |
@@ -363,29 +399,28 @@ class ClinicScheduleView(AdminRequiredMixin, TemplateView):
                     Q(appointment__patient__email__icontains=patient_search)
                 )
             )
-        
-        # Сортируем по дате и времени
-        slots_qs = slots_qs.order_by('time_from', 'doctor__lname', 'doctor__fname')
-        
-        # Группируем слоты по дате и врачу
+
+        slots_qs = slots_qs.order_by(
+            'time_from',
+            'doctor__lname',
+            'doctor__fname'
+        )
+
         schedule_dict = defaultdict(lambda: defaultdict(list))
-        
+
         for slot in slots_qs:
             date_key = slot.time_from.date().isoformat()
             doctor_key = slot.doctor.pk
             schedule_dict[date_key][doctor_key].append(slot)
-        
-        # Преобразуем в структуру для шаблона
+
         day_names_short = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
         schedule_list = []
         for date_str in sorted(schedule_dict.keys()):
             date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
             doctors_list = []
-            
-            # Сортируем врачей по фамилии
+
             doctors_data = []
             for doctor_id, slots in schedule_dict[date_str].items():
-                # Сортируем слоты по времени внутри каждого врача
                 slots_sorted = sorted(slots, key=lambda s: s.time_from)
                 doctor = slots_sorted[0].doctor
                 doctors_data.append({
@@ -393,9 +428,10 @@ class ClinicScheduleView(AdminRequiredMixin, TemplateView):
                     'slots': slots_sorted,
                     'total_count': len(slots_sorted)
                 })
-            
-            # Сортируем список врачей по фамилии, затем по имени
-            doctors_data.sort(key=lambda d: (d['doctor'].lname, d['doctor'].fname))
+
+            doctors_data.sort(
+                key=lambda d: (d['doctor'].lname, d['doctor'].fname)
+            )
             doctors_list = doctors_data
             
             schedule_list.append({
@@ -404,15 +440,19 @@ class ClinicScheduleView(AdminRequiredMixin, TemplateView):
                 'day_name_short': day_names_short[date_obj.weekday()],
                 'doctors': doctors_list
             })
-        
-        # Также получаем статистику по записям для контекста
+
         appointments_qs = Appointment.objects.all().select_related(
-            'patient', 'doctor', 'doctor__specialization', 'slot', 'slot__room'
+            'patient',
+            'doctor',
+            'doctor__specialization',
+            'slot',
+            'slot__room'
         )
-        
-        # Применяем фильтры к записям для статистики (кроме статуса, т.к. он нужен для отдельных подсчетов)
+
         if date_from:
-            appointments_qs = appointments_qs.filter(date__date__gte=date_from)
+            appointments_qs = appointments_qs.filter(
+                date__date__gte=date_from
+            )
         if date_to:
             appointments_qs = appointments_qs.filter(date__date__lte=date_to)
         if doctor_id:
@@ -425,101 +465,123 @@ class ClinicScheduleView(AdminRequiredMixin, TemplateView):
                 Q(patient__fname__icontains=patient_search) |
                 Q(patient__email__icontains=patient_search)
             )
-        
-        # Статистика - считаем до применения фильтра по статусу
-        base_appointments_qs = appointments_qs  # Сохраняем базовый queryset без фильтра по статусу
-        
-        # Если фильтр по статусу применен, применяем его к общему счету
+
+        base_appointments_qs = appointments_qs
+
         if status:
             appointments_qs = appointments_qs.filter(status=status)
-        
-        # Пагинация по датам
-        paginator = Paginator(schedule_list, 7)  # 7 дней на страницу
+
+        paginator = Paginator(schedule_list, 7)
         page = self.request.GET.get('page', 1)
         schedule_page = paginator.get_page(page)
-        
-        # Статистика - используем базовый queryset для подсчета по статусам
-        context['total_count'] = appointments_qs.count()  # Общее количество с учетом всех фильтров включая статус
-        context['booked_count'] = base_appointments_qs.filter(status='booked').count()
-        context['in_progress_count'] = base_appointments_qs.filter(status='in_progress').count()
-        context['completed_count'] = base_appointments_qs.filter(status='completed').count()
-        
-        # Контекст для фильтров
+
+        context['total_count'] = appointments_qs.count()
+        context['booked_count'] = (
+            base_appointments_qs.filter(status='booked').count()
+        )
+        context['in_progress_count'] = (
+            base_appointments_qs.filter(status='in_progress').count()
+        )
+        context['completed_count'] = (
+            base_appointments_qs.filter(status='completed').count()
+        )
+
         context['date_from'] = date_from_str
         context['date_to'] = date_to_str
         context['selected_doctor_id'] = doctor_id
         context['selected_room_id'] = room_id
         context['selected_status'] = status
         context['patient_search'] = patient_search
-        
-        # Списки для фильтров
+
         context['doctors'] = Doctor.objects.all().order_by('lname', 'fname')
         context['rooms'] = Room.objects.all().order_by('room_number')
         context['status_choices'] = Appointment.STATUS_CHOICES
-        
-        # Результаты
+
         context['schedule_page'] = schedule_page
         
         return context
 
 
 class AppointmentUpdateStatusView(AdminRequiredMixin, View):
+    """Представление для обновления статуса приема."""
+
     def post(self, request, *args, **kwargs):
+        """Обработка POST запроса на обновление статуса."""
         appointment_id = request.POST.get('appointment_id')
         new_status = request.POST.get('status')
-        
+
         if not appointment_id or not new_status:
             messages.error(request, 'Не указаны необходимые параметры')
             return redirect('clinic_admin:clinic_schedule')
-        
+
         if new_status not in dict(Appointment.STATUS_CHOICES).keys():
             messages.error(request, 'Некорректный статус')
             return redirect('clinic_admin:clinic_schedule')
-        
+
         try:
             appointment = get_object_or_404(Appointment, pk=appointment_id)
             old_status = appointment.status
             appointment.status = new_status
-            
+
             if new_status == 'cancelled' and appointment.slot:
                 slot = appointment.slot
                 appointment.slot = None
                 appointment.save()
             else:
                 appointment.save()
-            
+
             status_display = dict(Appointment.STATUS_CHOICES)[new_status]
-            messages.success(request, f'Статус приема изменен с "{dict(Appointment.STATUS_CHOICES)[old_status]}" на "{status_display}"')
+            messages.success(
+                request,
+                f'Статус приема изменен с '
+                f'"{dict(Appointment.STATUS_CHOICES)[old_status]}" '
+                f'на "{status_display}"'
+            )
         except Exception as e:
-            messages.error(request, f'Ошибка при изменении статуса: {str(e)}')
-        
+            messages.error(
+                request,
+                f'Ошибка при изменении статуса: {str(e)}'
+            )
+
         referer = request.META.get('HTTP_REFERER', '/admin-panel/schedule/')
         return redirect(referer)
 
 
 class AppointmentResultsView(AdminRequiredMixin, TemplateView):
+    """Представление результатов приема."""
+
     template_name = 'clinic_admin/appointments/results.html'
-    
+
     def get_context_data(self, **kwargs):
+        """Получение контекста для результатов приема."""
         context = super().get_context_data(**kwargs)
         appointment = get_object_or_404(
             Appointment.objects.select_related(
-                'patient', 'doctor', 'doctor__specialization', 'slot', 'slot__room'
+                'patient',
+                'doctor',
+                'doctor__specialization',
+                'slot',
+                'slot__room'
             ),
             pk=kwargs['pk']
         )
-        
+
         context['appointment'] = appointment
-        
+
         try:
             recipe = appointment.recipe
             recipe = Recipe.objects.select_related(
-                'diagnosis', 'next_appointment_slot', 'next_appointment_slot__room',
-                'next_appointment_slot__doctor', 'referral_doctor', 'referral_doctor__specialization',
-                'referral_slot', 'referral_slot__room'
+                'diagnosis',
+                'next_appointment_slot',
+                'next_appointment_slot__room',
+                'next_appointment_slot__doctor',
+                'referral_doctor',
+                'referral_doctor__specialization',
+                'referral_slot',
+                'referral_slot__room'
             ).get(appointment=appointment)
             context['recipe'] = recipe
         except Recipe.DoesNotExist:
             context['recipe'] = None
-        
+
         return context

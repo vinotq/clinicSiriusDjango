@@ -348,7 +348,7 @@
   </div>
 
   <div class="row g-4">
-    <!-- Календарь -->
+    
     <div class="col-lg-9">
       <div class="schedule-calendar">
         <div class="calendar-header">
@@ -383,10 +383,10 @@
               <div class="week-date">
                 {% if week_days %}
                   {% with last_day=week_days|last %}
-                    {{ week_start|date:"d" }} {{ week_days.0.month_name }} {{ week_start|date:"Y" }} – {{ week_end|date:"d" }} {% if week_days|length > 6 %}{{ week_days.6.month_name }}{% else %}{{ last_day.month_name }}{% endif %} {{ week_end|date:"Y" }}
+                    {{ week_start|date:"d" }} {{ week_days.0.month_name }} {{ week_start|date:"Y" }} - {{ week_end|date:"d" }} {% if week_days|length > 6 %}{{ week_days.6.month_name }}{% else %}{{ last_day.month_name }}{% endif %} {{ week_end|date:"Y" }}
                   {% endwith %}
                 {% else %}
-                  {{ week_start|date:"d.m.Y" }} – {{ week_end|date:"d.m.Y" }}
+                  {{ week_start|date:"d.m.Y" }} - {{ week_end|date:"d.m.Y" }}
                 {% endif %}
               </div>
               <a href="?view=week&week={{ next_week }}" class="text-decoration-none">
@@ -407,7 +407,7 @@
         </div>
 
         <div class="calendar-grid {% if view_type == 'day' %}day-view{% endif %}">
-          <!-- Временная колонка -->
+          
           <div class="time-column">
             <div style="height: 100px; border-bottom: 2px solid #e5e7eb;"></div>
             {% for hour in "6789012345678901234567"|make_list %}
@@ -421,7 +421,7 @@
             {% endfor %}
           </div>
 
-          <!-- Колонки дней -->
+          
           {% for day in week_days %}
             <div class="day-column">
               <div class="day-header {% if day.is_today %}today{% endif %}">
@@ -438,17 +438,17 @@
                          {% if slot.appointment %}
                            data-appointment-id="{{ slot.appointment.pk }}"
                            data-appointment-status="{{ slot.appointment.status }}"
-                           title="{% format_name_short slot.appointment.patient.lname slot.appointment.patient.fname slot.appointment.patient.tname %} - {{ slot.time_from|time:'H:i' }}–{{ slot.time_to|time:'H:i' }} ({{ slot.appointment.get_status_display }})"
+                           title="{% format_name_short slot.appointment.patient.lname slot.appointment.patient.fname slot.appointment.patient.tname %} - {{ slot.time_from|time:'H:i' }}-{{ slot.time_to|time:'H:i' }} ({{ slot.appointment.get_status_display }})"
                            {% if slot.appointment.status == 'completed' %}
                              onclick="window.location.href='{% url 'clinic_admin:appointment_results' slot.appointment.pk %}'"
                            {% else %}
-                             onclick="showStatusModal({{ slot.appointment.pk }}, '{{ slot.appointment.status }}', '{% format_name_short slot.appointment.patient.lname slot.appointment.patient.fname slot.appointment.patient.tname %}', '{{ slot.time_from|time:"H:i" }}–{{ slot.time_to|time:"H:i" }}')"
+                             onclick="showStatusModal({{ slot.appointment.pk }}, '{{ slot.appointment.status }}', '{% format_name_short slot.appointment.patient.lname slot.appointment.patient.fname slot.appointment.patient.tname %}', '{{ slot.time_from|time:"H:i" }}-{{ slot.time_to|time:"H:i" }}')"
                            {% endif %}
                          {% else %}
-                           title="Свободно - {{ slot.time_from|time:'H:i' }}–{{ slot.time_to|time:'H:i' }}"
+                           title="Свободно - {{ slot.time_from|time:'H:i' }}-{{ slot.time_to|time:'H:i' }}"
                          {% endif %}>
                       {% if slot_height >= 60 %}
-                        <div class="slot-time">{{ slot.time_from|time:"H:i" }} – {{ slot.time_to|time:"H:i" }}</div>
+                        <div class="slot-time">{{ slot.time_from|time:"H:i" }} - {{ slot.time_to|time:"H:i" }}</div>
                         {% if slot_height >= 90 %}
                           <div class="slot-room">Каб. {{ slot.room.room_number }}</div>
                           {% if slot.appointment %}
@@ -456,7 +456,7 @@
                           {% endif %}
                         {% endif %}
                       {% else %}
-                        <div class="slot-time" style="margin: 0; line-height: 1.2; font-size: 0.75rem; color: white;">{{ slot.time_from|time:"H:i" }}–{{ slot.time_to|time:"H:i" }}</div>
+                        <div class="slot-time" style="margin: 0; line-height: 1.2; font-size: 0.75rem; color: white;">{{ slot.time_from|time:"H:i" }}-{{ slot.time_to|time:"H:i" }}</div>
                       {% endif %}
                     </div>
                   {% endwith %}
@@ -468,10 +468,10 @@
       </div>
     </div>
     
-    <!-- Легенда -->
+    
     <div class="col-lg-3">
       <div class="d-flex flex-column gap-3">
-        <!-- Легенда -->
+        
         <div class="card border-0 shadow-sm">
           <div class="card-body">
             <h5 class="fw-semibold mb-4 d-flex align-items-center gap-2">
@@ -629,7 +629,7 @@ function updateAppointmentStatus(newStatus) {
 }
 </script>
 
-<!-- Modal для изменения статуса приема -->
+
 <div class="modal fade" id="statusModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
