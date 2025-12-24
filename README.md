@@ -201,66 +201,35 @@ ClinicSirius построен на классической архитектур
 
 ```mermaid
 graph TB
-    subgraph "Client Layer"
-        Browser[Browser<br/>HTML/CSS/JS]
-        API_Client[API Client<br/>HTTP/JSON]
+    subgraph "Клиент"
+        Browser[Браузер]
+        API_Client[API Клиент]
     end
     
     subgraph "Django Backend"
-        subgraph "Request Layer"
-            Router[URL Router]
-            Middleware[Middleware Stack<br/>CORS, CSRF, Auth, Session]
-        end
-        
-        subgraph "Application Layer"
-            TemplateViews[Template Views<br/>HTML Rendering]
-            APIViews[API Views/ViewSets<br/>REST API]
-            Mixins[Custom Mixins<br/>Permissions]
-        end
-        
-        subgraph "Business Logic"
-            Serializers[Serializers<br/>Data Transformation]
-            Permissions[Permissions<br/>Access Control]
-            Auth[JWT/Session Auth]
-        end
-        
-        subgraph "Data Layer"
-            Models[Models/ORM<br/>Django ORM]
-            Managers[Query Managers<br/>Optimization]
-        end
+        Middleware[Middleware<br/>CORS, CSRF, Auth]
+        Router[URL Router]
+        Views[Views<br/>Template & API]
+        AuthPerms[Auth & Permissions<br/>JWT/Session]
+        Serializers[Сериализаторы]
+        Models[Models/ORM]
     end
     
-    subgraph "Database"
-        PostgreSQL[(PostgreSQL<br/>Relational Database)]
-    end
+    DB[(PostgreSQL)]
     
-    Browser -->|HTTP Request| Middleware
-    API_Client -->|HTTP + JWT| Middleware
-    
+    Browser -->|HTTP| Middleware
+    API_Client -->|HTTP+JWT| Middleware
     Middleware --> Router
-    Router --> TemplateViews
-    Router --> APIViews
-    
-    TemplateViews --> Mixins
-    APIViews --> Mixins
-    
-    Mixins --> Permissions
-    Permissions --> Auth
-    
-    TemplateViews --> Models
-    APIViews --> Serializers
+    Router --> Views
+    Views --> AuthPerms
+    Views --> Serializers
+    Views --> Models
     Serializers --> Models
-    
-    Models --> Managers
-    Managers --> PostgreSQL
-    
-    PostgreSQL -->|SQL Results| Models
-    Models -->|Python Objects| Serializers
-    Models -->|Context| TemplateViews
-    
-    Serializers -->|JSON| APIViews
-    TemplateViews -->|HTML| Browser
-    APIViews -->|JSON| API_Client
+    Models --> DB
+    DB --> Models
+    Models --> Serializers
+    Views -->|HTML| Browser
+    Views -->|JSON| API_Client
 ```
 
 
