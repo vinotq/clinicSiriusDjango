@@ -4,30 +4,57 @@ from .models import Doctor, Specialization
 
 User = get_user_model()
 
+
 class SpecializationSerializer(serializers.ModelSerializer):
+    """Сериализатор специализации."""
+
     class Meta:
         model = Specialization
         fields = ['id', 'name']
 
 
 class DoctorSerializer(serializers.ModelSerializer):
+    """Сериализатор врача."""
+
     specialization = SpecializationSerializer(read_only=True)
     specialization_id = serializers.IntegerField(write_only=True)
-    specialization_name = serializers.CharField(source='specialization.name', read_only=True)
-    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False)
-    
+    specialization_name = serializers.CharField(
+        source='specialization.name',
+        read_only=True
+    )
+    user = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        required=False
+    )
+
     class Meta:
         model = Doctor
-        fields = ['id', 'fname', 'lname', 'tname', 'bdate', 'phone_number', 'email', 
-                  'specialization', 'specialization_id', 'specialization_name', 'user']
-    
+        fields = [
+            'id',
+            'fname',
+            'lname',
+            'tname',
+            'bdate',
+            'phone_number',
+            'email',
+            'specialization',
+            'specialization_id',
+            'specialization_name',
+            'user'
+        ]
+
     def create(self, validated_data):
+        """Создание нового врача."""
         specialization_id = validated_data.pop('specialization_id')
         specialization = Specialization.objects.get(id=specialization_id)
-        doctor = Doctor.objects.create(specialization=specialization, **validated_data)
+        doctor = Doctor.objects.create(
+            specialization=specialization,
+            **validated_data
+        )
         return doctor
-    
+
     def update(self, instance, validated_data):
+        """Обновление данных врача."""
         specialization_id = validated_data.pop('specialization_id', None)
         if specialization_id:
             specialization = Specialization.objects.get(id=specialization_id)

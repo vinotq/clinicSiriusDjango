@@ -88,7 +88,6 @@
 
 {% block content %}
 <section class="container py-5">
-  <!-- Заголовок профиля -->
   {% if role == 'doctor' and doctor %}
   <div class="profile-header" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(255, 255, 255, 0.95) 100%); border-color: rgba(59, 130, 246, 0.2);">
     <div class="d-flex flex-column flex-md-row align-items-center align-items-md-start gap-4">
@@ -197,7 +196,6 @@
       <div class="card">
         <div class="card-body p-4">
           {% if role == 'doctor' and doctor %}
-          <!-- Информация о враче -->
           <h5 class="section-title">
             <i class="bi bi-person-badge me-2"></i>Информация о враче
           </h5>
@@ -292,7 +290,6 @@
           </div>
           
           {% elif role == 'admin' %}
-          <!-- Профиль администратора -->
           <h5 class="section-title">
             <i class="bi bi-shield-check me-2"></i>Информация администратора
           </h5>
@@ -355,7 +352,6 @@
           <form method="post" id="patient-form">
             {% csrf_token %}
             
-            <!-- Личные данные -->
             <h5 class="section-title">
               <i class="bi bi-person me-2"></i>Личные данные
             </h5>
@@ -412,7 +408,6 @@
               </div>
             </div>
 
-            <!-- Контактная информация -->
             <h5 class="section-title">
               <i class="bi bi-telephone me-2"></i>Контактная информация
             </h5>
@@ -449,7 +444,6 @@
               </div>
             </div>
 
-            <!-- Документы -->
             <h5 class="section-title">
               <i class="bi bi-file-earmark-text me-2"></i>Документы
             </h5>
@@ -563,7 +557,6 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 </script>
 
-<!-- Modal для подтверждения удаления профиля -->
 <div class="modal fade" id="deletePatientModal" tabindex="-1" aria-labelledby="deletePatientModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">

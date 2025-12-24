@@ -9,9 +9,12 @@ from staff.models import Doctor, Specialization
 from .utils import parse_date_ddmmyyyy
 
 class DoctorListView(AdminRequiredMixin, TemplateView):
+    """Список врачей."""
+
     template_name = 'clinic_admin/doctors/list.html'
-    
+
     def get_context_data(self, **kwargs):
+        """Получение контекста для списка врачей."""
         context = super().get_context_data(**kwargs)
         doctors = Doctor.objects.all().select_related('specialization').order_by('lname', 'fname')
         paginator = Paginator(doctors, 25)
@@ -22,9 +25,12 @@ class DoctorListView(AdminRequiredMixin, TemplateView):
 
 
 class DoctorCreateView(AdminRequiredMixin, TemplateView):
+    """Создание нового врача."""
+
     template_name = 'clinic_admin/doctors/form.html'
-    
+
     def get(self, request, *args, **kwargs):
+        """Обработка GET запроса для создания врача."""
         return render(request, self.template_name, {
             'action': 'create',
             'specializations': Specialization.objects.all().order_by('name')
@@ -74,10 +80,12 @@ class DoctorCreateView(AdminRequiredMixin, TemplateView):
                 'error': f'Ошибка при создании врача: {str(e)}'
             })
 class DoctorEditView(AdminRequiredMixin, View):
-    """Представление для создания расписания доктора (админ)"""
+    """Создание расписания доктора."""
+
     template_name = 'clinic_admin/schedule/add_timeslot.html'
-    
+
     def get(self, request, pk):
+        """Обработка GET запроса для создания расписания."""
         import json
         from scheduling.models import Room
         doctor = get_object_or_404(Doctor, pk=pk)
@@ -108,7 +116,7 @@ class DoctorEditView(AdminRequiredMixin, View):
                 try:
                     temp_date = datetime.strptime(date_str, '%Y-%m-%d').date()
                     date_str_display = temp_date.strftime('%d.%m.%Y')
-                except:
+                except (ValueError, TypeError):
                     pass
             return render(request, self.template_name, {
                 'doctor': doctor,
@@ -248,9 +256,12 @@ class DoctorEditView(AdminRequiredMixin, View):
 
 
 class DoctorDetailView(AdminRequiredMixin, TemplateView):
+    """Детальная информация о враче."""
+
     template_name = 'clinic_admin/doctors/detail.html'
-    
+
     def get_context_data(self, **kwargs):
+        """Получение контекста для детальной информации о враче."""
         context = super().get_context_data(**kwargs)
         doctor = get_object_or_404(Doctor, pk=kwargs['pk'])
         
@@ -428,7 +439,10 @@ class DoctorDetailView(AdminRequiredMixin, TemplateView):
 
 
 class DoctorDeleteView(AdminRequiredMixin, View):
+    """Удаление врача."""
+
     def post(self, request, *args, **kwargs):
+        """Обработка POST запроса на удаление врача."""
         doctor = get_object_or_404(Doctor, pk=kwargs['pk'])
         doctor_name = f"{doctor.lname} {doctor.fname}"
         doctor.delete()

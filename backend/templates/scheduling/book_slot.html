@@ -6,7 +6,7 @@
   {% endif %}
   
   <div class="mb-3">
-    <p class="mb-2"><strong>Время:</strong> {{ slot.time_from|time:"H:i" }} – {{ slot.time_to|time:"H:i" }}</p>
+    <p class="mb-2"><strong>Время:</strong> {{ slot.time_from|time:"H:i" }} - {{ slot.time_to|time:"H:i" }}</p>
     <p class="mb-3"><strong>Кабинет:</strong> {{ slot.room.room_number }}</p>
   </div>
   
@@ -25,7 +25,6 @@
     </ul>
     
     <div class="tab-content mt-3">
-      <!-- Выбор существующего пациента -->
       <div class="tab-pane fade show active" id="select-panel" role="tabpanel">
         <div class="mb-3">
           <label class="form-label">Выберите пациента</label>
@@ -52,7 +51,6 @@
         </div>
       </div>
       
-      <!-- Создание нового пациента -->
       <div class="tab-pane fade" id="create-panel" role="tabpanel">
         <input type="hidden" name="create_new_patient" value="true" id="createNewPatient">
         <div class="row">

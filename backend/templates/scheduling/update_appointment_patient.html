@@ -19,7 +19,7 @@
 
       <div class="card shadow-sm">
         <div class="card-body p-4 p-md-5">
-          <!-- Информация о записи -->
+          
           <div class="alert alert-info mb-4">
             <h6 class="alert-heading mb-3">
               <i class="bi bi-info-circle"></i> Информация о записи
@@ -55,7 +55,7 @@
             <div class="mb-4">
               <label class="form-label fw-semibold mb-3 fs-5">Выберите пациента</label>
               
-              <!-- Радио-кнопки для выбора режима -->
+              
               <div class="btn-group w-100 mb-4" role="group">
                 <input type="radio" class="btn-check" name="mode" id="modeSelect" value="select" checked>
                 <label class="btn btn-outline-primary" for="modeSelect">
@@ -68,7 +68,7 @@
                 </label>
               </div>
               
-              <!-- Список существующих пациентов -->
+              
               <div id="selectPatientSection">
                 <div class="d-flex flex-column gap-3">
                   {% for pat in all_patients %}
@@ -100,7 +100,7 @@
                 </div>
               </div>
               
-              <!-- Форма создания нового пациента -->
+              
               <div id="createPatientSection" style="display: none;">
                 <div class="card bg-light">
                   <div class="card-body">

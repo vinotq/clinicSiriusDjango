@@ -4,8 +4,6 @@ from django.views.generic import ListView, View
 from django.views.decorators.http import require_http_methods
 from django.utils.decorators import method_decorator
 from django.http import HttpResponseBadRequest, HttpResponseForbidden, JsonResponse
-from django.utils.dateparse import parse_datetime
-from django.db.models import Q, Prefetch
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
@@ -22,32 +20,33 @@ import re
 from .models import AppointmentSchedule, Appointment, Recipe, Diagnosis
 from .serializers import AppointmentScheduleSerializer, AppointmentSerializer
 from patients.models import Patient
-from staff.models import Doctor, Specialization
+from staff.models import Doctor
 
-# Утилита для работы с московским временем
-# Данные хранятся в UTC в базе (Django с USE_TZ=True)
 from django.utils import timezone
 
+
 def to_moscow_time(dt):
-    """Конвертирует datetime в московское время"""
+    """Конвертирует datetime в московское время."""
     if dt is None:
         return None
-    # Если naive datetime, делаем его aware с московским временем
     if not timezone.is_aware(dt):
         return timezone.make_aware(dt)
-    # Конвертируем в московское время
     return timezone.localtime(dt)
 
+
 def moscow_now():
-    """Возвращает текущее время в московском часовом поясе"""
+    """Возвращает текущее время в московском часовом поясе."""
     return timezone.localtime(timezone.now())
 
 class AppointmentScheduleViewSet(viewsets.ModelViewSet):
+    """ViewSet для работы с расписанием приемов."""
+
     queryset = AppointmentSchedule.objects.all()
     serializer_class = AppointmentScheduleSerializer
     permission_classes = [IsAuthenticated]
-    
+
     def get_queryset(self):
+        """Получение queryset с фильтрацией."""
         from django.utils import timezone
         queryset = AppointmentSchedule.objects.filter(
             appointment__isnull=True,
@@ -56,7 +55,7 @@ class AppointmentScheduleViewSet(viewsets.ModelViewSet):
         doctor_id = self.request.query_params.get('doctor_id')
         doctor = self.request.query_params.get('doctor')
         date = self.request.query_params.get('date')
-        
+
         if doctor_id:
             queryset = queryset.filter(doctor_id=doctor_id)
         elif doctor:
@@ -64,21 +63,25 @@ class AppointmentScheduleViewSet(viewsets.ModelViewSet):
         if date:
             queryset = queryset.filter(time_from__date=date)
         return queryset.order_by('time_from')
+
     @action(detail=False, methods=['get'])
     def available(self, request):
+        """Получение доступных слотов."""
         doctor_id = request.query_params.get('doctor_id')
         date = request.query_params.get('date')
-        
+
         queryset = self.get_queryset()
-        
+
         if doctor_id:
             queryset = queryset.filter(doctor_id=doctor_id)
         if date:
             queryset = queryset.filter(time_from__date=date)
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
     @action(detail=False, methods=['get'])
     def schedule_by_doctor(self, request):
+        """Получение расписания по врачу."""
         from django.utils import timezone
         doctor_id = request.query_params.get('doctor_id')
         
@@ -122,22 +125,37 @@ class AppointmentScheduleViewSet(viewsets.ModelViewSet):
                 'times': times
             })
         return Response(result)
+
+
 class AppointmentViewSet(viewsets.ModelViewSet):
+    """ViewSet для работы с записями на прием."""
+
     queryset = Appointment.objects.all()
     serializer_class = AppointmentSerializer
     permission_classes = [IsAuthenticated]
-    
+
     def get_queryset(self):
+        """Получение queryset записей текущего пользователя."""
         user = self.request.user
         if hasattr(user, 'patient_profile'):
-            return Appointment.objects.filter(patient=user.patient_profile).select_related(
-                'doctor', 'doctor__user', 'patient', 'slot', 'slot__room'
+            return Appointment.objects.filter(
+                patient=user.patient_profile
+            ).select_related(
+                'doctor',
+                'doctor__user',
+                'patient',
+                'slot',
+                'slot__room'
             )
         return Appointment.objects.none()
+
     def perform_create(self, serializer):
+        """Создание новой записи."""
         serializer.save()
+
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def cancel(self, request, pk=None):
+        """Отмена записи на прием."""
         appointment = self.get_object()
         
         user = request.user
@@ -182,8 +200,6 @@ class AppointmentViewSet(viewsets.ModelViewSet):
                 {'detail': 'This slot is already booked'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        if appointment.slot:
-            old_slot = appointment.slot
         appointment.slot = new_slot
         appointment.date = new_slot.time_from
         appointment.doctor = new_slot.doctor
@@ -227,11 +243,14 @@ class AppointmentViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK
         )
 class DoctorScheduleView(DoctorRequiredMixin, ListView):
+    """Расписание врача."""
+
     model = AppointmentSchedule
     template_name = 'scheduling/doctor_schedule.html'
     context_object_name = 'slots'
-    
+
     def get_queryset(self):
+        """Получение queryset слотов врача."""
         from django.utils import timezone
         self.doctor = get_object_or_404(Doctor, pk=self.kwargs['doctor_id'])
         queryset = AppointmentSchedule.objects.filter(doctor=self.doctor).select_related('room', 'appointment', 'appointment__patient').order_by('time_from')
@@ -288,8 +307,7 @@ class DoctorScheduleView(DoctorRequiredMixin, ListView):
         
 
         from django.utils import timezone
-        from collections import defaultdict
-        
+
         view_type = self.request.GET.get('view', 'week')
         selected_date_str = self.request.GET.get('date')
         
@@ -493,9 +511,12 @@ class DoctorScheduleView(DoctorRequiredMixin, ListView):
         
         return context
 class AddTimeSlotView(DoctorRequiredMixin, View):
+    """Добавление временного слота для врача."""
+
     template_name = 'scheduling/add_timeslot.html'
-    
+
     def get(self, request, doctor_id):
+        """Обработка GET запроса для добавления слота."""
         import json
         from .models import Room
         doctor = get_object_or_404(Doctor, pk=doctor_id)
@@ -526,7 +547,7 @@ class AddTimeSlotView(DoctorRequiredMixin, View):
                 try:
                     temp_date = datetime.strptime(date_str, '%Y-%m-%d').date()
                     date_str_display = temp_date.strftime('%d.%m.%Y')
-                except:
+                except (ValueError, TypeError):
                     pass
             return render(request, self.template_name, {
                 'doctor': doctor,
@@ -675,9 +696,12 @@ class AddTimeSlotView(DoctorRequiredMixin, View):
             })
 @method_decorator(require_http_methods(['GET', 'POST']), name='dispatch')
 class BookAppointmentView(PatientRequiredMixin, View):
+    """Запись на прием (многошаговая форма)."""
+
     template_name = 'clinic/appointment_form.html'
-    
+
     def get(self, request):
+        """Обработка GET запроса для записи на прием."""
         step = request.GET.get('step', '1')
         step = int(step) if step.isdigit() else 1
         
@@ -914,7 +938,10 @@ class BookAppointmentView(PatientRequiredMixin, View):
         return redirect('{}?step=1'.format(reverse('scheduling:book_appointment')))
 @method_decorator(require_http_methods(['POST']), name='dispatch')
 class BookForOtherDoctorView(DoctorRequiredMixin, View):
+    """Запись пациента к другому врачу."""
+
     def post(self, request, *args, **kwargs):
+        """Обработка POST запроса на запись к другому врачу."""
         from django.utils import timezone
         from django.contrib import messages
         current_appointment_id = request.POST.get('current_appointment_id')
@@ -930,11 +957,13 @@ class BookForOtherDoctorView(DoctorRequiredMixin, View):
         new_appointment.save()
         return redirect(reverse('scheduling:doctor_schedule', args=[slot.doctor.pk]))
 class AppointmentDetailView(DoctorRequiredMixin, View):
+    """Детальная информация о приеме."""
+
     template_name = 'scheduling/appointment_detail.html'
-    
+
     def get(self, request, pk):
+        """Обработка GET запроса для детальной информации о приеме."""
         import json
-        from collections import defaultdict
         appointment = get_object_or_404(Appointment, pk=pk)
         doctor = request.user.doctor_profile
         
@@ -1048,7 +1077,10 @@ class AppointmentDetailView(DoctorRequiredMixin, View):
 
 @method_decorator(require_http_methods(['POST']), name='dispatch')
 class UpdateAppointmentStatusView(DoctorRequiredMixin, View):
+    """Обновление статуса приема."""
+
     def post(self, request, pk):
+        """Обработка POST запроса на обновление статуса."""
         from django.utils import timezone
         from django.contrib import messages
         appointment = get_object_or_404(Appointment, pk=pk)
@@ -1176,7 +1208,10 @@ class UpdateAppointmentStatusView(DoctorRequiredMixin, View):
         messages.success(request, 'Прием завершен')
         return redirect('scheduling:doctor_schedule', doctor_id=doctor.pk)
 class GetReferralSlotsView(DoctorRequiredMixin, View):
+    """Получение доступных слотов для направления."""
+
     def get(self, request, doctor_id):
+        """Обработка GET запроса для получения слотов."""
         from django.utils import timezone
         
         doctor = get_object_or_404(Doctor, pk=doctor_id)
@@ -1213,9 +1248,12 @@ class GetReferralSlotsView(DoctorRequiredMixin, View):
 
 
 class OfferAccountCreationView(View):
+    """Предложение создания аккаунта."""
+
     template_name = 'scheduling/offer_account_creation.html'
-    
+
     def get(self, request, pk):
+        """Обработка GET запроса для предложения создания аккаунта."""
         appointment = get_object_or_404(Appointment, pk=pk)
         
         if request.user.is_authenticated:
@@ -1226,9 +1264,10 @@ class OfferAccountCreationView(View):
         return render(request, self.template_name, context)
     
     def post(self, request, pk):
+        """Обработка POST запроса для предложения создания аккаунта."""
         action = request.POST.get('action')
-        appointment = get_object_or_404(Appointment, pk=pk)
-        
+        get_object_or_404(Appointment, pk=pk)
+
         if action == 'create_account':
             request.session['appointment_id_after_registration'] = pk
             return redirect('accounts:register')
@@ -1238,9 +1277,12 @@ class OfferAccountCreationView(View):
 
 
 class AppointmentInfoView(View):
+    """Информация о приеме."""
+
     template_name = 'scheduling/appointment_info.html'
-    
+
     def get(self, request, pk):
+        """Обработка GET запроса для информации о приеме."""
         appointment = get_object_or_404(Appointment, pk=pk)
         user = request.user
         
@@ -1351,7 +1393,10 @@ class AppointmentInfoView(View):
 
 
 class CancelAppointmentView(View):
+    """Отмена записи на прием."""
+
     def post(self, request, pk):
+        """Обработка POST запроса на отмену записи."""
         from django.contrib import messages
         
         appointment = get_object_or_404(Appointment, pk=pk)
@@ -1393,10 +1438,13 @@ class CancelAppointmentView(View):
 
 @method_decorator(require_http_methods(['GET', 'POST']), name='dispatch')
 class BookSlotView(LoginRequiredMixin, View):
+    """Запись на слот."""
+
     template_name = 'scheduling/book_slot.html'
     login_url = 'accounts:login'
-    
+
     def get(self, request, slot_id):
+        """Обработка GET запроса для записи на слот."""
         from django.utils import timezone
         slot = get_object_or_404(AppointmentSchedule, pk=slot_id)
         user = request.user
@@ -1635,9 +1683,12 @@ class BookSlotView(LoginRequiredMixin, View):
 
 
 class UpdateAppointmentPatientView(PatientRequiredMixin, View):
+    """Обновление пациента в записи."""
+
     template_name = 'scheduling/book_slot.html'
-    
+
     def get(self, request, slot_id):
+        """Обработка GET запроса для обновления пациента."""
         slot = get_object_or_404(AppointmentSchedule, pk=slot_id)
         doctor = request.user.doctor_profile
         
@@ -1760,14 +1811,17 @@ class UpdateAppointmentPatientView(PatientRequiredMixin, View):
                     'error': 'Пациент не найден'
                 })
         try:
-            appointment = Appointment.objects.create(
+            Appointment.objects.create(
                 patient=patient,
                 doctor=doctor,
                 slot=slot,
                 date=slot.time_from,
                 status='booked'
             )
-            messages.success(request, f'Пациент {patient.lname} {patient.fname} записан на прием')
+            messages.success(
+                request,
+                f'Пациент {patient.lname} {patient.fname} записан на прием'
+            )
             return redirect('scheduling:doctor_schedule', doctor_id=doctor.pk)
         except IntegrityError:
             messages.error(request, 'Ошибка при создании записи. Возможно, слот уже занят.')
@@ -1779,9 +1833,12 @@ class UpdateAppointmentPatientView(PatientRequiredMixin, View):
 
 @method_decorator(require_http_methods(['GET', 'POST']), name='dispatch')
 class ChangeBookedAppointmentPatientView(DoctorRequiredMixin, View):
+    """Изменение пациента в забронированной записи."""
+
     template_name = 'scheduling/change_appointment_patient.html'
-    
+
     def get(self, request, appointment_id):
+        """Обработка GET запроса для изменения пациента."""
         appointment = get_object_or_404(Appointment, pk=appointment_id)
         doctor = request.user.doctor_profile
         

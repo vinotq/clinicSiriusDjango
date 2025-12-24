@@ -48,12 +48,12 @@
                   <td>{{ p.lname }} {{ p.fname }} {{ p.tname }}</td>
                   <td>{{ p.bdate|date:"d.m.Y" }}</td>
                   <td>{{ p.snils }}</td>
-                  <td>{{ p.oms|default:"—" }}</td>
+                  <td>{{ p.oms|default:"-" }}</td>
                   <td>
                     {% if p.last_visit %}
                       {{ p.last_visit.date|date:"d.m.Y H:i" }}
                     {% else %}
-                      —
+                      -
                     {% endif %}
                   </td>
                   <td class="text-end">

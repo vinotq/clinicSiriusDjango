@@ -186,7 +186,7 @@
     </a>
   </div>
 
-  <!-- Форма фильтров -->
+  
   <div class="card mb-4">
     <div class="card-header bg-light">
       <h5 class="mb-0"><i class="bi bi-funnel"></i> Фильтры и период</h5>
@@ -194,7 +194,7 @@
     <div class="card-body">
       <form method="get" action="{% url 'clinic_admin:analytics' %}" id="analyticsForm">
         <div class="row g-3">
-          <!-- Период -->
+          
           <div class="col-md-3">
             <label class="form-label fw-bold">Период анализа</label>
             <div class="input-group" style="position: relative;">
@@ -220,7 +220,7 @@
             <small class="text-muted">По дату</small>
           </div>
           
-          <!-- Быстрые периоды -->
+          
           <div class="col-md-6">
             <label class="form-label fw-bold">Быстрый выбор периода</label>
             <div class="btn-group w-100" role="group">
@@ -236,7 +236,7 @@
         <hr class="my-3">
 
         <div class="row g-3">
-          <!-- Фильтр по врачу -->
+          
           <div class="col-md-4">
             <label class="form-label fw-bold">Врач</label>
             <select class="form-select" name="doctor" id="filterDoctor" onchange="document.getElementById('analyticsForm').submit()">
@@ -249,7 +249,7 @@
             </select>
           </div>
 
-          <!-- Фильтр по специализации -->
+          
           <div class="col-md-4">
             <label class="form-label fw-bold">Специализация</label>
             <select class="form-select" name="specialization" id="filterSpecialization" onchange="document.getElementById('analyticsForm').submit()">
@@ -262,7 +262,7 @@
             </select>
           </div>
 
-          <!-- Фильтр по статусу -->
+          
           <div class="col-md-4">
             <label class="form-label fw-bold">Статус записи</label>
             <select class="form-select" name="status" id="filterStatus" onchange="document.getElementById('analyticsForm').submit()">
@@ -288,7 +288,7 @@
     </div>
   </div>
 
-  <!-- Общая статистика -->
+  
   <div class="row g-3 mb-4">
     <div class="col-md-3">
       <div class="stat-card">
@@ -316,7 +316,7 @@
     </div>
   </div>
 
-  <!-- График записей по дням -->
+  
   <div class="analytics-section">
     <div class="stat-card">
       <h4 class="fw-bold mb-4">Записи по дням ({{ start_date|date:"d.m.Y" }} - {{ end_date|date:"d.m.Y" }})</h4>
@@ -326,7 +326,7 @@
     </div>
   </div>
 
-  <!-- График по врачам -->
+  
   <div class="analytics-section">
     <div class="stat-card">
       <h4 class="fw-bold mb-4">Топ-10 врачей по количеству приемов</h4>
@@ -336,7 +336,7 @@
     </div>
   </div>
 
-  <!-- График по специализациям -->
+  
   <div class="analytics-section">
     <div class="stat-card">
       <h4 class="fw-bold mb-4">Записи по специализациям</h4>
@@ -346,7 +346,7 @@
     </div>
   </div>
 
-  <!-- График занятости кабинетов -->
+  
   <div class="analytics-section">
     <div class="stat-card">
       <h4 class="fw-bold mb-4">Занятость кабинетов</h4>
@@ -356,7 +356,7 @@
     </div>
   </div>
 
-  <!-- График часов пик -->
+  
   <div class="analytics-section">
     <div class="stat-card">
       <h4 class="fw-bold mb-4">Распределение записей по часам (часы пик)</h4>

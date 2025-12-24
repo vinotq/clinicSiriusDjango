@@ -109,7 +109,7 @@
                   <td>{{ doctor.lname }} {{ doctor.fname }} {{ doctor.tname|default:"" }}</td>
                   <td>{{ doctor.specialization.name }}</td>
                   <td>{{ doctor.email }}</td>
-                  <td>{{ doctor.phone_number|default:"—" }}</td>
+                  <td>{{ doctor.phone_number|default:"-" }}</td>
                   <td class="text-end">
                     <div class="btn-group btn-group-sm">
                       <a class="btn btn-outline-primary" href="{% url 'clinic_admin:doctor_detail' doctor.pk %}">

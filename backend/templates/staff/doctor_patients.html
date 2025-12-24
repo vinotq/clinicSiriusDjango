@@ -14,7 +14,7 @@
     </div>
   </div>
 
-  <!-- Статистика -->
+  
   <div class="row g-3 mb-4">
     <div class="col-md-3">
       <div class="widget">
@@ -119,8 +119,8 @@
                     <div class="fw-semibold">{{ patient.lname }} {{ patient.fname }} {{ patient.tname|default:"" }}</div>
                   </td>
                   <td>{{ patient.bdate|date:"d.m.Y" }}</td>
-                  <td>{{ patient.phone_number|default:"—" }}</td>
-                  <td>{{ patient.email|default:"—" }}</td>
+                  <td>{{ patient.phone_number|default:"-" }}</td>
+                  <td>{{ patient.email|default:"-" }}</td>
                   <td>
                     <span class="badge bg-primary">{{ patient.total_appointments|default:0 }}</span>
                   </td>
@@ -135,7 +135,7 @@
                     {% if patient.last_appointment_date %}
                       {{ patient.last_appointment_date|date:"d.m.Y H:i" }}
                     {% else %}
-                      <span class="text-muted">—</span>
+                      <span class="text-muted">-</span>
                     {% endif %}
                   </td>
                   <td class="text-end">

@@ -200,8 +200,8 @@
                     <div class="fw-semibold">{{ patient.lname }} {{ patient.fname }} {{ patient.tname|default:"" }}</div>
                   </td>
                   <td>{{ patient.bdate|date:"d.m.Y" }}</td>
-                  <td>{{ patient.phone_number|default:"—" }}</td>
-                  <td>{{ patient.email|default:"—" }}</td>
+                  <td>{{ patient.phone_number|default:"-" }}</td>
+                  <td>{{ patient.email|default:"-" }}</td>
                   {% if is_doctor %}
                     <td>
                       <span class="badge bg-primary">{{ patient.total_appointments|default:0 }}</span>
@@ -217,7 +217,7 @@
                       {% if patient.last_appointment_date %}
                         {{ patient.last_appointment_date|date:"d.m.Y H:i" }}
                       {% else %}
-                        <span class="text-muted">—</span>
+                        <span class="text-muted">-</span>
                       {% endif %}
                     </td>
                   {% else %}

@@ -118,7 +118,7 @@
     </a>
   </div>
 
-  <!-- Фильтры -->
+  
   <div class="card filter-card mb-4">
     <div class="card-body">
       <form method="get" id="filterForm" class="row g-3">
@@ -226,7 +226,7 @@
     </div>
   </div>
 
-  <!-- Таблица расписания -->
+  
   <div class="card">
     <div class="card-body">
       {% if schedule_page and schedule_page.object_list %}
@@ -263,14 +263,14 @@
                           {% if slot.appointment %}
                             <div class="appointment-card badge p-2" 
                                  style="cursor: pointer; background: {% if slot.appointment.status == 'completed' %}#6b7280{% elif slot.appointment.status == 'in_progress' %}#3b82f6{% else %}#eab308{% endif %}; color: white;"
-                                 onclick="showAppointmentModal('{{ slot.appointment.pk }}', '{% format_name_short slot.appointment.patient.lname slot.appointment.patient.fname slot.appointment.patient.tname %}', '{{ slot.time_from|date:"d.m.Y H:i" }}', '{% format_name_short slot.doctor.lname slot.doctor.fname slot.doctor.tname %}', '{{ slot.doctor.specialization.name|escapejs }}', '{% if slot.room %}Кабинет {{ slot.room.room_number }}{% else %}—{% endif %}', '{{ slot.appointment.get_status_display|escapejs }}', '{{ slot.appointment.patient.pk }}', '{{ slot.doctor.pk }}', '{{ slot.appointment.status }}')">
+                                 onclick="showAppointmentModal('{{ slot.appointment.pk }}', '{% format_name_short slot.appointment.patient.lname slot.appointment.patient.fname slot.appointment.patient.tname %}', '{{ slot.time_from|date:"d.m.Y H:i" }}', '{% format_name_short slot.doctor.lname slot.doctor.fname slot.doctor.tname %}', '{{ slot.doctor.specialization.name|escapejs }}', '{% if slot.room %}Кабинет {{ slot.room.room_number }}{% else %}-{% endif %}', '{{ slot.appointment.get_status_display|escapejs }}', '{{ slot.appointment.patient.pk }}', '{{ slot.doctor.pk }}', '{{ slot.appointment.status }}')">
                               <div class="fw-bold">{{ slot.time_from|time:"H:i" }}</div>
                               <div class="small">{% format_name_short slot.appointment.patient.lname slot.appointment.patient.fname slot.appointment.patient.tname %}</div>
                             </div>
                           {% else %}
                             <div class="appointment-card badge p-2" 
                                  style="cursor: default; background: #22c55e; color: white;"
-                                 title="Свободно - {{ slot.time_from|time:"H:i" }}–{{ slot.time_to|time:"H:i" }}">
+                                 title="Свободно - {{ slot.time_from|time:"H:i" }}-{{ slot.time_to|time:"H:i" }}">
                               <div class="fw-bold">{{ slot.time_from|time:"H:i" }}</div>
                               <div class="small">Свободно</div>
                             </div>
@@ -320,7 +320,7 @@
     </div>
   </div>
 
-  <!-- Модальное окно для всех приемов -->
+  
   <div class="modal fade" id="allAppointmentsModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
@@ -329,13 +329,13 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body" id="allAppointmentsContent">
-          <!-- Контент будет загружен через JavaScript -->
+          
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Модальное окно для одного приема -->
+  
   <div class="modal fade" id="appointmentModal" tabindex="-1">
     <div class="modal-dialog">
       <div class="modal-content">
@@ -344,7 +344,7 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body" id="appointmentContent">
-          <!-- Контент будет загружен через JavaScript -->
+          
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
@@ -457,7 +457,7 @@ function showAllAppointmentsModal(dateStr, doctorId, totalCount) {
                 doctor: '{% format_name_short slot.doctor.lname slot.doctor.fname slot.doctor.tname %}',
                 doctorId: {{ slot.doctor.pk }},
                 specialization: '{{ slot.doctor.specialization.name|escapejs }}',
-                room: '{% if slot.room %}Кабинет {{ slot.room.room_number }}{% else %}—{% endif %}',
+                room: '{% if slot.room %}Кабинет {{ slot.room.room_number }}{% else %}-{% endif %}',
                 status: '{{ appt.get_status_display|escapejs }}',
                 statusColor: '{% if appt.status == "completed" %}#6b7280{% elif appt.status == "in_progress" %}#3b82f6{% else %}#eab308{% endif %}'
               });
@@ -501,7 +501,7 @@ function showAllAppointmentsModal(dateStr, doctorId, totalCount) {
                         <strong>Специализация:</strong> {{ slot.doctor.specialization.name }}
                       </p>
                       <p class="card-text small mb-0">
-                        <strong>Кабинет:</strong> {% if slot.room %}Кабинет {{ slot.room.room_number }}{% else %}—{% endif %}
+                        <strong>Кабинет:</strong> {% if slot.room %}Кабинет {{ slot.room.room_number }}{% else %}-{% endif %}
                       </p>
                     </div>
                   </div>
@@ -525,7 +525,7 @@ function showAllAppointmentsModal(dateStr, doctorId, totalCount) {
                       </a>
                     </p>
                     <p class="card-text small mb-0">
-                      <strong>Кабинет:</strong> {% if slot.room %}Кабинет {{ slot.room.room_number }}{% else %}—{% endif %}
+                      <strong>Кабинет:</strong> {% if slot.room %}Кабинет {{ slot.room.room_number }}{% else %}-{% endif %}
                     </p>
                   </div>
                 </div>
@@ -562,7 +562,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 doctor: '{% format_name_short slot.doctor.lname slot.doctor.fname slot.doctor.tname %}',
                 doctorId: {{ slot.doctor.pk }},
                 specialization: '{{ slot.doctor.specialization.name|escapejs }}',
-                room: '{% if slot.room %}Кабинет {{ slot.room.room_number }}{% else %}—{% endif %}',
+                room: '{% if slot.room %}Кабинет {{ slot.room.room_number }}{% else %}-{% endif %}',
                 status: '{{ appt.get_status_display|escapejs }}',
                 statusColor: '{% if appt.status == "completed" %}#6b7280{% elif appt.status == "in_progress" %}#3b82f6{% else %}#eab308{% endif %}',
                 currentStatus: '{{ appt.status }}'
@@ -591,7 +591,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (appointments.length === 0) {
           content.innerHTML = '<p class="text-muted text-center py-3">Приемы не найдены</p>';
         } else {
-          let html = `<h6 class="mb-3">${doctorName} — ${appointments.length} приемов</h6><div class="row g-3">`;
+          let html = `<h6 class="mb-3">${doctorName} - ${appointments.length} приемов</h6><div class="row g-3">`;
           appointments.forEach(function(appt) {
             const patientUrl = '{% url "clinic_admin:patient_detail" 0 %}'.replace('0', appt.patientId);
             const doctorUrl = '{% url "clinic_admin:doctor_detail" 0 %}'.replace('0', appt.doctorId);

@@ -127,7 +127,7 @@
       <form method="post">
         {% csrf_token %}
         
-        <!-- Выбор родителя (представителя семьи) -->
+        
         <div class="mb-4">
           <label class="form-label fw-semibold mb-2">
             Родитель (представитель семьи) <span class="text-danger">*</span>
@@ -146,7 +146,7 @@
                 <div class="searchable-select-option" data-value="{{ patient.pk }}" 
                      data-text="{{ patient.lname }} {{ patient.fname }} {% if patient.tname %}{{ patient.tname|first }}.{% endif %}">
                   {{ patient.lname }} {{ patient.fname }} {% if patient.tname %}{{ patient.tname|first }}.{% endif %}
-                  <small class="text-muted d-block">{{ patient.email|default:"—" }}</small>
+                  <small class="text-muted d-block">{{ patient.email|default:"-" }}</small>
                 </div>
                 {% endfor %}
               </div>
@@ -154,7 +154,7 @@
           </div>
         </div>
         
-        <!-- Выбор детей (членов семьи) -->
+        
         <div class="mb-4">
           <label class="form-label fw-semibold mb-2">
             Члены семьи (дети) <span class="text-danger">*</span>
@@ -173,7 +173,7 @@
                 <div class="searchable-select-option" data-value="{{ patient.pk }}" 
                      data-text="{{ patient.lname }} {{ patient.fname }} {% if patient.tname %}{{ patient.tname|first }}.{% endif %}">
                   {{ patient.lname }} {{ patient.fname }} {% if patient.tname %}{{ patient.tname|first }}.{% endif %}
-                  <small class="text-muted d-block">{{ patient.email|default:"—" }}</small>
+                  <small class="text-muted d-block">{{ patient.email|default:"-" }}</small>
                 </div>
                 {% endfor %}
               </div>

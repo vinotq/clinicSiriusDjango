@@ -2,6 +2,7 @@ from datetime import date, datetime
 
 
 def parse_date_ddmmyyyy(date_str):
+    """Парсинг даты из строки в формате ДД.ММ.ГГГГ или ГГГГ-ММ-ДД."""
     if not date_str:
         return None
     date_str = date_str.strip()
@@ -16,6 +17,7 @@ def parse_date_ddmmyyyy(date_str):
 
 
 def format_name_short(lname, fname, tname=None):
+    """Форматирование ФИО в короткий формат (Фамилия И. О.)."""
     result = lname or ''
     if fname:
         result += f' {fname[0].upper()}.'

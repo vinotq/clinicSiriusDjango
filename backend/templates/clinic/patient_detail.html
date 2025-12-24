@@ -32,11 +32,11 @@
             </div>
             <div>
               <div class="fw-semibold">Телефон</div>
-              <small class="text-muted">{{ patient_obj.phone_number|default:"—" }}</small>
+              <small class="text-muted">{{ patient_obj.phone_number|default:"-" }}</small>
             </div>
             <div>
               <div class="fw-semibold">Email</div>
-              <small class="text-muted">{{ patient_obj.email|default:"—" }}</small>
+              <small class="text-muted">{{ patient_obj.email|default:"-" }}</small>
             </div>
             {% if patient_obj.blood_type %}
             <div>

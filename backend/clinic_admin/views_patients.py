@@ -17,29 +17,27 @@ import json
 from .utils import parse_date_ddmmyyyy
 
 class PatientListView(AdminOrDoctorRequiredMixin, TemplateView):
+    """Список пациентов."""
+
     template_name = 'clinic_admin/patients/list.html'
-    
+
     def get_context_data(self, **kwargs):
+        """Получение контекста для списка пациентов."""
         context = super().get_context_data(**kwargs)
         user = self.request.user
         role = getattr(user, 'role', None)
-        
-        # Определяем, является ли пользователь доктором
+
         doctor = None
         if role == 'doctor':
             doctor = getattr(user, 'doctor_profile', None)
-        
-        # Базовый queryset
+
         if doctor:
-            # Для доктора - только его пациенты
             patients = Patient.objects.filter(
                 appointments__doctor=doctor
             ).distinct().select_related('user')
         else:
-            # Для админа - все пациенты
             patients = Patient.objects.all().select_related('user')
-        
-        # Поиск
+
         search_query = self.request.GET.get('q', '').strip()
         if search_query:
             patients = patients.filter(
@@ -51,8 +49,7 @@ class PatientListView(AdminOrDoctorRequiredMixin, TemplateView):
                 Q(email__icontains=search_query) |
                 Q(phone_number__icontains=search_query)
             )
-        
-        # Фильтр по статусу посещений
+
         visit_status = self.request.GET.get('visit_status', '')
         if visit_status and doctor:
             if visit_status == 'has_upcoming':
@@ -70,33 +67,52 @@ class PatientListView(AdminOrDoctorRequiredMixin, TemplateView):
                 patients = patients.exclude(
                     appointments__doctor=doctor
                 )
-        
-        # Аннотация с данными о посещениях
+
         if doctor:
             patients = patients.annotate(
-                total_appointments=Count('appointments', filter=Q(appointments__doctor=doctor)),
-                last_appointment_date=Max('appointments__date', filter=Q(appointments__doctor=doctor)),
-                upcoming_count=Count('appointments', filter=Q(
-                    appointments__doctor=doctor,
-                    appointments__date__gte=timezone.now(),
-                    appointments__status__in=['booked', 'in_progress']
-                ))
+                total_appointments=Count(
+                    'appointments',
+                    filter=Q(appointments__doctor=doctor)
+                ),
+                last_appointment_date=Max(
+                    'appointments__date',
+                    filter=Q(appointments__doctor=doctor)
+                ),
+                upcoming_count=Count(
+                    'appointments',
+                    filter=Q(
+                        appointments__doctor=doctor,
+                        appointments__date__gte=timezone.now(),
+                        appointments__status__in=['booked', 'in_progress']
+                    )
+                )
             )
-        
-        # Сортировка
+
         sort_by = self.request.GET.get('sort', 'lname')
         if sort_by == 'last_visit':
-            patients = patients.order_by('-last_appointment_date', 'lname', 'fname')
+            patients = patients.order_by(
+                '-last_appointment_date',
+                'lname',
+                'fname'
+            )
         elif sort_by == 'total_visits':
-            patients = patients.order_by('-total_appointments', 'lname', 'fname')
+            patients = patients.order_by(
+                '-total_appointments',
+                'lname',
+                'fname'
+            )
         else:
             patients = patients.order_by('lname', 'fname')
-        
-        # Подсказки для поиска (AJAX запрос)
+
         if self.request.GET.get('suggestions') == '1':
             from django.http import JsonResponse
             suggestions = list(patients[:10].values_list(
-                'lname', 'fname', 'tname', 'snils', 'oms', 'email'
+                'lname',
+                'fname',
+                'tname',
+                'snils',
+                'oms',
+                'email'
             ))
             suggestions_list = []
             for item in suggestions:
@@ -104,15 +120,14 @@ class PatientListView(AdminOrDoctorRequiredMixin, TemplateView):
                 if item[2]:
                     parts.append(item[2])
                 suggestions_list.append(' '.join(parts))
-                if item[3]:  # СНИЛС
+                if item[3]:
                     suggestions_list.append(item[3])
-                if item[4]:  # ОМС
+                if item[4]:
                     suggestions_list.append(item[4])
-                if item[5]:  # Email
+                if item[5]:
                     suggestions_list.append(item[5])
             return JsonResponse({'suggestions': suggestions_list[:20]})
-        
-        # Пагинация
+
         paginator = Paginator(patients, 25)
         page = self.request.GET.get('page')
         patients_page = paginator.get_page(page)
@@ -128,9 +143,12 @@ class PatientListView(AdminOrDoctorRequiredMixin, TemplateView):
 
 
 class PatientCreateView(AdminRequiredMixin, TemplateView):
+    """Создание нового пациента."""
+
     template_name = 'clinic_admin/patients/form.html'
-    
+
     def get(self, request, *args, **kwargs):
+        """Обработка GET запроса для создания пациента."""
         return render(request, self.template_name, {'action': 'create'})
     
     def post(self, request, *args, **kwargs):
@@ -167,7 +185,6 @@ class PatientCreateView(AdminRequiredMixin, TemplateView):
                 'error': error_msg
             })
         except Exception as e:
-            
             error_str = str(e).lower()
             if 'phone' in error_str:
                 error_msg = 'Неверный формат телефона'
@@ -177,12 +194,12 @@ class PatientCreateView(AdminRequiredMixin, TemplateView):
                 'action': 'create',
                 'error': error_msg
             })
-        except Exception as e:
-            return render(request, self.template_name, {
-                'action': 'create',
-                'error': f'Ошибка при создании пациента: {str(e)}'
-            })
+
+
 class PatientDetailView(AdminOrDoctorRequiredMixin, TemplateView):
+    """Детальная информация о пациенте."""
+
+    template_name = 'clinic_admin/patients/detail.html'
     template_name = 'clinic_admin/patients/detail.html'
     
     def get_context_data(self, **kwargs):
@@ -192,8 +209,7 @@ class PatientDetailView(AdminOrDoctorRequiredMixin, TemplateView):
         patient = get_object_or_404(Patient, pk=kwargs['pk'])
         
         context['patient'] = patient
-        
-        # Для доктора показываем только его приёмы этого пациента
+
         doctor = None
         if role == 'doctor':
             doctor = getattr(user, 'doctor_profile', None)
@@ -416,9 +432,12 @@ class PatientDetailView(AdminOrDoctorRequiredMixin, TemplateView):
 
 
 class PatientEditView(AdminRequiredMixin, View):
+    """Редактирование пациента."""
+
     template_name = 'clinic_admin/patients/form.html'
-    
+
     def get(self, request, pk):
+        """Обработка GET запроса для редактирования пациента."""
         patient = get_object_or_404(Patient, pk=pk)
         return render(request, self.template_name, {
             'action': 'edit',
@@ -463,7 +482,10 @@ class PatientEditView(AdminRequiredMixin, View):
 
 
 class PatientDeleteView(AdminRequiredMixin, View):
+    """Удаление пациента."""
+
     def post(self, request, pk):
+        """Обработка POST запроса на удаление пациента."""
         patient = get_object_or_404(Patient, pk=pk)
         patient_name = f"{patient.lname} {patient.fname}"
         patient.delete()
@@ -472,17 +494,22 @@ class PatientDeleteView(AdminRequiredMixin, View):
 
 
 class PatientBookView(AdminRequiredMixin, View):
-    
+    """Запись пациента на прием."""
+
     def post(self, request, *args, **kwargs):
+        """Обработка POST запроса на запись пациента."""
         patient = get_object_or_404(Patient, pk=kwargs['pk'])
         patient_name = f"{patient.lname} {patient.fname}"
         patient.delete()
         messages.success(request, f'Пациент {patient_name} успешно удален')
         return redirect('clinic_admin:patient_list')
 class FamilyCreateView(AdminRequiredMixin, View):
+    """Создание семейной связи."""
+
     template_name = 'clinic_admin/families/create.html'
-    
+
     def get(self, request, *args, **kwargs):
+        """Обработка GET запроса для создания семьи."""
         context = {
             'patients': Patient.objects.all().order_by('lname', 'fname')
         }
@@ -541,7 +568,10 @@ class FamilyCreateView(AdminRequiredMixin, View):
 
 
 class FamilyAddMemberView(AdminRequiredMixin, View):
+    """Добавление члена семьи."""
+
     def post(self, request, pk):
+        """Обработка POST запроса на добавление члена семьи."""
         patient = get_object_or_404(Patient, pk=pk)
         child_id = request.POST.get('child_id')
         
@@ -571,7 +601,10 @@ class FamilyAddMemberView(AdminRequiredMixin, View):
 
 
 class FamilyRemoveMemberView(AdminRequiredMixin, View):
+    """Удаление члена семьи."""
+
     def post(self, request, *args, **kwargs):
+        """Обработка POST запроса на удаление члена семьи."""
         patient = get_object_or_404(Patient, pk=kwargs['pk'])
         other_patient_id = request.POST.get('child_id') or request.POST.get('parent_id')
         
@@ -601,9 +634,12 @@ class FamilyRemoveMemberView(AdminRequiredMixin, View):
 
 
 class FamilyListView(AdminRequiredMixin, TemplateView):
+    """Список семей."""
+
     template_name = 'clinic_admin/families/list.html'
 
     def _get_all_family_members(self, patient, visited=None):
+        """Получение всех членов семьи рекурсивно."""
         if visited is None:
             visited = set()
         
@@ -671,9 +707,12 @@ class FamilyListView(AdminRequiredMixin, TemplateView):
 
 
 class FamilyDetailView(AdminRequiredMixin, TemplateView):
+    """Детальная информация о семье."""
+
     template_name = 'clinic_admin/families/detail.html'
-    
+
     def get_context_data(self, **kwargs):
+        """Получение контекста для детальной информации о семье."""
         context = super().get_context_data(**kwargs)
         patient = get_object_or_404(Patient, pk=kwargs['pk'])
         

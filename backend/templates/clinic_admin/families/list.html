@@ -44,7 +44,7 @@
                 <tr>
                   <td>
                     <strong>{{ family.representative.lname }} {{ family.representative.fname }}</strong><br>
-                    <small class="text-muted">{{ family.representative.email|default:"—" }}</small><br>
+                    <small class="text-muted">{{ family.representative.email|default:"-" }}</small><br>
                     <small class="text-muted">Всего в семье: {{ family.members_count }}</small>
                   </td>
                   <td>

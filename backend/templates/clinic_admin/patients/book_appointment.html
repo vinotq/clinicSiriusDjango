@@ -341,7 +341,7 @@
     <a class="btn btn-outline-secondary" href="{% url 'clinic_admin:patient_detail' patient.pk %}">Назад к пациенту</a>
   </div>
 
-  <!-- Информация о пациенте -->
+  
   <div class="patient-info-card">
     <h5 class="mb-2">
       <i class="bi bi-person-circle"></i> Пациент: 
@@ -363,7 +363,7 @@
     {% endfor %}
   {% endif %}
 
-  <!-- Индикатор шагов -->
+  
   <div class="step-indicator">
     <div class="step-item {% if step >= 1 %}active{% endif %} {% if step > 1 %}completed{% endif %}">
       <div class="step-number">1</div>
@@ -380,7 +380,7 @@
   </div>
 
   <div class="step-content">
-    <!-- Шаг 1: Выбор специализации -->
+    
     {% if step == 1 %}
     <div class="card">
       <div class="card-body p-4">
@@ -451,7 +451,7 @@
     </div>
     {% endif %}
 
-    <!-- Шаг 2: Выбор врача -->
+    
     {% if step == 2 %}
     <div class="card">
       <div class="card-body p-4">
@@ -497,7 +497,7 @@
     </div>
     {% endif %}
 
-    <!-- Шаг 3: Выбор даты и времени -->
+    
     {% if step == 3 %}
     <div class="card">
       <div class="card-body p-4">
@@ -515,7 +515,7 @@
           <input type="hidden" name="slot_id" id="selected_slot_id" value="{{ selected_slot }}">
           <input type="hidden" name="selected_date" id="selected_date" value="{{ selected_date }}">
           
-          <!-- Календарь для выбора даты -->
+          
           <div class="mb-4">
             <label class="form-label fw-semibold mb-2">Выберите дату</label>
             <div class="input-group" style="position: relative; max-width: 340px;">
@@ -526,7 +526,7 @@
             <small class="text-muted d-block mt-2">Выберите дату в календаре, затем выберите время</small>
           </div>
           
-          <!-- Временные слоты для выбранной даты -->
+          
           <div id="time-slots-container" style="display: none;">
             <label class="form-label fw-semibold mb-2">Выберите время</label>
             <div id="slots-list" class="slots-grid"></div>
@@ -550,7 +550,7 @@
       </div>
     </div>
     
-    <!-- JavaScript для шага 3 -->
+    
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>
     <script>

@@ -433,7 +433,7 @@
     </div>
   </div>
 
-  <!-- Календарь записей всех членов семьи -->
+  
   <div class="mt-4">
     <div class="schedule-calendar">
       <div class="calendar-header">
@@ -462,7 +462,7 @@
               <button type="button">‹</button>
             </a>
             <div class="week-date">
-              {{ week_start|date:"d" }} {{ week_days.0.month_name }} {{ week_start|date:"Y" }} – {{ week_end|date:"d" }} {{ week_end_month_name }} {{ week_end|date:"Y" }}
+              {{ week_start|date:"d" }} {{ week_days.0.month_name }} {{ week_start|date:"Y" }} - {{ week_end|date:"d" }} {{ week_end_month_name }} {{ week_end|date:"Y" }}
     </div>
             <a href="?view=week&week={{ next_week }}">
               <button type="button">›</button>
@@ -476,7 +476,7 @@
       </div>
 
       <div class="calendar-grid {% if view_type == 'day' %}day-view{% endif %}">
-        <!-- Временная колонка -->
+        
         <div class="time-column">
           <div style="height: 100px; border-bottom: 2px solid #e5e7eb;"></div>
           {% for hour in "6789012345678901234567"|make_list %}
@@ -490,7 +490,7 @@
           {% endfor %}
         </div>
 
-        <!-- Колонки дней -->
+        
         {% for day in week_days %}
           <div class="day-column">
             <div class="day-header {% if day.is_today %}today{% endif %}">
@@ -503,12 +503,12 @@
                 {% with appt=appt_data.appointment appt_height=appt_data.height %}
                   <div class="appointment-block {% if appt.status == 'in_progress' %}in-progress{% elif appt.status == 'completed' %}completed{% else %}booked{% endif %}"
                        style="top: {{ appt_data.top }}px; height: {{ appt_height }}px;{% if appt_data.left is not None %} left: {{ appt_data.left }}%; width: {{ appt_data.width }}%;{% endif %}"
-                       onclick="showAppointmentModal({{ appt.pk }}, '{{ appt.patient.lname }} {{ appt.patient.fname }}', '{{ appt.date|date:"d.m.Y H:i" }}', '{{ appt.doctor.lname }} {{ appt.doctor.fname }}', '{{ appt.doctor.specialization.name|escapejs }}', '{% if appt.slot and appt.slot.room %}Кабинет {{ appt.slot.room.room_number }}{% else %}—{% endif %}', '{{ appt.get_status_display|escapejs }}', {{ appt.patient.pk }}, {{ appt.doctor.pk }}, '{{ appt.status }}', {% if appt.status == 'completed' or appt.recipe %}true{% else %}false{% endif %})"
+                       onclick="showAppointmentModal({{ appt.pk }}, '{{ appt.patient.lname }} {{ appt.patient.fname }}', '{{ appt.date|date:"d.m.Y H:i" }}', '{{ appt.doctor.lname }} {{ appt.doctor.fname }}', '{{ appt.doctor.specialization.name|escapejs }}', '{% if appt.slot and appt.slot.room %}Кабинет {{ appt.slot.room.room_number }}{% else %}-{% endif %}', '{{ appt.get_status_display|escapejs }}', {{ appt.patient.pk }}, {{ appt.doctor.pk }}, '{{ appt.status }}', {% if appt.status == 'completed' or appt.recipe %}true{% else %}false{% endif %})"
                        title="{{ appt.patient.lname }} {{ appt.patient.fname }} - {{ appt.doctor.lname }} {{ appt.doctor.fname }} - {{ appt.date|time:'H:i' }}">
                     {% if appt_height >= 60 %}
                       <div class="appointment-time">
                         {% if appt.slot %}
-                          {{ appt.slot.time_from|time:"H:i" }} – {{ appt.slot.time_to|time:"H:i" }}
+                          {{ appt.slot.time_from|time:"H:i" }} - {{ appt.slot.time_to|time:"H:i" }}
                         {% else %}
                           {{ appt.date|time:"H:i" }}
                         {% endif %}
@@ -523,7 +523,7 @@
                     {% else %}
                       <div class="appointment-time" style="margin: 0; line-height: 1.2; font-size: 0.75rem; color: white;">
                         {% if appt.slot %}
-                          {{ appt.slot.time_from|time:"H:i" }}–{{ appt.slot.time_to|time:"H:i" }}
+                          {{ appt.slot.time_from|time:"H:i" }}-{{ appt.slot.time_to|time:"H:i" }}
                         {% else %}
                           {{ appt.date|time:"H:i" }}
                         {% endif %}
@@ -540,7 +540,7 @@
   </div>
 </section>
 
-<!-- Modal для информации о приеме -->
+
 <div class="modal fade" id="appointmentModal" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
@@ -549,7 +549,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body" id="appointmentContent">
-        <!-- Контент будет загружен через JavaScript -->
+        
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
@@ -558,7 +558,7 @@
   </div>
 </div>
 
-<!-- Modal для подтверждения удаления члена семьи -->
+
 <div class="modal fade" id="deleteMemberModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -583,7 +583,7 @@
   </div>
 </div>
 
-<!-- Modal для добавления члена семьи -->
+
 <div class="modal fade" id="addMemberModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
