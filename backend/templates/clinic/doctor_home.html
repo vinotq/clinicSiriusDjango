@@ -1,0 +1,239 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Главная | Clinic Sirius{% endblock %}
+
+{% block extra_head %}
+<style>
+.hero-section {
+  background: linear-gradient(135deg, var(--brand-start) 0%, var(--brand-end) 100%);
+  color: white;
+  border-radius: 16px;
+  padding: 3rem 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 12px rgba(48, 179, 84, 0.2);
+}
+
+.hero-greeting {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.hero-subtitle {
+  font-size: 1rem;
+  opacity: 0.9;
+  margin-bottom: 0;
+}
+
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.quick-action-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.3s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  border: 2px solid transparent;
+}
+
+.quick-action-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+  border-color: var(--brand-start);
+  text-decoration: none;
+  color: inherit;
+}
+
+.quick-action-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, var(--brand-start) 0%, var(--brand-end) 100%);
+  color: white;
+}
+
+.quick-action-icon i {
+  font-size: 1.5rem;
+}
+
+.quick-action-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  color: var(--dark);
+}
+
+.quick-action-desc {
+  font-size: 0.875rem;
+  color: var(--muted);
+  margin: 0;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--brand-start);
+  margin-bottom: 0.25rem;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: var(--muted);
+  margin: 0;
+}
+
+.upcoming-section {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.appointment-item {
+  padding: 1rem;
+  border-radius: 8px;
+  border-left: 4px solid var(--brand-start);
+  background: #f8fbf9;
+  margin-bottom: 0.75rem;
+  transition: all 0.2s;
+}
+
+.appointment-item:hover {
+  background: #edf3ee;
+  transform: translateX(4px);
+}
+
+.appointment-item:last-child {
+  margin-bottom: 0;
+}
+
+.appointment-time {
+  font-weight: 700;
+  color: #000;
+  font-size: 1.1rem;
+  margin-bottom: 0.25rem;
+}
+
+.appointment-patient {
+  font-weight: 500;
+  color: var(--dark);
+  margin-bottom: 0.25rem;
+}
+
+.appointment-room {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 2rem;
+  color: var(--muted);
+}
+
+.empty-state-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.empty-state-icon i {
+  font-size: 3rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="container py-5">
+  
+  <div class="hero-section">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+      <div>
+        <div class="hero-greeting">Добро пожаловать, {{ doctor.lname }} {{ doctor.fname }}!</div>
+        <p class="hero-subtitle">{{ doctor.specialization.name }}{% if doctor.office %} · Кабинет {{ doctor.office }}{% endif %}</p>
+      </div>
+      <div class="text-end">
+        <div class="h3 mb-0">{{ today_count|default:0 }}</div>
+        <div class="hero-subtitle">Приёмов сегодня</div>
+      </div>
+    </div>
+  </div>
+
+  
+  <div class="quick-actions">
+    <a href="{% url 'scheduling:add_timeslot' doctor.id %}" class="quick-action-card">
+      <div class="quick-action-icon"><i class="bi bi-calendar-plus"></i></div>
+      <div class="quick-action-title">Добавить окно</div>
+      <p class="quick-action-desc">Создать новое время для приёма</p>
+    </a>
+    
+    <a href="{% url 'scheduling:doctor_schedule' doctor.id %}" class="quick-action-card">
+      <div class="quick-action-icon"><i class="bi bi-calendar-week"></i></div>
+      <div class="quick-action-title">Расписание</div>
+      <p class="quick-action-desc">Просмотр и управление расписанием</p>
+    </a>
+    
+    <a href="{% url 'staff:doctor_patients' %}" class="quick-action-card">
+      <div class="quick-action-icon"><i class="bi bi-people"></i></div>
+      <div class="quick-action-title">Мои пациенты</div>
+      <p class="quick-action-desc">Список всех пациентов</p>
+    </a>
+    
+    
+    <a href="{% url 'accounts:settings' %}" class="quick-action-card">
+      <div class="quick-action-icon"><i class="bi bi-gear"></i></div>
+      <div class="quick-action-title">Настройки</div>
+      <p class="quick-action-desc">Управление аккаунтом и паролем</p>
+    </a>
+  </div>
+
+  
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-value">{{ patients_count|default:0 }}</div>
+      <p class="stat-label">Всего пациентов</p>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ total_appointments|default:0 }}</div>
+      <p class="stat-label">Всего приёмов</p>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ available_slots_count|default:0 }}</div>
+      <p class="stat-label">Свободных окон</p>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ today_count|default:0 }}</div>
+      <p class="stat-label">Сегодня</p>
+    </div>
+  </div>
+
+</section>
+{% endblock %}
+

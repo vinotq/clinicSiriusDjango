@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Изменить пациента | Clinic Sirius{% endblock %}
+
+{% block content %}
+<section class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-8 col-xl-7">
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+          <h2 class="fw-bold mb-2">Изменить пациента</h2>
+          <p class="text-muted mb-0">Выберите другого пациента для этой записи</p>
+        </div>
+        <a class="btn btn-outline-secondary" href="{% url 'index' %}">
+          <i class="bi bi-arrow-left"></i> Назад
+        </a>
+      </div>
+
+      <div class="card shadow-sm">
+        <div class="card-body p-4 p-md-5">
+          
+          <div class="alert alert-info mb-4">
+            <h6 class="alert-heading mb-3">
+              <i class="bi bi-info-circle"></i> Информация о записи
+            </h6>
+            <div class="d-flex flex-column gap-2">
+              <p class="mb-0">
+                <strong><i class="bi bi-person-badge"></i> Врач:</strong><br>
+                <span class="ms-3">
+                  {{ appointment.doctor.lname }} 
+                  {% if appointment.doctor.fname %}{{ appointment.doctor.fname|first }}.{% endif %}
+                  {% if appointment.doctor.tname %}{{ appointment.doctor.tname|first }}.{% endif %}
+                </span>
+              </p>
+              <p class="mb-0">
+                <strong><i class="bi bi-calendar-event"></i> Дата и время:</strong><br>
+                <span class="ms-3 fw-bold" style="color: #000;">{{ appointment.date|date:"d.m.Y H:i" }}</span>
+              </p>
+              <p class="mb-0">
+                <strong><i class="bi bi-person"></i> Текущий пациент:</strong><br>
+                <span class="ms-3">
+                  {{ appointment.patient.lname }} 
+                  {% if appointment.patient.fname %}{{ appointment.patient.fname|first }}.{% endif %}
+                  {% if appointment.patient.tname %}{{ appointment.patient.tname|first }}.{% endif %}
+                </span>
+              </p>
+            </div>
+          </div>
+
+          <form method="post" id="patientForm">
+            {% csrf_token %}
+            <input type="hidden" name="action" id="actionInput" value="select_patient">
+            
+            <div class="mb-4">
+              <label class="form-label fw-semibold mb-3 fs-5">Выберите пациента</label>
+              
+              
+              <div class="btn-group w-100 mb-4" role="group">
+                <input type="radio" class="btn-check" name="mode" id="modeSelect" value="select" checked>
+                <label class="btn btn-outline-primary" for="modeSelect">
+                  <i class="bi bi-person-check"></i> Выбрать существующего
+                </label>
+                
+                <input type="radio" class="btn-check" name="mode" id="modeCreate" value="create">
+                <label class="btn btn-outline-primary" for="modeCreate">
+                  <i class="bi bi-person-plus"></i> Создать нового
+                </label>
+              </div>
+              
+              
+              <div id="selectPatientSection">
+                <div class="d-flex flex-column gap-3">
+                  {% for pat in all_patients %}
+                  <label class="doctor-card d-block {% if appointment.patient.id == pat.id %}selected{% endif %}" style="padding: 1rem 1.25rem; margin-bottom: 0;">
+                    <input type="radio" name="patient_id" value="{{ pat.id }}" 
+                           {% if appointment.patient.id == pat.id %}checked{% endif %}>
+                    <div class="d-flex align-items-center">
+                      <div class="flex-grow-1">
+                        <div class="fw-semibold mb-1">
+                          {{ pat.lname }} 
+                          {% if pat.fname %}{{ pat.fname|first }}.{% endif %}
+                          {% if pat.tname %}{{ pat.tname|first }}.{% endif %}
+                        </div>
+                        <small class="text-muted d-flex align-items-center gap-2">
+                          {% if forloop.first %}
+                            <i class="bi bi-person-check"></i> <span>Вы</span>
+                          {% else %}
+                            <i class="bi bi-people"></i> <span>Член семьи</span>
+                          {% endif %}
+                          {% if pat.bdate %}
+                            <span>•</span>
+                            <span>{{ pat.bdate|date:"d.m.Y" }}</span>
+                          {% endif %}
+                        </small>
+                      </div>
+                    </div>
+                  </label>
+                  {% endfor %}
+                </div>
+              </div>
+              
+              
+              <div id="createPatientSection" style="display: none;">
+                <div class="card bg-light">
+                  <div class="card-body">
+                    <h6 class="fw-semibold mb-3">Данные нового пациента</h6>
+                    <div class="row g-3">
+                      <div class="col-md-6">
+                        <label class="form-label">Фамилия <span class="text-danger">*</span></label>
+                        <input type="text" name="lname" class="form-control" placeholder="Иванов">
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label">Имя <span class="text-danger">*</span></label>
+                        <input type="text" name="fname" class="form-control" placeholder="Иван">
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label">Отчество</label>
+                        <input type="text" name="tname" class="form-control" placeholder="Иванович">
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label">Дата рождения <span class="text-danger">*</span></label>
+                        <input type="text" name="bdate" class="form-control" placeholder="ДД.ММ.ГГГГ">
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label">Телефон</label>
+                        <input type="text" name="phone_number" class="form-control" placeholder="+7 (999) 123-45-67">
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" class="form-control" placeholder="email@example.com">
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label">СНИЛС <span class="text-danger">*</span></label>
+                        <input type="text" name="snils" class="form-control" placeholder="12345678901">
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label">ОМС <span class="text-danger">*</span></label>
+                        <input type="text" name="oms" class="form-control" placeholder="1234567890123456">
+                      </div>
+                      <div class="col-12">
+                        <div class="form-check">
+                          <input class="form-check-input" type="checkbox" name="add_to_family" id="addToFamily" checked>
+                          <label class="form-check-label" for="addToFamily">
+                            Добавить в семью
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {% if error %}
+            <div class="alert alert-danger mb-3">
+              <i class="bi bi-exclamation-triangle"></i> {{ error }}
+            </div>
+            {% endif %}
+
+            <div class="d-flex justify-content-between gap-3 mt-5 pt-3 border-top">
+              <a href="{% url 'index' %}" class="btn btn-outline-secondary px-4">
+                Отмена
+              </a>
+              <button type="submit" class="btn btn-primary px-4">
+                <i class="bi bi-check-circle"></i> Сохранить изменения
+              </button>
+            </div>
+          </form>
+          
+          <script>
+            document.addEventListener('DOMContentLoaded', function() {
+              const modeSelect = document.getElementById('modeSelect');
+              const modeCreate = document.getElementById('modeCreate');
+              const selectSection = document.getElementById('selectPatientSection');
+              const createSection = document.getElementById('createPatientSection');
+              const actionInput = document.getElementById('actionInput');
+              const form = document.getElementById('patientForm');
+              
+              function toggleSections() {
+                if (modeSelect.checked) {
+                  selectSection.style.display = 'block';
+                  createSection.style.display = 'none';
+                  actionInput.value = 'select_patient';
+                  // Делаем выбор пациента обязательным
+                  const radios = selectSection.querySelectorAll('input[type="radio"][name="patient_id"]');
+                  radios.forEach(radio => radio.required = true);
+                  // Убираем required с полей формы создания
+                  const createInputs = createSection.querySelectorAll('input[required]');
+                  createInputs.forEach(input => input.removeAttribute('required'));
+                } else {
+                  selectSection.style.display = 'none';
+                  createSection.style.display = 'block';
+                  actionInput.value = 'create_patient';
+                  // Убираем required с радиокнопок выбора
+                  const radios = selectSection.querySelectorAll('input[type="radio"][name="patient_id"]');
+                  radios.forEach(radio => radio.required = false);
+                  // Добавляем required к обязательным полям формы создания
+                  const requiredFields = ['lname', 'fname', 'bdate', 'snils', 'oms'];
+                  requiredFields.forEach(fieldName => {
+                    const field = createSection.querySelector(`input[name="${fieldName}"]`);
+                    if (field) field.required = true;
+                  });
+                }
+              }
+              
+              modeSelect.addEventListener('change', toggleSections);
+              modeCreate.addEventListener('change', toggleSections);
+              
+              // Инициализация при загрузке
+              toggleSections();
+            });
+          </script>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+

@@ -1,0 +1,771 @@
+{% extends 'base.html' %}
+
+{% block title %}Аналитика | Clinic Sirius{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<style>
+  .flatpickr-calendar {
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border: 1px solid #dee2e6;
+    padding: 8px;
+    font-size: 13px;
+    width: 100%;
+    min-width: 320px;
+    max-width: 340px;
+    z-index: 1055 !important;
+  }
+  
+  .flatpickr-months {
+    margin-bottom: 6px;
+    padding: 0;
+  }
+  
+  .flatpickr-month {
+    padding: 6px 4px;
+    font-size: 14px;
+    font-weight: 600;
+    height: 32px;
+    line-height: 32px;
+    margin-bottom: 0;
+    position: relative;
+  }
+  
+  .flatpickr-current-month {
+    font-size: 14px;
+    font-weight: 600;
+    padding: 0;
+    height: auto;
+    line-height: 1.2;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 50%;
+    margin-top: -0.6em;
+  }
+  
+  .flatpickr-weekdays {
+    padding: 6px 0;
+    margin-bottom: 2px;
+    margin-top: 0;
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+  }
+  
+  .flatpickr-weekday {
+    font-size: 11px;
+    font-weight: 600;
+    color: #495057;
+    padding: 4px 2px;
+    line-height: 1.2;
+    display: table-cell;
+    text-align: center;
+    width: 14.28%;
+    overflow: visible;
+    white-space: nowrap;
+  }
+  
+  .flatpickr-days {
+    padding: 2px 0;
+    margin-top: 0;
+  }
+  
+  .flatpickr-calendar .flatpickr-innerContainer {
+    padding: 0;
+  }
+  
+  .flatpickr-day {
+    height: 32px;
+    line-height: 32px;
+    font-size: 13px;
+    margin: 1px;
+    border-radius: 6px;
+    width: calc(14.28% - 2px);
+    max-width: 42px;
+    color: #212529 !important;
+    background: #ffffff;
+    border: 1px solid transparent;
+  }
+  
+  .flatpickr-day:hover {
+    background: #e7f1ff !important;
+    border-color: #0d6efd !important;
+    color: #212529 !important;
+    cursor: pointer;
+  }
+  
+  .flatpickr-day.today {
+    border: 2px solid #ffc107;
+    color: #212529 !important;
+    background: #ffffff;
+  }
+  
+  .flatpickr-day.today:hover {
+    background: #e7f1ff !important;
+    border-color: #0d6efd !important;
+  }
+  
+  .flatpickr-day.selected {
+    background: #0d6efd !important;
+    border-color: #0d6efd !important;
+    color: white !important;
+    font-weight: 600;
+  }
+  
+  .flatpickr-day.selected.today {
+    background: #0d6efd !important;
+    border-color: #0d6efd !important;
+    color: white !important;
+  }
+  
+  .flatpickr-day.flatpickr-disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    color: #6c757d !important;
+    background: #f8f9fa !important;
+  }
+  
+  .flatpickr-current-month {
+    color: #212529 !important;
+  }
+  
+  .flatpickr-weekday {
+    color: #495057 !important;
+    font-weight: 600;
+  }
+  
+  .stat-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.12);
+    border: 1px solid rgba(0,0,0,0.05);
+    margin-bottom: 1.5rem;
+    transition: all 0.3s ease;
+  }
+
+  .stat-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.15);
+  }
+  
+  .stat-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--brand-start);
+    margin-bottom: 0.5rem;
+  }
+  
+  .stat-label {
+    font-size: 1rem;
+    color: #6b7280;
+  }
+  
+  .chart-container {
+    position: relative;
+    height: 400px;
+    margin-bottom: 2rem;
+  }
+  
+  .analytics-section {
+    margin-bottom: 3rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="container py-5">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+    <div>
+      <h2 class="fw-bold mb-0">Аналитика и статистика</h2>
+      <p class="text-muted mb-0">Детальная аналитика работы клиники</p>
+    </div>
+    <a class="btn btn-outline-secondary" href="{% url 'clinic_admin:dashboard' %}">
+      <i class="bi bi-arrow-left"></i> Назад
+    </a>
+  </div>
+
+  
+  <div class="card mb-4">
+    <div class="card-header bg-light">
+      <h5 class="mb-0"><i class="bi bi-funnel"></i> Фильтры и период</h5>
+    </div>
+    <div class="card-body">
+      <form method="get" action="{% url 'clinic_admin:analytics' %}" id="analyticsForm">
+        <div class="row g-3">
+          
+          <div class="col-md-3">
+            <label class="form-label fw-bold">Период анализа</label>
+            <div class="input-group" style="position: relative;">
+              <input type="text" class="form-control" name="start_date" 
+                     value="{{ start_date|date:'d.m.Y' }}" id="startDate" 
+                     placeholder="дд.мм.гггг" readonly>
+              <span class="input-group-text" id="startDateIcon" style="cursor: pointer;">
+                <i class="bi bi-calendar3"></i>
+              </span>
+            </div>
+            <small class="text-muted">С даты</small>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold">&nbsp;</label>
+            <div class="input-group" style="position: relative;">
+              <input type="text" class="form-control" name="end_date" 
+                     value="{{ end_date|date:'d.m.Y' }}" id="endDate" 
+                     placeholder="дд.мм.гггг" readonly>
+              <span class="input-group-text" id="endDateIcon" style="cursor: pointer;">
+                <i class="bi bi-calendar3"></i>
+              </span>
+            </div>
+            <small class="text-muted">По дату</small>
+          </div>
+          
+          
+          <div class="col-md-6">
+            <label class="form-label fw-bold">Быстрый выбор периода</label>
+            <div class="btn-group w-100" role="group">
+              <button type="button" class="btn btn-outline-primary btn-sm" onclick="setPeriod('today')">Сегодня</button>
+              <button type="button" class="btn btn-outline-primary btn-sm" onclick="setPeriod('week')">Неделя</button>
+              <button type="button" class="btn btn-outline-primary btn-sm" onclick="setPeriod('month')">Месяц</button>
+              <button type="button" class="btn btn-outline-primary btn-sm" onclick="setPeriod('3months')">3 месяца</button>
+              <button type="button" class="btn btn-outline-primary btn-sm" onclick="setPeriod('year')">Год</button>
+            </div>
+          </div>
+        </div>
+
+        <hr class="my-3">
+
+        <div class="row g-3">
+          
+          <div class="col-md-4">
+            <label class="form-label fw-bold">Врач</label>
+            <select class="form-select" name="doctor" id="filterDoctor" onchange="document.getElementById('analyticsForm').submit()">
+              <option value="">Все врачи</option>
+              {% for doctor in doctors_list %}
+                <option value="{{ doctor.pk }}" {% if filter_doctor|stringformat:"s" == doctor.pk|stringformat:"s" %}selected{% endif %}>
+                  {{ doctor.lname }} {{ doctor.fname }} {% if doctor.specialization %}({{ doctor.specialization.name }}){% endif %}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          
+          <div class="col-md-4">
+            <label class="form-label fw-bold">Специализация</label>
+            <select class="form-select" name="specialization" id="filterSpecialization" onchange="document.getElementById('analyticsForm').submit()">
+              <option value="">Все специализации</option>
+              {% for spec in specializations_list %}
+                <option value="{{ spec.pk }}" {% if filter_specialization|stringformat:"s" == spec.pk|stringformat:"s" %}selected{% endif %}>
+                  {{ spec.name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          
+          <div class="col-md-4">
+            <label class="form-label fw-bold">Статус записи</label>
+            <select class="form-select" name="status" id="filterStatus" onchange="document.getElementById('analyticsForm').submit()">
+              <option value="">Все статусы</option>
+              <option value="booked" {% if filter_status == 'booked' %}selected{% endif %}>Записан</option>
+              <option value="in_progress" {% if filter_status == 'in_progress' %}selected{% endif %}>В процессе</option>
+              <option value="completed" {% if filter_status == 'completed' %}selected{% endif %}>Завершено</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row mt-3">
+          <div class="col-12">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-search"></i> Применить фильтры
+            </button>
+            <a href="{% url 'clinic_admin:analytics' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-x-circle"></i> Сбросить
+            </a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="stat-card">
+        <div class="stat-value">{{ total_appointments }}</div>
+        <div class="stat-label">Всего записей за период</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="stat-card">
+        <div class="stat-value text-primary">{{ appointments_by_status.booked }}</div>
+        <div class="stat-label">Записан</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="stat-card">
+        <div class="stat-value text-warning">{{ appointments_by_status.in_progress }}</div>
+        <div class="stat-label">В процессе</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="stat-card">
+        <div class="stat-value text-success">{{ appointments_by_status.completed }}</div>
+        <div class="stat-label">Завершено</div>
+      </div>
+    </div>
+  </div>
+
+  
+  <div class="analytics-section">
+    <div class="stat-card">
+      <h4 class="fw-bold mb-4">Записи по дням ({{ start_date|date:"d.m.Y" }} - {{ end_date|date:"d.m.Y" }})</h4>
+      <div class="chart-container">
+        <canvas id="appointmentsChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  
+  <div class="analytics-section">
+    <div class="stat-card">
+      <h4 class="fw-bold mb-4">Топ-10 врачей по количеству приемов</h4>
+      <div class="chart-container">
+        <canvas id="doctorsChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  
+  <div class="analytics-section">
+    <div class="stat-card">
+      <h4 class="fw-bold mb-4">Записи по специализациям</h4>
+      <div class="chart-container">
+        <canvas id="specializationsChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  
+  <div class="analytics-section">
+    <div class="stat-card">
+      <h4 class="fw-bold mb-4">Занятость кабинетов</h4>
+      <div class="chart-container">
+        <canvas id="roomsChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  
+  <div class="analytics-section">
+    <div class="stat-card">
+      <h4 class="fw-bold mb-4">Распределение записей по часам (часы пик)</h4>
+      <div class="chart-container">
+        <canvas id="hoursChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// Инициализация flatpickr для дат
+document.addEventListener('DOMContentLoaded', function() {
+  const startDateInput = document.getElementById('startDate');
+  const endDateInput = document.getElementById('endDate');
+  const startDateIcon = document.getElementById('startDateIcon');
+  const endDateIcon = document.getElementById('endDateIcon');
+  
+  // Преобразование формата даты из дд.мм.гггг в YYYY-MM-DD
+  function formatDateForSubmit(dateStr) {
+    if (!dateStr) return '';
+    const parts = dateStr.split('.');
+    if (parts.length === 3) {
+      return parts[2] + '-' + parts[1] + '-' + parts[0];
+    }
+    return dateStr;
+  }
+  
+  // Инициализация flatpickr для начальной даты
+  let flatpickrStart = null;
+  if (startDateInput) {
+    flatpickrStart = flatpickr(startDateInput, {
+      dateFormat: 'd.m.Y',
+      locale: 'ru',
+      allowInput: false,
+      clickOpens: true,
+      animate: true,
+      onChange: function(selectedDates, dateStr, instance) {
+        startDateInput.blur();
+      }
+    });
+    
+    // Клик на иконку открывает календарь
+    if (startDateIcon && flatpickrStart) {
+      startDateIcon.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        flatpickrStart.open();
+      });
+    }
+  }
+  
+  // Инициализация flatpickr для конечной даты
+  let flatpickrEnd = null;
+  if (endDateInput) {
+    flatpickrEnd = flatpickr(endDateInput, {
+      dateFormat: 'd.m.Y',
+      locale: 'ru',
+      allowInput: false,
+      clickOpens: true,
+      animate: true,
+      onChange: function(selectedDates, dateStr, instance) {
+        endDateInput.blur();
+        // Обновляем минимальную дату для начальной даты, если она больше конечной
+        if (flatpickrStart && selectedDates[0]) {
+          flatpickrStart.set('maxDate', selectedDates[0]);
+        }
+      }
+    });
+    
+    // Клик на иконку открывает календарь
+    if (endDateIcon && flatpickrEnd) {
+      endDateIcon.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        flatpickrEnd.open();
+      });
+    }
+    
+    // Устанавливаем минимальную дату для конечной даты равной начальной
+    if (flatpickrStart && flatpickrEnd) {
+      flatpickrStart.config.onChange.push(function(selectedDates) {
+        if (selectedDates[0]) {
+          flatpickrEnd.set('minDate', selectedDates[0]);
+        }
+      });
+    }
+  }
+  
+  // Преобразование дат перед отправкой формы
+  const analyticsForm = document.getElementById('analyticsForm');
+  if (analyticsForm) {
+    analyticsForm.addEventListener('submit', function(e) {
+      // Даты уже в правильном формате дд.мм.гггг, бэкенд их обработает
+    });
+  }
+});
+
+// Функция для быстрого выбора периода
+function setPeriod(period) {
+  const today = new Date();
+  const startDateInput = document.getElementById('startDate');
+  const endDateInput = document.getElementById('endDate');
+  const form = document.getElementById('analyticsForm');
+  
+  if (!startDateInput || !endDateInput || !form) {
+    console.error('Не найдены элементы формы');
+    return;
+  }
+  
+  let startDate = new Date();
+  let endDate = new Date(today);
+  
+  // Устанавливаем время на начало дня для корректного сравнения
+  today.setHours(0, 0, 0, 0);
+  endDate.setHours(0, 0, 0, 0);
+  
+  switch(period) {
+    case 'today':
+      startDate = new Date(today);
+      endDate = new Date(today);
+      break;
+    case 'week':
+      startDate = new Date(today);
+      startDate.setDate(today.getDate() - 7);
+      endDate = new Date(today);
+      break;
+    case 'month':
+      startDate = new Date(today);
+      startDate.setMonth(today.getMonth() - 1);
+      endDate = new Date(today);
+      break;
+    case '3months':
+      startDate = new Date(today);
+      startDate.setMonth(today.getMonth() - 3);
+      endDate = new Date(today);
+      break;
+    case 'year':
+      startDate = new Date(today);
+      startDate.setFullYear(today.getFullYear() - 1);
+      endDate = new Date(today);
+      break;
+    default:
+      console.error('Неизвестный период:', period);
+      return;
+  }
+  
+  // Обновляем flatpickr календари, если они уже инициализированы
+  if (window.flatpickrInstances) {
+    if (window.flatpickrInstances.start) {
+      window.flatpickrInstances.start.setDate(startDate, false);
+    }
+    if (window.flatpickrInstances.end) {
+      window.flatpickrInstances.end.setDate(endDate, false);
+    }
+  } else {
+    // Если flatpickr еще не инициализирован, устанавливаем значения напрямую
+    const formatDate = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${day}.${month}.${year}`;
+    };
+    
+    startDateInput.value = formatDate(startDate);
+    endDateInput.value = formatDate(endDate);
+  }
+  
+  // Автоматически отправляем форму при выборе быстрого периода
+  form.submit();
+}
+
+// Инициализация графиков после загрузки DOM и Chart.js
+document.addEventListener('DOMContentLoaded', function() {
+  // Ждем загрузки Chart.js
+  function initCharts() {
+    if (typeof Chart === 'undefined' && typeof window.Chart === 'undefined') {
+      console.log('Ожидание загрузки Chart.js...');
+      setTimeout(initCharts, 100);
+      return;
+    }
+    
+    // Используем Chart из глобальной области видимости
+    const ChartLib = typeof Chart !== 'undefined' ? Chart : window.Chart;
+    
+    if (!ChartLib) {
+      console.error('Chart.js не загружен');
+      return;
+    }
+
+    // График записей по дням
+    const appointmentsCtx = document.getElementById('appointmentsChart');
+    if (appointmentsCtx) {
+      try {
+        const appointmentsLabels = {{ appointments_chart_labels|safe }};
+        const appointmentsData = {{ appointments_chart_data|safe }};
+        
+        // Проверяем, что данные корректны
+        const labels = Array.isArray(appointmentsLabels) ? appointmentsLabels : [];
+        const data = Array.isArray(appointmentsData) ? appointmentsData : [];
+        
+        if (labels.length > 0 || data.length > 0) {
+          new ChartLib(appointmentsCtx.getContext('2d'), {
+            type: 'line',
+            data: {
+              labels: labels,
+              datasets: [{
+                label: 'Количество записей',
+                data: data,
+                borderColor: 'rgb(48, 179, 84)',
+                backgroundColor: 'rgba(48, 179, 84, 0.1)',
+                tension: 0.4
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  display: true
+                }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true
+                }
+              }
+            }
+          });
+        } else {
+          console.log('Нет данных для отображения графика записей по дням');
+        }
+      } catch (e) {
+        console.error('Ошибка при создании графика записей по дням:', e);
+      }
+    }
+
+    // График по врачам
+    const doctorsCtx = document.getElementById('doctorsChart');
+    if (doctorsCtx) {
+      try {
+        const doctorsLabels = {{ doctors_chart_labels|safe }};
+        const doctorsData = {{ doctors_chart_data|safe }};
+        const doctorsTooltipData = {{ doctors_tooltip_data|safe }};
+        new ChartLib(doctorsCtx.getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels: Array.isArray(doctorsLabels) ? doctorsLabels : [],
+            datasets: [{
+              label: 'Количество приемов',
+              data: Array.isArray(doctorsData) ? doctorsData : [],
+              backgroundColor: 'rgba(59, 130, 246, 0.8)'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: false
+              },
+              tooltip: {
+                callbacks: {
+                  title: function(context) {
+                    const index = context[0].dataIndex;
+                    const tooltipData = Array.isArray(doctorsTooltipData) ? doctorsTooltipData : [];
+                    const doctor = tooltipData[index];
+                    if (doctor && doctor.name && doctor.specialization) {
+                      return `${doctor.name} - ${doctor.specialization}`;
+                    }
+                    return context[0].label;
+                  },
+                  label: function(context) {
+                    return `Приемов: ${context.parsed.y}`;
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true
+              }
+            }
+          }
+        });
+      } catch (e) {
+        console.error('Ошибка при создании графика по врачам:', e);
+      }
+    }
+
+    // График по специализациям
+    const specsCtx = document.getElementById('specializationsChart');
+    if (specsCtx) {
+      try {
+        const specsLabels = {{ specs_chart_labels|safe }};
+        const specsData = {{ specs_chart_data|safe }};
+        new ChartLib(specsCtx.getContext('2d'), {
+          type: 'doughnut',
+          data: {
+            labels: Array.isArray(specsLabels) ? specsLabels : [],
+            datasets: [{
+              data: Array.isArray(specsData) ? specsData : [],
+              backgroundColor: [
+                'rgba(48, 179, 84, 0.8)',
+                'rgba(59, 130, 246, 0.8)',
+                'rgba(245, 158, 11, 0.8)',
+                'rgba(239, 68, 68, 0.8)',
+                'rgba(139, 92, 246, 0.8)',
+                'rgba(236, 72, 153, 0.8)',
+                'rgba(20, 184, 166, 0.8)',
+                'rgba(251, 146, 60, 0.8)',
+              ]
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'right'
+              }
+            }
+          }
+        });
+      } catch (e) {
+        console.error('Ошибка при создании графика по специализациям:', e);
+      }
+    }
+
+    // График кабинетов
+    const roomsCtx = document.getElementById('roomsChart');
+    if (roomsCtx) {
+      try {
+        const roomsLabels = {{ rooms_chart_labels|safe }};
+        const roomsData = {{ rooms_chart_data|safe }};
+        new ChartLib(roomsCtx.getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels: Array.isArray(roomsLabels) ? roomsLabels : [],
+            datasets: [{
+              label: 'Забронировано',
+              data: Array.isArray(roomsData) ? roomsData : [],
+              backgroundColor: 'rgba(245, 158, 11, 0.8)'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: false
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true
+              }
+            }
+          }
+        });
+      } catch (e) {
+        console.error('Ошибка при создании графика кабинетов:', e);
+      }
+    }
+
+    // График часов пик
+    const hoursCtx = document.getElementById('hoursChart');
+    if (hoursCtx) {
+      try {
+        const hoursLabels = {{ hours_chart_labels|safe }};
+        const hoursData = {{ hours_chart_data|safe }};
+        new ChartLib(hoursCtx.getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels: Array.isArray(hoursLabels) ? hoursLabels : [],
+            datasets: [{
+              label: 'Количество записей',
+              data: Array.isArray(hoursData) ? hoursData : [],
+              backgroundColor: 'rgba(139, 92, 246, 0.8)'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: false
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true
+              }
+            }
+          }
+        });
+      } catch (e) {
+        console.error('Ошибка при создании графика часов пик:', e);
+      }
+    }
+  }
+
+  // Запускаем инициализацию графиков
+  initCharts();
+});
+</script>
+{% endblock %}
+

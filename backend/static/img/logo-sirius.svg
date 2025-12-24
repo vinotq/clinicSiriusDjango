@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <!-- Толстое кольцо с разрывом, образующее «С» -->
+  <circle cx="100" cy="100" r="76" fill="none"
+          stroke="#30B354" stroke-width="44" stroke-linecap="round"
+          stroke-dasharray="380 140" transform="rotate(-28 100 100)"/>
+
+  <!-- Внутренний белый круг -->
+  <circle cx="100" cy="100" r="54" fill="#FFFFFF"/>
+
+  <!-- Красный медицинский крест -->
+  <path d="M100 78v44M78 100h44"
+        stroke="#DE2B2B" stroke-width="16" stroke-linecap="round"/>
+</svg>
+

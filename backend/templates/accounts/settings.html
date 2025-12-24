@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}Настройки аккаунта | Clinic Sirius{% endblock %}
+
+{% block content %}
+<section class="container py-5" style="max-width: 760px;">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+    <div>
+      <h2 class="fw-bold mb-0">Настройки аккаунта</h2>
+      <p class="text-muted mb-0">Управляйте данными аккаунта и безопасностью.</p>
+    </div>
+    {% if user.role == 'doctor' %}
+      <a class="btn btn-outline-primary" href="{% url 'staff:doctor_home' %}">Вернуться на главную</a>
+    {% elif user.role == 'admin' %}
+      <a class="btn btn-outline-primary" href="{% url 'clinic_admin:dashboard' %}">Вернуться в панель управления</a>
+    {% else %}
+    {% endif %}
+  </div>
+
+  <div class="row g-4">
+    
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="fw-semibold mb-3">Данные аккаунта</h5>
+          {% if account_success %}
+            <div class="alert alert-success">{{ account_success }}</div>
+          {% endif %}
+          {% if account_error %}
+            <div class="alert alert-danger">{{ account_error }}</div>
+          {% endif %}
+          <form method="post" action="{% url 'accounts:settings' %}" class="d-grid gap-3">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="update_account">
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input type="email" name="email" class="form-control" value="{{ user.email }}" placeholder="you@example.com" required>
+              <small class="text-muted">Email используется для входа в систему</small>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Имя пользователя</label>
+              <input type="text" name="username" class="form-control" value="{{ user.username }}" placeholder="username" required>
+              <small class="text-muted">Уникальное имя пользователя</small>
+            </div>
+            <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12">
+  <div class="card">
+    <div class="card-body">
+          <h5 class="fw-semibold mb-3">Смена пароля</h5>
+          {% if password_success %}
+            <div class="alert alert-success">{{ password_success }}</div>
+      {% endif %}
+          {% if password_error %}
+            <div class="alert alert-danger">{{ password_error }}</div>
+      {% endif %}
+          <form method="post" action="{% url 'accounts:settings' %}" class="d-grid gap-3">
+        {% csrf_token %}
+            <input type="hidden" name="action" value="change_password">
+            <div class="form-group">
+              <label class="form-label">Текущий пароль</label>
+              <input type="password" name="current_password" class="form-control" placeholder="••••••••" required>
+            </div>
+        <div class="form-group">
+          <label class="form-label">Новый пароль</label>
+          <input type="password" name="new_password" class="form-control" placeholder="••••••••" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Повторите новый пароль</label>
+          <input type="password" name="new_password_confirm" class="form-control" placeholder="••••••••" required>
+        </div>
+            <button type="submit" class="btn btn-primary">Изменить пароль</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <div class="card border-danger">
+        <div class="card-body">
+          <h5 class="fw-semibold mb-3 text-danger">
+            <i class="bi bi-exclamation-triangle"></i> Удаление аккаунта
+          </h5>
+          <p class="text-muted mb-3">Удаление аккаунта приведёт к:</p>
+          <ul class="text-muted mb-4">
+            <li>Удалению учётной записи и всех связанных данных</li>
+            <li>Завершению текущей сессии</li>
+            <li>Невозможности восстановления данных</li>
+          </ul>
+          <form method="post" action="{% url 'accounts:settings' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="delete_account">
+            <button type="submit" class="btn btn-outline-danger" onclick="return confirm('Вы уверены, что хотите удалить аккаунт? Это действие нельзя отменить. Все ваши данные будут безвозвратно удалены.');">
+              <i class="bi bi-trash"></i> Удалить аккаунт
+            </button>
+      </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+

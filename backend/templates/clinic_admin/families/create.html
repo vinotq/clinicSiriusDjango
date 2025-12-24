@@ -1,0 +1,350 @@
+{% extends 'base.html' %}
+
+{% block title %}Создать семью | Clinic Sirius{% endblock %}
+
+{% block extra_head %}
+<style>
+  .searchable-select-wrapper {
+    position: relative;
+  }
+  
+  .searchable-select-input {
+    width: 100%;
+    cursor: pointer;
+    background: white;
+  }
+  
+  .searchable-select-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1055;
+    background: white;
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    max-height: 300px;
+    overflow-y: auto;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    display: none;
+    margin-top: 2px;
+  }
+  
+  .searchable-select-dropdown.show {
+    display: block;
+  }
+  
+  .searchable-select-option {
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    border-bottom: 1px solid #f8f9fa;
+    font-size: 0.875rem;
+  }
+  
+  .searchable-select-option:hover,
+  .searchable-select-option.selected {
+    background-color: #e7f1ff;
+  }
+  
+  .searchable-select-option:last-child {
+    border-bottom: none;
+  }
+  
+  .searchable-select-search {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #dee2e6;
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 1;
+  }
+  
+  .searchable-select-search input {
+    width: 100%;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+  }
+  
+  .selected-members {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+  
+  .selected-member-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: #e7f1ff;
+    border: 1px solid #0d6efd;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+  }
+  
+  .selected-member-badge .remove-btn {
+    background: none;
+    border: none;
+    color: #0d6efd;
+    cursor: pointer;
+    padding: 0;
+    font-size: 1.2rem;
+    line-height: 1;
+  }
+  
+  .selected-member-badge .remove-btn:hover {
+    color: #dc3545;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="container py-5">
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+  
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+    <div>
+      <h2 class="fw-bold mb-0">Создать семью</h2>
+      <p class="text-muted mb-0">Создание семейной связи между пациентами</p>
+    </div>
+    <a class="btn btn-outline-secondary" href="{% url 'clinic_admin:family_list' %}">
+      <i class="bi bi-arrow-left"></i> Назад
+    </a>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        
+        
+        <div class="mb-4">
+          <label class="form-label fw-semibold mb-2">
+            Родитель (представитель семьи) <span class="text-danger">*</span>
+          </label>
+          <div class="searchable-select-wrapper">
+            <input type="text" class="form-control searchable-select-input" id="parentSelect" 
+                   placeholder="Выберите родителя..." 
+                   autocomplete="off" readonly>
+            <input type="hidden" name="parent_id" id="parentId">
+            <div class="searchable-select-dropdown" id="parentDropdown">
+              <div class="searchable-select-search">
+                <input type="text" placeholder="Поиск..." id="parentSearch" autocomplete="off">
+              </div>
+              <div id="parentOptions">
+                {% for patient in patients %}
+                <div class="searchable-select-option" data-value="{{ patient.pk }}" 
+                     data-text="{{ patient.lname }} {{ patient.fname }} {% if patient.tname %}{{ patient.tname|first }}.{% endif %}">
+                  {{ patient.lname }} {{ patient.fname }} {% if patient.tname %}{{ patient.tname|first }}.{% endif %}
+                  <small class="text-muted d-block">{{ patient.email|default:"-" }}</small>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        
+        <div class="mb-4">
+          <label class="form-label fw-semibold mb-2">
+            Члены семьи (дети) <span class="text-danger">*</span>
+          </label>
+          <div class="searchable-select-wrapper">
+            <input type="text" class="form-control searchable-select-input" id="childSelect" 
+                   placeholder="Выберите членов семьи..." 
+                   autocomplete="off" readonly>
+            <input type="hidden" name="child_ids" id="childIds">
+            <div class="searchable-select-dropdown" id="childDropdown">
+              <div class="searchable-select-search">
+                <input type="text" placeholder="Поиск..." id="childSearch" autocomplete="off">
+              </div>
+              <div id="childOptions">
+                {% for patient in patients %}
+                <div class="searchable-select-option" data-value="{{ patient.pk }}" 
+                     data-text="{{ patient.lname }} {{ patient.fname }} {% if patient.tname %}{{ patient.tname|first }}.{% endif %}">
+                  {{ patient.lname }} {{ patient.fname }} {% if patient.tname %}{{ patient.tname|first }}.{% endif %}
+                  <small class="text-muted d-block">{{ patient.email|default:"-" }}</small>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+          <div class="selected-members" id="selectedMembers"></div>
+          <small class="text-muted d-block mt-2">Выберите одного или нескольких пациентов</small>
+        </div>
+        
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-circle"></i> Создать семью
+          </button>
+          <a href="{% url 'clinic_admin:family_list' %}" class="btn btn-outline-secondary">
+            Отмена
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Инициализация поиска для родителя
+  initSearchableSelect('parentSelect', 'parentDropdown', 'parentSearch', 'parentOptions', 'parentId', false);
+  
+  // Инициализация поиска для детей (множественный выбор)
+  initSearchableSelect('childSelect', 'childDropdown', 'childSearch', 'childOptions', 'childIds', true);
+  
+  function initSearchableSelect(inputId, dropdownId, searchId, optionsId, hiddenId, multiple) {
+    const input = document.getElementById(inputId);
+    const dropdown = document.getElementById(dropdownId);
+    const search = document.getElementById(searchId);
+    const options = document.querySelectorAll(`#${optionsId} .searchable-select-option`);
+    const hidden = document.getElementById(hiddenId);
+    const selectedMembers = document.getElementById('selectedMembers');
+    
+    let selectedValues = [];
+    
+    // Открытие/закрытие dropdown
+    input.addEventListener('click', function(e) {
+      e.stopPropagation();
+      dropdown.classList.toggle('show');
+      if (dropdown.classList.contains('show')) {
+        search.focus();
+      }
+    });
+    
+    // Поиск
+    search.addEventListener('input', function() {
+      const query = this.value.toLowerCase();
+      options.forEach(function(option) {
+        const text = option.textContent.toLowerCase();
+        if (text.includes(query)) {
+          option.style.display = 'block';
+        } else {
+          option.style.display = 'none';
+        }
+      });
+    });
+    
+    // Выбор опции
+    options.forEach(function(option) {
+      option.addEventListener('click', function() {
+        const value = this.getAttribute('data-value');
+        const text = this.getAttribute('data-text');
+        
+        if (multiple) {
+          if (selectedValues.includes(value)) {
+            // Удаляем из выбранных
+            selectedValues = selectedValues.filter(v => v !== value);
+            this.classList.remove('selected');
+          } else {
+            // Добавляем в выбранные
+            selectedValues.push(value);
+            this.classList.add('selected');
+          }
+          
+          // Обновляем скрытое поле
+          const hiddenInputs = document.querySelectorAll(`input[name="child_ids"]`);
+          hiddenInputs.forEach(input => input.remove());
+          
+          selectedValues.forEach(function(val) {
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'child_ids';
+            hiddenInput.value = val;
+            document.querySelector('form').appendChild(hiddenInput);
+          });
+          
+          // Обновляем отображение выбранных
+          updateSelectedMembers();
+          
+          // Обновляем placeholder
+          if (selectedValues.length > 0) {
+            input.value = `Выбрано: ${selectedValues.length}`;
+          } else {
+            input.value = '';
+          }
+        } else {
+          // Одиночный выбор
+          selectedValues = [value];
+          hidden.value = value;
+          input.value = text;
+          dropdown.classList.remove('show');
+          
+          // Снимаем выделение с других опций
+          options.forEach(function(opt) {
+            opt.classList.remove('selected');
+          });
+          this.classList.add('selected');
+        }
+      });
+    });
+    
+    // Закрытие при клике вне
+    document.addEventListener('click', function(e) {
+      if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.classList.remove('show');
+      }
+    });
+    
+    function updateSelectedMembers() {
+      if (!selectedMembers) return;
+      
+      selectedMembers.innerHTML = '';
+      selectedValues.forEach(function(value) {
+        const option = Array.from(options).find(opt => opt.getAttribute('data-value') === value);
+        if (option) {
+          const text = option.getAttribute('data-text');
+          const badge = document.createElement('div');
+          badge.className = 'selected-member-badge';
+          badge.innerHTML = `
+            <span>${text}</span>
+            <button type="button" class="remove-btn" data-value="${value}">&times;</button>
+          `;
+          
+          badge.querySelector('.remove-btn').addEventListener('click', function() {
+            selectedValues = selectedValues.filter(v => v !== value);
+            option.classList.remove('selected');
+            
+            const hiddenInputs = document.querySelectorAll(`input[name="child_ids"]`);
+            hiddenInputs.forEach(input => input.remove());
+            
+            selectedValues.forEach(function(val) {
+              const hiddenInput = document.createElement('input');
+              hiddenInput.type = 'hidden';
+              hiddenInput.name = 'child_ids';
+              hiddenInput.value = val;
+              document.querySelector('form').appendChild(hiddenInput);
+            });
+            
+            updateSelectedMembers();
+            
+            if (selectedValues.length > 0) {
+              input.value = `Выбрано: ${selectedValues.length}`;
+            } else {
+              input.value = '';
+            }
+          });
+          
+          selectedMembers.appendChild(badge);
+        }
+      });
+    }
+  }
+});
+</script>
+{% endblock %}
+
+
+
+

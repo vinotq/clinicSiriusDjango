@@ -1,0 +1,582 @@
+{% extends 'base.html' %}
+
+{% block title %}Настройки аккаунта | Clinic Sirius{% endblock %}
+
+{% block extra_head %}
+<style>
+  .profile-header {
+    background: linear-gradient(135deg, rgba(48, 179, 84, 0.1) 0%, rgba(255, 255, 255, 0.95) 100%);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid rgba(48, 179, 84, 0.2);
+  }
+  
+  .profile-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #30b354, #2a9a48);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+  
+  .info-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: 12px;
+    transition: all 0.2s;
+    margin-bottom: 0.5rem;
+  }
+  
+  .info-item:hover {
+    background: #f8f9fa;
+  }
+  
+  .info-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: rgba(48, 179, 84, 0.1);
+    color: #30b354;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1.2rem;
+  }
+  
+  .info-content {
+    flex-grow: 1;
+  }
+  
+  .info-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+  }
+  
+  .info-value {
+    font-size: 1rem;
+    color: #212529;
+    font-weight: 500;
+  }
+  
+  .info-value.empty {
+    color: #adb5bd;
+    font-style: italic;
+  }
+  
+  .section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #212529;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #e9ecef;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="container py-5">
+  {% if role == 'doctor' and doctor %}
+  <div class="profile-header" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(255, 255, 255, 0.95) 100%); border-color: rgba(59, 130, 246, 0.2);">
+    <div class="d-flex flex-column flex-md-row align-items-center align-items-md-start gap-4">
+      <div class="profile-avatar" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
+        {% if doctor.fname %}{{ doctor.fname|first|upper }}{% else %}Д{% endif %}{% if doctor.lname %}{{ doctor.lname|first|upper }}{% endif %}
+      </div>
+      <div class="flex-grow-1 text-center text-md-start">
+        <h2 class="fw-bold mb-2">
+          {{ doctor.lname }} {{ doctor.fname }}
+          {% if doctor.tname %}{{ doctor.tname }}{% endif %}
+        </h2>
+        <div class="d-flex flex-wrap gap-2 justify-content-center justify-content-md-start">
+          <a class="btn btn-outline-primary btn-sm" href="{% url 'accounts:settings' %}">
+            <i class="bi bi-gear"></i> Настройки аккаунта
+          </a>
+          <a class="btn btn-primary btn-sm" href="{% url 'staff:doctor_home' %}">
+            <i class="bi bi-calendar-check"></i> Главная
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% elif role == 'admin' %}
+  <div class="profile-header" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(255, 255, 255, 0.95) 100%); border-color: rgba(139, 92, 246, 0.2);">
+    <div class="d-flex flex-column flex-md-row align-items-center align-items-md-start gap-4">
+      <div class="profile-avatar" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
+        {{ user.username|first|upper }}
+      </div>
+      <div class="flex-grow-1 text-center text-md-start">
+        <h2 class="fw-bold mb-2">{{ user.username }}</h2>
+        <p class="text-muted mb-3">Профиль администратора</p>
+        <div class="d-flex flex-wrap gap-2 justify-content-center justify-content-md-start">
+          <a class="btn btn-outline-primary btn-sm" href="{% url 'accounts:settings' %}">
+            <i class="bi bi-gear"></i> Настройки аккаунта
+          </a>
+          <a class="btn btn-primary btn-sm" href="{% url 'clinic_admin:dashboard' %}">
+            <i class="bi bi-speedometer2"></i> Панель администратора
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% elif patient %}
+  <div class="profile-header">
+    <div class="d-flex flex-column flex-md-row align-items-center align-items-md-start gap-4">
+      <div class="profile-avatar">
+        {% if patient.fname %}{{ patient.fname|first|upper }}{% else %}П{% endif %}{% if patient.lname %}{{ patient.lname|first|upper }}{% endif %}
+      </div>
+      <div class="flex-grow-1 text-center text-md-start">
+        <h2 class="fw-bold mb-2">
+          {{ patient.lname }} {{ patient.fname }}
+          {% if patient.tname %}{{ patient.tname }}{% endif %}
+        </h2>
+        <p class="text-muted mb-3">Профиль пациента</p>
+        <div class="d-flex flex-wrap gap-2 justify-content-center justify-content-md-start">
+          <a class="btn btn-outline-primary btn-sm" href="{% url 'accounts:settings' %}">
+            <i class="bi bi-gear"></i> Настройки аккаунта
+          </a>
+          <a class="btn btn-primary btn-sm" href="{% url 'index' %}">
+            <i class="bi bi-calendar-check"></i> Кабинет пациента
+          </a>
+          {% if patient %}
+          <button type="button" class="btn btn-outline-secondary btn-sm" id="edit-btn" onclick="toggleEditMode()">
+            <i class="bi bi-pencil"></i> Редактировать
+          </button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+      <h2 class="fw-bold mb-0">Личные данные</h2>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <a class="btn btn-outline-primary" href="{% url 'accounts:settings' %}">Настройки аккаунта</a>
+      {% if role == 'doctor' %}
+        <a class="btn btn-primary" href="{% url 'staff:doctor_home' %}">Главная</a>
+      {% elif role == 'admin' %}
+        <a class="btn btn-primary" href="{% url 'clinic_admin:dashboard' %}">Панель администратора</a>
+      {% else %}
+        <a class="btn btn-primary" href="{% url 'index' %}">Кабинет пациента</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if success %}
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        showToast('{{ success|escapejs }}', 'success');
+      });
+    </script>
+  {% endif %}
+  {% if error %}
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        showToast('{{ error|escapejs }}', 'danger');
+      });
+    </script>
+  {% endif %}
+
+  <div class="row g-4">
+    <div class="col-lg-12">
+      <div class="card">
+        <div class="card-body p-4">
+          {% if role == 'doctor' and doctor %}
+          <h5 class="section-title">
+            <i class="bi bi-person-badge me-2"></i>Информация о враче
+          </h5>
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <div class="info-item">
+                <div class="info-icon">
+                  <i class="bi bi-person"></i>
+                </div>
+                <div class="info-content">
+                  <div class="info-label">ФИО</div>
+                  <div class="info-value">{{ doctor.lname }} {{ doctor.fname }} {% if doctor.tname %}{{ doctor.tname }}{% endif %}</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="info-item">
+                <div class="info-icon">
+                  <i class="bi bi-briefcase"></i>
+                </div>
+                <div class="info-content">
+                  <div class="info-label">Специализация</div>
+                  <div class="info-value">{{ doctor.specialization.name }}</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="info-item">
+                <div class="info-icon">
+                  <i class="bi bi-calendar-event"></i>
+                </div>
+                <div class="info-content">
+                  <div class="info-label">Дата рождения</div>
+                  <div class="info-value">{{ doctor.bdate|date:"d.m.Y" }}</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="info-item">
+                <div class="info-icon">
+                  <i class="bi bi-phone"></i>
+                </div>
+                <div class="info-content">
+                  <div class="info-label">Телефон</div>
+                  <div class="info-value {% if not doctor.phone_number %}empty{% endif %}">
+                    {{ doctor.phone_number|default:"не указан" }}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="info-item">
+                <div class="info-icon">
+                  <i class="bi bi-envelope"></i>
+                </div>
+                <div class="info-content">
+                  <div class="info-label">Email</div>
+                  <div class="info-value">{{ doctor.email }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <h5 class="section-title">
+            <i class="bi bi-graph-up me-2"></i>Статистика
+          </h5>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                  <h3 class="mb-0">{{ total_appointments|default:0 }}</h3>
+                  <p class="mb-0">Всего приёмов</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                  <h3 class="mb-0">{{ upcoming_appointments_count|default:0 }}</h3>
+                  <p class="mb-0">Предстоящих</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                  <h3 class="mb-0">{{ completed_appointments|default:0 }}</h3>
+                  <p class="mb-0">Завершённых</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {% elif role == 'admin' %}
+          <h5 class="section-title">
+            <i class="bi bi-shield-check me-2"></i>Информация администратора
+          </h5>
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <div class="info-item">
+                <div class="info-icon">
+                  <i class="bi bi-person"></i>
+                </div>
+                <div class="info-content">
+                  <div class="info-label">Имя пользователя</div>
+                  <div class="info-value">{{ user.username }}</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="info-item">
+                <div class="info-icon">
+                  <i class="bi bi-envelope"></i>
+                </div>
+                <div class="info-content">
+                  <div class="info-label">Email</div>
+                  <div class="info-value">{{ user.email }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <h5 class="section-title">
+            <i class="bi bi-graph-up me-2"></i>Статистика системы
+          </h5>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                  <h3 class="mb-0">{{ total_patients|default:0 }}</h3>
+                  <p class="mb-0">Пациентов</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                  <h3 class="mb-0">{{ total_doctors|default:0 }}</h3>
+                  <p class="mb-0">Врачей</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                  <h3 class="mb-0">{{ total_appointments|default:0 }}</h3>
+                  <p class="mb-0">Приёмов</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {% elif patient %}
+          <form method="post" id="patient-form">
+            {% csrf_token %}
+            
+            <h5 class="section-title">
+              <i class="bi bi-person me-2"></i>Личные данные
+            </h5>
+            <div class="row g-3 mb-4">
+              <div class="col-md-6">
+                <div class="info-item">
+                  <div class="info-icon">
+                    <i class="bi bi-person"></i>
+                  </div>
+                  <div class="info-content">
+                    <div class="info-label">Имя <span class="text-danger">*</span></div>
+                    <div id="fname-display" class="info-value">{{ patient.fname|default:"не указано" }}</div>
+                    <input type="text" name="fname" id="fname-input" class="form-control mt-2" value="{{ patient.fname }}" style="display: none;" required>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="info-item">
+                  <div class="info-icon">
+                    <i class="bi bi-person-badge"></i>
+                  </div>
+                  <div class="info-content">
+                    <div class="info-label">Фамилия <span class="text-danger">*</span></div>
+                    <div id="lname-display" class="info-value">{{ patient.lname|default:"не указано" }}</div>
+                    <input type="text" name="lname" id="lname-input" class="form-control mt-2" value="{{ patient.lname }}" style="display: none;" required>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="info-item">
+                  <div class="info-icon">
+                    <i class="bi bi-person-vcard"></i>
+                  </div>
+                  <div class="info-content">
+                    <div class="info-label">Отчество</div>
+                    <div id="tname-display" class="info-value {% if not patient.tname %}empty{% endif %}">{{ patient.tname|default:"не указано" }}</div>
+                    <input type="text" name="tname" id="tname-input" class="form-control mt-2" value="{{ patient.tname|default:'' }}" style="display: none;">
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="info-item">
+                  <div class="info-icon">
+                    <i class="bi bi-calendar-event"></i>
+                  </div>
+                  <div class="info-content">
+                    <div class="info-label">Дата рождения <span class="text-danger">*</span></div>
+                    <div id="bdate-display" class="info-value">
+                      {% if patient.bdate %}{{ patient.bdate|date:"d.m.Y" }}{% else %}не указана{% endif %}
+                    </div>
+                    <input type="date" name="bdate" id="bdate-input" class="form-control mt-2" value="{{ patient.bdate|date:'Y-m-d' }}" style="display: none;" required>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <h5 class="section-title">
+              <i class="bi bi-telephone me-2"></i>Контактная информация
+            </h5>
+            <div class="row g-3 mb-4">
+              <div class="col-md-6">
+                <div class="info-item">
+                  <div class="info-icon">
+                    <i class="bi bi-phone"></i>
+                  </div>
+                  <div class="info-content">
+                    <div class="info-label">Телефон</div>
+                    <div id="phone-display" class="info-value {% if not patient.phone_number %}empty{% endif %}">
+                      {% if patient.phone_number %}
+                        <span class="formatted-phone">{{ patient.phone_number }}</span>
+                      {% else %}
+                        не указан
+                      {% endif %}
+                    </div>
+                    <input type="text" name="phone_number" id="phone-input" class="form-control mt-2" value="{{ patient.phone_number|default:'' }}" style="display: none;">
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="info-item">
+                  <div class="info-icon">
+                    <i class="bi bi-envelope"></i>
+                  </div>
+                  <div class="info-content">
+                    <div class="info-label">Email пациента</div>
+                    <div id="email-display" class="info-value {% if not patient.email %}empty{% endif %}">{{ patient.email|default:"не указан" }}</div>
+                    <input type="email" name="patient_email" id="email-input" class="form-control mt-2" value="{{ patient.email|default:'' }}" style="display: none;">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <h5 class="section-title">
+              <i class="bi bi-file-earmark-text me-2"></i>Документы
+            </h5>
+            <div class="row g-3 mb-4">
+              <div class="col-md-6">
+                <div class="info-item">
+                  <div class="info-icon">
+                    <i class="bi bi-credit-card"></i>
+                  </div>
+                  <div class="info-content">
+                    <div class="info-label">СНИЛС <span class="text-danger">*</span></div>
+                    <div id="snils-display" class="info-value">{{ patient.snils|default:"не указан" }}</div>
+                    <input type="text" name="snils" id="snils-input" class="form-control mt-2" value="{{ patient.snils|default:'' }}" style="display: none;" required>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="info-item">
+                  <div class="info-icon">
+                    <i class="bi bi-file-medical"></i>
+                  </div>
+                  <div class="info-content">
+                    <div class="info-label">Полис ОМС <span class="text-danger">*</span></div>
+                    <div id="oms-display" class="info-value">{{ patient.oms|default:"не указан" }}</div>
+                    <input type="text" name="oms" id="oms-input" class="form-control mt-2" value="{{ patient.oms|default:'' }}" style="display: none;" required>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2 mt-4" id="form-actions" style="display: none !important;">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-circle"></i> Сохранить изменения
+              </button>
+              <button type="button" class="btn btn-outline-secondary" onclick="cancelEdit()">
+                <i class="bi bi-x-circle"></i> Отмена
+              </button>
+              <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deletePatientModal">
+                <i class="bi bi-trash"></i> Удалить профиль пациента
+              </button>
+            </div>
+          </form>
+          {% else %}
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> У вас пока нет профиля пациента. Профиль будет создан автоматически при первой записи на приём.
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+function toggleEditMode() {
+  var isEditing = document.getElementById('fname-input').style.display !== 'none';
+  
+  if (!isEditing) {
+    // Переключаемся в режим редактирования
+    document.querySelectorAll('[id$="-display"]').forEach(function(el) {
+      el.style.display = 'none';
+    });
+    document.querySelectorAll('[id$="-input"]').forEach(function(el) {
+      el.style.display = 'block';
+    });
+    document.getElementById('form-actions').style.display = 'flex';
+    var editBtn = document.getElementById('edit-btn');
+    if (editBtn) editBtn.style.display = 'none';
+    
+    // Прокручиваем к началу формы
+    document.getElementById('patient-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+function cancelEdit() {
+  // Возвращаемся в режим просмотра
+  document.querySelectorAll('[id$="-display"]').forEach(function(el) {
+    el.style.display = 'block';
+  });
+  document.querySelectorAll('[id$="-input"]').forEach(function(el) {
+    el.style.display = 'none';
+  });
+  document.getElementById('form-actions').style.display = 'none';
+  var editBtn = document.getElementById('edit-btn');
+  if (editBtn) editBtn.style.display = 'block';
+  
+  // Перезагружаем страницу, чтобы сбросить значения формы
+  window.location.reload();
+}
+
+// Форматирование телефона
+function formatPhone(phone) {
+  if (!phone) return 'не указан';
+  // Убираем все нецифровые символы
+  var digits = phone.replace(/\D/g, '');
+  if (digits.length === 11 && digits[0] === '7') {
+    // Формат: +7 (XXX) XXX-XX-XX
+    return '+7 (' + digits.substring(1, 4) + ') ' + digits.substring(4, 7) + '-' + digits.substring(7, 9) + '-' + digits.substring(9, 11);
+  } else if (digits.length === 10) {
+    // Формат: +7 (XXX) XXX-XX-XX (без первой 7)
+    return '+7 (' + digits.substring(0, 3) + ') ' + digits.substring(3, 6) + '-' + digits.substring(6, 8) + '-' + digits.substring(8, 10);
+  }
+  return phone; // Возвращаем как есть, если формат не распознан
+}
+
+// Применяем форматирование при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.formatted-phone').forEach(function(el) {
+    el.textContent = formatPhone(el.textContent);
+  });
+  });
+</script>
+
+<div class="modal fade" id="deletePatientModal" tabindex="-1" aria-labelledby="deletePatientModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deletePatientModalLabel">Подтверждение удаления</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Вы уверены, что хотите удалить профиль пациента? Это действие нельзя отменить.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+        <form method="post" action="{% url 'accounts:profile' %}" class="d-inline">
+          {% csrf_token %}
+          <input type="hidden" name="delete_patient" value="1">
+          <button type="submit" class="btn btn-danger">Удалить профиль</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

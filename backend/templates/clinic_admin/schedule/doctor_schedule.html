@@ -1,0 +1,559 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Расписание - {{ doctor.lname }} {{ doctor.fname }} | Clinic Sirius{% endblock %}
+
+{% block extra_head %}
+<style>
+.schedule-calendar {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.calendar-header {
+  background: linear-gradient(135deg, var(--brand-start) 0%, var(--brand-end) 100%);
+  color: white;
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.view-toggle {
+  display: flex;
+  gap: 0.5rem;
+  background: rgba(255,255,255,0.2);
+  border-radius: 8px;
+  padding: 0.25rem;
+}
+
+.view-toggle button {
+  background: transparent;
+  border: none;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.view-toggle button.active {
+  background: white;
+  color: var(--brand-start);
+}
+
+.view-toggle button:hover:not(.active) {
+  background: rgba(255,255,255,0.1);
+}
+
+.week-navigation {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.week-navigation button {
+  background: rgba(255,255,255,0.2);
+  border: none;
+  color: white;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.week-navigation button:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+.week-date {
+  font-size: 1.1rem;
+  font-weight: 600;
+  min-width: 200px;
+  text-align: center;
+}
+
+.today-btn {
+  background: rgba(255,255,255,0.2);
+  border: none;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.today-btn:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: 100px repeat(7, 1fr);
+  border-top: 1px solid #e5e7eb;
+}
+
+.calendar-grid.day-view {
+  grid-template-columns: 100px 1fr;
+}
+
+.time-column {
+  border-right: 1px solid #e5e7eb;
+  background: #f9fafb;
+  display: flex;
+  flex-direction: column;
+}
+
+.time-slot {
+  height: 30px;
+  min-height: 30px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  padding: 0 0.5rem;
+  font-size: 0.85rem;
+  color: #6b7280;
+  font-weight: 500;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.time-slot.major {
+  height: 30px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #374151;
+}
+
+.day-column {
+  border-right: 1px solid #e5e7eb;
+  position: relative;
+}
+
+.day-column:last-child {
+  border-right: none;
+}
+
+.day-header {
+  height: 100px;
+  border-bottom: 2px solid #e5e7eb;
+  padding: 1.25rem;
+  text-align: center;
+  background: #f9fafb;
+}
+
+.day-header.today {
+  background: linear-gradient(to bottom, rgba(48, 179, 84, 0.1), transparent);
+  border-bottom-color: var(--brand-start);
+}
+
+.day-name {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.day-date {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.day-date.today {
+  color: var(--brand-start);
+}
+
+.day-content {
+  position: relative;
+  height: 1440px;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 29px,
+    #e5e7eb 29px,
+    #e5e7eb 30px
+  );
+  box-sizing: border-box;
+}
+
+.slot-block {
+  position: absolute;
+  left: 1%;
+  width: 98%;
+  border-radius: 6px;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  z-index: 1;
+  overflow: hidden;
+  min-height: 30px;
+  box-sizing: border-box;
+  margin: 0;
+}
+
+/* Когда заданы left и width через inline стили, используем их */
+.slot-block[style*="left:"] {
+  right: auto;
+}
+
+.slot-block.available {
+  cursor: pointer;
+}
+
+.slot-block.booked,
+.slot-block.in-progress {
+  cursor: pointer;
+}
+
+.slot-block:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  z-index: 2;
+}
+
+.slot-block.available {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  color: white;
+}
+
+.slot-block.booked {
+  background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%);
+  color: white;
+}
+
+.slot-block.in-progress {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+}
+
+.slot-block.completed {
+  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+  color: white;
+}
+
+.slot-time {
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.slot-room {
+  font-size: 0.75rem;
+  opacity: 0.9;
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.slot-patient {
+  font-weight: 500;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.slot-empty {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.9);
+  text-align: center;
+  padding: 0.25rem;
+}
+
+@media (max-width: 1200px) {
+  .calendar-grid {
+    grid-template-columns: 80px repeat(7, 1fr);
+  }
+  
+  .time-slot {
+    height: 30px;
+    min-height: 30px;
+    font-size: 0.8rem;
+    padding: 0 0.25rem;
+  }
+  
+  .time-slot.major {
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+  
+  .day-header {
+    height: 90px;
+    padding: 1rem 0.5rem;
+  }
+  
+  .day-content {
+    height: 1440px;
+  }
+  
+  .day-date {
+    font-size: 1rem;
+  }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="container-fluid py-5" style="max-width: 98%; margin: 0 auto;">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">Расписание врача</h2>
+      <p class="text-muted mb-0">{{ doctor.lname }} {{ doctor.fname }} · {{ doctor.specialization.name }}</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a class="btn btn-primary" href="{% url 'clinic_admin:doctor_edit' doctor.id %}">Добавить окно</a>
+      <a class="btn btn-outline-secondary" href="{% url 'clinic_admin:doctor_detail' doctor.id %}">Назад к врачу</a>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    
+    <div class="col-lg-9">
+      <div class="schedule-calendar">
+        <div class="calendar-header">
+          <div class="view-toggle">
+            <a href="?view=day{% if view_type == 'day' %}&date={{ selected_date_str|default:today }}{% endif %}" class="text-decoration-none">
+              <button type="button" {% if view_type == 'day' %}class="active"{% endif %}>День</button>
+            </a>
+            <a href="?view=week{% if view_type == 'week' %}&week={{ week_start|date:'Y-m-d' }}{% endif %}" class="text-decoration-none">
+              <button type="button" {% if view_type == 'week' %}class="active"{% endif %}>Неделя</button>
+            </a>
+          </div>
+          
+          <div class="week-navigation">
+            {% if view_type == 'day' %}
+              <a href="?view=day&date={{ prev_day }}" class="text-decoration-none">
+                <button type="button">‹</button>
+              </a>
+              <div class="week-date">
+                {{ week_start|date:"d" }} {{ week_days.0.month_name }} {{ week_start|date:"Y" }}
+              </div>
+              <a href="?view=day&date={{ next_day }}" class="text-decoration-none">
+                <button type="button">›</button>
+              </a>
+            {% else %}
+              <a href="?view=week&week={{ prev_week }}" class="text-decoration-none">
+                <button type="button">‹</button>
+              </a>
+              <div class="week-date">
+                {{ week_start|date:"d" }} {{ week_days.0.month_name }} {{ week_start|date:"Y" }} - {{ week_end|date:"d" }} {{ week_days.6.month_name }} {{ week_end|date:"Y" }}
+              </div>
+              <a href="?view=week&week={{ next_week }}" class="text-decoration-none">
+                <button type="button">›</button>
+              </a>
+            {% endif %}
+          </div>
+          
+          <a href="?view={{ view_type|default:'week' }}{% if view_type == 'day' %}&date={{ today }}{% else %}&week={{ today }}{% endif %}" class="text-decoration-none">
+            <button class="today-btn">Сегодня</button>
+          </a>
+        </div>
+
+        <div class="calendar-grid {% if view_type == 'day' %}day-view{% endif %}">
+          
+          <div class="time-column">
+            <div style="height: 100px; border-bottom: 2px solid #e5e7eb;"></div>
+            {% for hour in "6789012345678901234567"|make_list %}
+              {% if forloop.counter >= 1 and forloop.counter <= 17 %}
+                {% with h=forloop.counter|add:5 %}
+                  <div class="time-slot major">{{ h }}:00</div>
+                  <div class="time-slot">{{ h }}:20</div>
+                  <div class="time-slot">{{ h }}:40</div>
+                {% endwith %}
+              {% endif %}
+            {% endfor %}
+          </div>
+
+          
+          {% for day in week_days %}
+            <div class="day-column">
+              <div class="day-header {% if day.is_today %}today{% endif %}">
+                <div class="day-name">{{ day.day_name }}</div>
+                <div class="day-date {% if day.is_today %}today{% endif %}">{{ day.day_num }}</div>
+              </div>
+              
+              <div class="day-content">
+                {% for slot_data in day.slots %}
+                  {% with slot=slot_data.slot slot_height=slot_data.height %}
+                    <div class="slot-block {% if slot.appointment %}{% if slot.appointment.status == 'in_progress' %}in-progress{% elif slot.appointment.status == 'completed' %}completed{% else %}booked{% endif %}{% else %}available{% endif %}"
+                         style="top: {{ slot_data.top }}px; height: {{ slot_height }}px;{% if slot_data.left is not None %} left: {{ slot_data.left }}%; width: {{ slot_data.width }}%;{% endif %}"
+                         data-slot-height="{{ slot_height }}"
+                         {% if slot.appointment %}
+                           title="{{ slot.appointment.patient.lname }} {{ slot.appointment.patient.fname }} - {{ slot.time_from|time:'H:i' }}-{{ slot.time_to|time:'H:i' }}"
+                           onclick="window.location.href='{% url 'clinic_admin:patient_detail' slot.appointment.patient.pk %}'"
+                         {% else %}
+                           title="Свободно - {{ slot.time_from|time:'H:i' }}-{{ slot.time_to|time:'H:i' }}"
+                         {% endif %}>
+                      {% if slot_height >= 60 %}
+                        <div class="slot-time">{{ slot.time_from|time:"H:i" }} - {{ slot.time_to|time:"H:i" }}</div>
+                        {% if slot_height >= 90 %}
+                          <div class="slot-room">Каб. {{ slot.room.room_number }}</div>
+                        {% endif %}
+                      {% else %}
+                        <div class="slot-time" style="margin: 0; line-height: 1.2; font-size: 0.75rem; color: white;">{{ slot.time_from|time:"H:i" }}-{{ slot.time_to|time:"H:i" }}</div>
+                      {% endif %}
+                    </div>
+                  {% endwith %}
+                {% endfor %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    
+    
+    <div class="col-lg-3">
+      <div class="d-flex flex-column gap-3">
+        
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <h5 class="fw-semibold mb-4 d-flex align-items-center gap-2">
+              <i class="bi bi-info-circle-fill text-info"></i>
+              Легенда
+            </h5>
+            <div class="d-flex flex-column gap-3">
+              <div class="d-flex align-items-center gap-3">
+                <div class="slot-block available" style="position: static; width: 48px; height: 24px; padding: 0; border-radius: 6px; flex-shrink: 0;"></div>
+                <div>
+                  <div class="fw-semibold small">Свободно</div>
+                  <div class="text-muted" style="font-size: 0.75rem;">Доступно для записи</div>
+                </div>
+              </div>
+              <div class="d-flex align-items-center gap-3">
+                <div class="slot-block booked" style="position: static; width: 48px; height: 24px; padding: 0; border-radius: 6px; flex-shrink: 0;"></div>
+                <div>
+                  <div class="fw-semibold small">Забронировано</div>
+                  <div class="text-muted" style="font-size: 0.75rem;">Запись подтверждена</div>
+                </div>
+              </div>
+              <div class="d-flex align-items-center gap-3">
+                <div class="slot-block in-progress" style="position: static; width: 48px; height: 24px; padding: 0; border-radius: 6px; flex-shrink: 0;"></div>
+                <div>
+                  <div class="fw-semibold small">В процессе</div>
+                  <div class="text-muted" style="font-size: 0.75rem;">Приём начат</div>
+                </div>
+              </div>
+              <div class="d-flex align-items-center gap-3">
+                <div class="slot-block completed" style="position: static; width: 48px; height: 24px; padding: 0; border-radius: 6px; flex-shrink: 0;"></div>
+                <div>
+                  <div class="fw-semibold small">Завершено</div>
+                  <div class="text-muted" style="font-size: 0.75rem;">Приём завершён</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+// Проверка и корректировка позиционирования блоков для предотвращения перекрытий
+document.addEventListener('DOMContentLoaded', function() {
+  // Получаем все колонки дней
+  const dayColumns = document.querySelectorAll('.day-column');
+  
+  dayColumns.forEach(function(column) {
+    const slotBlocks = column.querySelectorAll('.slot-block');
+    const blocks = Array.from(slotBlocks).map(function(block) {
+      const style = window.getComputedStyle(block);
+      const top = parseInt(block.style.top) || 0;
+      const height = parseInt(block.style.height) || 40;
+      const left = parseFloat(block.style.left) || 1;
+      const width = parseFloat(block.style.width) || 98;
+      
+      return {
+        element: block,
+        top: top,
+        height: height,
+        end: top + height,
+        left: left,
+        width: width,
+        endLeft: left + width
+      };
+    });
+    
+    // Сортируем по позиции сверху
+    blocks.sort(function(a, b) {
+      return a.top - b.top;
+    });
+    
+    // Проверяем и корректируем перекрытия
+    for (let i = 0; i < blocks.length; i++) {
+      const current = blocks[i];
+      
+      // Проверка границ дня (0-1440px для 6-22 часов, интервалы по 20 минут, высота ячейки 30px)
+      if (current.top < 0) {
+        current.element.style.top = '0px';
+        current.top = 0;
+      }
+      if (current.end > 1440) {
+        const newHeight = 1440 - current.top;
+        current.element.style.height = newHeight + 'px';
+        current.height = newHeight;
+        current.end = current.top + newHeight;
+      }
+      
+      // Проверяем перекрытия с другими блоками
+      for (let j = i + 1; j < blocks.length; j++) {
+        const other = blocks[j];
+        
+        // Если блоки перекрываются по времени
+        if (current.top < other.end && current.end > other.top) {
+          // Если блоки перекрываются по горизонтали (левая граница одного внутри другого)
+          if (current.left < other.endLeft && current.endLeft > other.left) {
+            // Корректируем позицию, если нужно
+            // Это не должно происходить, так как сервер уже распределил блоки,
+            // но на всякий случай проверяем
+            const overlap = Math.min(current.endLeft - other.left, other.endLeft - current.left);
+            if (overlap > 0 && overlap < 1) {
+              // Небольшая корректировка для предотвращения визуального перекрытия
+              if (current.top <= other.top) {
+                current.element.style.width = (current.width - 0.5) + '%';
+              }
+            }
+          }
+        }
+        
+        // Если блоки не перекрываются по времени, можно прекратить проверку
+        if (current.end <= other.top) {
+          break;
+        }
+      }
+      
+      // Минимальная высота для читаемости
+      if (current.height < 30) {
+        current.element.style.minHeight = '30px';
+        current.element.style.overflow = 'visible';
+      }
+      
+      // Если блок слишком маленький, уменьшаем padding
+      if (current.height < 60) {
+        current.element.style.padding = '0.2rem 0.4rem';
+        current.element.style.fontSize = '0.75rem';
+      }
+    }
+  });
+});
+
+</script>
+
+{% endblock %}

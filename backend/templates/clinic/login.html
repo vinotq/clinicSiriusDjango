@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}Вход в аккаунт | Clinic Sirius{% endblock %}
+
+{% block content %}
+<section class="container py-5" style="max-width: 880px;">
+  <div class="row g-4 align-items-center">
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-body">
+          <h2 class="fw-bold mb-2">Добро пожаловать</h2>
+          <p class="text-muted mb-4">Войдите, чтобы управлять визитами, профилем пациента и семьёй.</p>
+          <form method="post" class="d-grid gap-3" id="login-form">
+            {% csrf_token %}
+            <input type="hidden" name="anchor" id="anchor-input" value="">
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input type="email" name="email" class="form-control" placeholder="you@example.com" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Пароль</label>
+              <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="remember" id="remember">
+              <label class="form-check-label" for="remember">Оставаться в системе</label>
+            </div>
+            {% if error %}
+              <div class="alert alert-danger">{{ error }}</div>
+            {% endif %}
+            <button type="submit" class="btn btn-primary w-100">Войти</button>
+          </form>
+          
+          <script>
+            // Сохраняем якорь из URL при загрузке страницы
+            document.addEventListener('DOMContentLoaded', function() {
+              const hash = window.location.hash;
+              if (hash) {
+                document.getElementById('anchor-input').value = hash;
+              }
+            });
+          </script>
+          <p class="text-muted mt-3 mb-0">Нет аккаунта? <a href="{% url 'accounts:register' %}" class="text-primary fw-semibold">Создать</a></p>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="gradient-card card h-100">
+        <div class="card-body">
+          <h5 class="fw-semibold mb-3">Что внутри кабинета</h5>
+          <ul class="focus-list">
+            <li>
+              <div class="fw-semibold">Быстрая запись</div>
+              <p class="text-muted mb-0">Выбор врача и слота без звонков.</p>
+            </li>
+            <li>
+              <div class="fw-semibold">Документы онлайн</div>
+              <p class="text-muted mb-0">Рекомендации и результаты доступны сразу.</p>
+            </li>
+            <li>
+              <div class="fw-semibold">Семейный доступ</div>
+              <p class="text-muted mb-0">Управление визитами близких из одного профиля.</p>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+

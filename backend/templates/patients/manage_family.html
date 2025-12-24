@@ -1,0 +1,300 @@
+{% extends 'base.html' %}
+
+{% block title %}Семья пациента | Clinic Sirius{% endblock %}
+
+{% block content %}
+<section class="container py-5">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+      <h2 class="fw-bold mb-2">Управление семьей</h2>
+      <p class="text-muted mb-0">Добавляйте и управляйте профилями близких без ожидания в регистратуре.</p>
+    </div>
+    <a class="btn btn-outline-secondary" href="{% url 'index' %}">
+      <i class="bi bi-arrow-left"></i> Назад в кабинет
+    </a>
+  </div>
+
+  {% if error %}
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        showToast('{{ error|escapejs }}', 'danger');
+      });
+    </script>
+  {% endif %}
+
+  
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-semibold mb-0">Члены семьи</h5>
+      </div>
+      {% if family_members %}
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead>
+              <tr>
+                <th>ФИО</th>
+                <th>Дата рождения</th>
+                <th>Телефон</th>
+                <th>Действия</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for member in family_members %}
+                <tr>
+                  <td>
+                    {{ member.lname }} {{ member.fname }}
+                    {% if member.tname %}{{ member.tname }}{% endif %}
+                    {% if member.id in children_ids %}
+                      <i class="bi bi-star-fill text-warning ms-2" title="Этот пользователь пригласил вас"></i>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if member.bdate %}{{ member.bdate|date:"d.m.Y" }}{% else %}не указана{% endif %}
+                  </td>
+                  <td>
+                    {% if member.phone_number %}
+                      <span class="formatted-phone">{{ member.phone_number }}</span>
+                    {% else %}
+                      не указан
+                    {% endif %}
+                  </td>
+                  <td>
+                    <div class="d-flex gap-2">
+                      <a href="{% url 'accounts:edit_family_member' member.id %}" class="btn btn-sm btn-outline-primary" title="Изменить данные">
+                        <i class="bi bi-pencil"></i> Изменить
+                      </a>
+                      {% if member.id in parents_ids %}
+                        {# Current user is a child - show "Leave family" button #}
+                        <button type="button" class="btn btn-sm btn-outline-warning" title="Выйти из семьи" data-bs-toggle="modal" data-bs-target="#confirmLeaveModal" data-member-name="{{ member.fname }} {{ member.lname }}" data-member-id="{{ member.id }}" data-action="leave">
+                          <i class="bi bi-box-arrow-right"></i> Выйти из семьи
+                        </button>
+                      {% elif member.id in removable_children_ids %}
+                        {# Current user is a parent - show "Remove" button for child #}
+                        <button type="button" class="btn btn-sm btn-outline-danger" title="Удалить из семьи" data-bs-toggle="modal" data-bs-target="#confirmRemoveModal" data-member-name="{{ member.fname }} {{ member.lname }}" data-member-id="{{ member.id }}" data-action="remove">
+                          <i class="bi bi-trash"></i> Удалить
+                        </button>
+                      {% endif %}
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-muted mb-0">Пока нет добавленных членов семьи.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row g-4">
+    
+    <div class="col-lg-7">
+      <div class="card h-100">
+        <div class="card-body">
+          <h5 class="fw-semibold mb-3">Добавить члена семьи</h5>
+          <form method="post" class="d-grid gap-3">
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label">Фамилия <span class="text-danger">*</span></label>
+                <input type="text" name="lname" class="form-control" required>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Имя <span class="text-danger">*</span></label>
+                <input type="text" name="fname" class="form-control" required>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Отчество</label>
+                <input type="text" name="tname" class="form-control">
+              </div>
+            </div>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Дата рождения <span class="text-danger">*</span></label>
+                <input type="date" name="bdate" class="form-control" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Телефон</label>
+                <input type="text" name="phone_number" class="form-control" placeholder="+7">
+              </div>
+            </div>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Email</label>
+                <input type="email" name="email" class="form-control" placeholder="family@example.com">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">СНИЛС <span class="text-danger">*</span></label>
+                <input type="text" name="snils" class="form-control" required>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Полис ОМС <span class="text-danger">*</span></label>
+                <input type="text" name="oms" class="form-control" required>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-plus-circle"></i> Добавить
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    
+    <div class="col-lg-5">
+      
+      {% if invites %}
+      <div class="card mb-4">
+        <div class="card-body">
+          <h6 class="fw-semibold mb-2">Активные коды приглашения</h6>
+          <p class="text-muted mb-3 small">Передайте код близким, чтобы привязать их профиль к вашей семье.</p>
+          <div class="d-flex flex-wrap gap-2">
+            {% for invite in invites %}
+              <span class="badge bg-primary-subtle text-primary px-3 py-2 fs-6">{{ invite.code }}</span>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      
+      <div class="card">
+        <div class="card-body">
+          <h6 class="fw-semibold mb-3">Коды приглашения</h6>
+          
+          
+          <div class="mb-4">
+            <h6 class="fw-semibold mb-2 small">Создать код приглашения</h6>
+            <p class="text-muted small mb-2">Сгенерируйте код для привязки профиля члена семьи</p>
+            <form method="post" action="{% url 'patients:family_invite' %}">
+              {% csrf_token %}
+              <button class="btn btn-outline-primary w-100" type="submit">
+                <i class="bi bi-plus-circle"></i> Сгенерировать код
+              </button>
+            </form>
+            {% if request.GET.invite %}
+            <script>
+              document.addEventListener('DOMContentLoaded', function() {
+                showToast('<strong>Новый код:</strong> {{ request.GET.invite }}', 'success');
+              });
+            </script>
+            {% endif %}
+          </div>
+
+          <hr>
+
+          
+                  <div>
+            <h6 class="fw-semibold mb-2 small">Принять приглашение</h6>
+            <p class="text-muted small mb-2">Введите код приглашения для привязки к семье</p>
+            <form method="post" action="{% url 'patients:family_redeem' %}" class="d-grid gap-2">
+                    {% csrf_token %}
+              <input type="text" name="invite_code" class="form-control" placeholder="6-значный код" required maxlength="6">
+              <button class="btn btn-primary w-100" type="submit">
+                <i class="bi bi-check-circle"></i> Привязать профиль
+              </button>
+                  </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+// Форматирование телефона
+function formatPhone(phone) {
+  if (!phone) return 'не указан';
+  var digits = phone.replace(/\D/g, '');
+  if (digits.length === 11 && digits[0] === '7') {
+    return '+7 (' + digits.substring(1, 4) + ') ' + digits.substring(4, 7) + '-' + digits.substring(7, 9) + '-' + digits.substring(9, 11);
+  } else if (digits.length === 10) {
+    return '+7 (' + digits.substring(0, 3) + ') ' + digits.substring(3, 6) + '-' + digits.substring(6, 8) + '-' + digits.substring(8, 10);
+  }
+  return phone;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.formatted-phone').forEach(function(el) {
+    el.textContent = formatPhone(el.textContent);
+  });
+});
+</script>
+
+
+<div class="modal fade" id="confirmRemoveModal" tabindex="-1" aria-labelledby="confirmRemoveModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmRemoveModalLabel">Подтверждение удаления</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Вы уверены, что хотите удалить <strong id="remove-member-name"></strong> из семьи?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+        <form id="remove-form" method="post" action="{% url 'patients:remove_family' %}" class="d-inline">
+          {% csrf_token %}
+          <input type="hidden" name="member_id" id="remove-member-id">
+          <button type="submit" class="btn btn-danger">Удалить</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div class="modal fade" id="confirmLeaveModal" tabindex="-1" aria-labelledby="confirmLeaveModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmLeaveModalLabel">Подтверждение выхода</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Вы уверены, что хотите выйти из семьи <strong id="leave-member-name"></strong>?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+        <form id="leave-form" method="post" action="{% url 'patients:remove_family' %}" class="d-inline">
+          {% csrf_token %}
+          <input type="hidden" name="member_id" id="leave-member-id">
+          <input type="hidden" name="leave_family" value="true">
+          <button type="submit" class="btn btn-warning">Выйти из семьи</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Обработка модального окна удаления
+  const removeModal = document.getElementById('confirmRemoveModal');
+  if (removeModal) {
+    removeModal.addEventListener('show.bs.modal', function (event) {
+      const button = event.relatedTarget;
+      const memberName = button.getAttribute('data-member-name');
+      const memberId = button.getAttribute('data-member-id');
+      
+      document.getElementById('remove-member-name').textContent = memberName;
+      document.getElementById('remove-member-id').value = memberId;
+    });
+  }
+  
+  // Обработка модального окна выхода из семьи
+  const leaveModal = document.getElementById('confirmLeaveModal');
+  if (leaveModal) {
+    leaveModal.addEventListener('show.bs.modal', function (event) {
+      const button = event.relatedTarget;
+      const memberName = button.getAttribute('data-member-name');
+      const memberId = button.getAttribute('data-member-id');
+      
+      document.getElementById('leave-member-name').textContent = memberName;
+      document.getElementById('leave-member-id').value = memberId;
+    });
+  }
+</script>
+{% endblock %}

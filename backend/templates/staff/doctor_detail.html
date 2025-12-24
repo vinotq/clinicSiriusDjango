@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ doctor.lname }} {{ doctor.fname }} | Clinic Sirius{% endblock %}
+
+{% block content %}
+<section class="container py-5">
+  <div class="row g-4">
+    <div class="col-lg-4">
+      <div class="card h-100">
+        <div class="card-body text-center py-4">
+          <div class="avatar-circle avatar-lg mx-auto mb-3">{{ doctor.lname|first|default:"Д" }}</div>
+          <h5 class="fw-bold mb-1">{{ doctor.lname }} {{ doctor.fname }}{% if doctor.tname %} {{ doctor.tname }}{% endif %}</h5>
+          <p class="text-muted mb-3">{{ doctor.specialization.name }}</p>
+          
+          <div class="d-flex justify-content-center gap-4 mb-3">
+            <div class="text-center">
+              <div class="h5 mb-0">{{ doctor.years_experience }}</div>
+              <small class="text-muted">лет стажа</small>
+            </div>
+            {% if doctor.office %}
+              <div class="text-center">
+                <div class="h5 mb-0">{{ doctor.office }}</div>
+                <small class="text-muted">кабинет</small>
+              </div>
+            {% endif %}
+          </div>
+          
+          <hr class="my-3">
+          
+          <div class="text-start small">
+            <div class="mb-2">
+              <span class="text-muted">Email:</span> {{ doctor.email }}
+            </div>
+            {% if doctor.phone_number %}
+              <div class="mb-2">
+                <span class="text-muted">Телефон:</span> {{ doctor.phone_number }}
+              </div>
+            {% endif %}
+            {% if doctor.remote_consultation %}
+              <div class="text-success">Доступна онлайн-консультация</div>
+            {% endif %}
+          </div>
+          
+          <div class="mt-4 d-grid gap-2">
+            <a class="btn btn-primary" href="{% url 'scheduling:book_appointment' %}?doctor={{ doctor.id }}">Записаться на приём</a>
+            <a class="btn btn-outline-primary" href="{% url 'staff:doctors_list' %}">Все врачи</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-8">
+      {% if doctor.bio or doctor.education or doctor.certifications %}
+        <div class="card mb-4">
+          <div class="card-body">
+            <h5 class="fw-semibold mb-3">О враче</h5>
+            {% if doctor.bio %}
+              <p class="text-muted mb-3">{{ doctor.bio }}</p>
+            {% endif %}
+            <div class="row g-3">
+              {% if doctor.education %}
+                <div class="col-md-6">
+                  <div class="text-muted small mb-1">Образование</div>
+                  <div>{{ doctor.education }}</div>
+                </div>
+              {% endif %}
+              {% if doctor.certifications %}
+                <div class="col-md-6">
+                  <div class="text-muted small mb-1">Сертификаты</div>
+                  <div>{{ doctor.certifications }}</div>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      {% endif %}
+
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-semibold mb-0">Ближайшие окна для записи</h5>
+            <a class="btn btn-sm btn-primary" href="{% url 'scheduling:book_appointment' %}?doctor={{ doctor.id }}">Выбрать</a>
+          </div>
+          {% if schedule %}
+            <div class="table-responsive">
+              <table class="table align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Дата</th>
+                    <th>Время</th>
+                    <th>Кабинет</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for slot in schedule %}
+                    <tr>
+                      <td>{{ slot.time_from|date:"d.m.Y" }}</td>
+                      <td class="fw-semibold">{{ slot.time_from|time:"H:i" }}-{{ slot.time_to|time:"H:i" }}</td>
+                      <td>{{ slot.room.room_number }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <p class="text-muted mb-0">Окна для записи скоро появятся.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

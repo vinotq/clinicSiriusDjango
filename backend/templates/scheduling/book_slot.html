@@ -1,0 +1,102 @@
+{% load static %}
+<form method="post" id="book-slot-form" action="{% url 'scheduling:book_slot' slot.id %}">
+  {% csrf_token %}
+  {% if error %}
+  <div class="alert alert-danger">{{ error }}</div>
+  {% endif %}
+  
+  <div class="mb-3">
+    <p class="mb-2"><strong>Время:</strong> {{ slot.time_from|time:"H:i" }} - {{ slot.time_to|time:"H:i" }}</p>
+    <p class="mb-3"><strong>Кабинет:</strong> {{ slot.room.room_number }}</p>
+  </div>
+  
+  <div class="mb-3">
+    <ul class="nav nav-tabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="select-tab" data-bs-toggle="tab" data-bs-target="#select-panel" type="button" role="tab">
+          Выбрать пациента
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="create-tab" data-bs-toggle="tab" data-bs-target="#create-panel" type="button" role="tab">
+          Создать нового
+        </button>
+      </li>
+    </ul>
+    
+    <div class="tab-content mt-3">
+      <div class="tab-pane fade show active" id="select-panel" role="tabpanel">
+        <div class="mb-3">
+          <label class="form-label">Выберите пациента</label>
+          <div class="searchable-select-wrapper">
+            <input type="text" class="form-control searchable-select-input" id="patientSelect" 
+                   placeholder="Начните вводить ФИО пациента..." 
+                   autocomplete="off" readonly>
+            <input type="hidden" name="patient_id" id="patientId">
+            <input type="hidden" name="create_new_patient" value="false" id="createNewPatientHidden">
+            <div class="searchable-select-dropdown" id="patientDropdown">
+              <div class="searchable-select-search">
+                <input type="text" placeholder="Поиск по ФИО, email..." id="patientSearch" autocomplete="off">
+              </div>
+              <div id="patientOptions">
+                {% for p in all_patients %}
+                  <div class="searchable-select-option" data-value="{{ p.pk }}" 
+                       data-text="{{ p.lname }} {{ p.fname }} {% if p.tname %}{{ p.tname }} {% endif %}{% if p.email %}({{ p.email }}){% endif %}">
+                    {{ p.lname }} {{ p.fname }}{% if p.tname %} {{ p.tname }}{% endif %}{% if p.email %} ({{ p.email }}){% endif %}
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="tab-pane fade" id="create-panel" role="tabpanel">
+        <input type="hidden" name="create_new_patient" value="true" id="createNewPatient">
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Фамилия <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="lname" required>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Имя <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="fname" required>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Отчество</label>
+            <input type="text" class="form-control" name="tname">
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Дата рождения <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="bdate" placeholder="дд.мм.гггг" required>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Телефон</label>
+            <input type="text" class="form-control" name="phone_number" placeholder="+7 (999) 999-99-99">
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" name="email">
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">СНИЛС <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="snils" required>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">ОМС <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="oms" required>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="modal-footer mt-4">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+    <button type="button" class="btn btn-primary" id="book-slot-submit-btn">Записать</button>
+  </div>
+</form>

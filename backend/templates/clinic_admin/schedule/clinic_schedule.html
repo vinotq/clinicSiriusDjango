@@ -1,0 +1,817 @@
+{% extends 'base.html' %}
+{% load clinic_admin_extras %}
+
+{% block title %}Расписание клиники | Clinic Sirius{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<style>
+  .filter-card {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+  }
+  
+  .stat-badge {
+    font-size: 0.875rem;
+    padding: 0.25rem 0.5rem;
+  }
+  
+  .flatpickr-calendar {
+    z-index: 1055 !important;
+  }
+  
+  .searchable-select-wrapper {
+    position: relative;
+  }
+  
+  .searchable-select-input {
+    width: 100%;
+    cursor: pointer;
+    background: white;
+  }
+  
+  .searchable-select-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1055;
+    background: white;
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    max-height: 300px;
+    overflow-y: auto;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    display: none;
+    margin-top: 2px;
+  }
+  
+  .searchable-select-dropdown.show {
+    display: block;
+  }
+  
+  .searchable-select-option {
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    border-bottom: 1px solid #f8f9fa;
+    font-size: 0.875rem;
+  }
+  
+  .searchable-select-option:hover,
+  .searchable-select-option.selected {
+    background-color: #e7f1ff;
+  }
+  
+  .searchable-select-option:last-child {
+    border-bottom: none;
+  }
+  
+  .searchable-select-search {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #dee2e6;
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 1;
+  }
+  
+  .searchable-select-search input {
+    width: 100%;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+  }
+  
+  .appointment-card {
+    min-width: 120px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    white-space: nowrap;
+  }
+  
+  .appointment-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  }
+  
+  #allAppointmentsModal .card {
+    border: 1px solid #dee2e6;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  
+  #allAppointmentsModal .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="container py-5">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+    <div>
+      <h2 class="fw-bold mb-0">Расписание клиники</h2>
+      <p class="text-muted mb-0">Все записи на прием с фильтрацией</p>
+    </div>
+    <a class="btn btn-outline-secondary" href="{% url 'clinic_admin:dashboard' %}">
+      <i class="bi bi-arrow-left"></i> Назад
+    </a>
+  </div>
+
+  
+  <div class="card filter-card mb-4">
+    <div class="card-body">
+      <form method="get" id="filterForm" class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold">Дата от</label>
+          <div class="input-group">
+            <input type="text" class="form-control" name="date_from" id="dateFrom" 
+                   placeholder="дд.мм.гггг" value="{{ date_from }}" autocomplete="off" readonly>
+            <span class="input-group-text" style="cursor: pointer;" id="dateFromIcon">
+              <i class="bi bi-calendar3"></i>
+            </span>
+          </div>
+        </div>
+        
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold">Дата до</label>
+          <div class="input-group">
+            <input type="text" class="form-control" name="date_to" id="dateTo" 
+                   placeholder="дд.мм.гггг" value="{{ date_to }}" autocomplete="off" readonly>
+            <span class="input-group-text" style="cursor: pointer;" id="dateToIcon">
+              <i class="bi bi-calendar3"></i>
+            </span>
+          </div>
+        </div>
+        
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold">Врач</label>
+          <div class="searchable-select-wrapper">
+            <input type="text" class="form-control form-control-sm searchable-select-input" id="doctorSelect" 
+                   placeholder="Все врачи" 
+                   autocomplete="off" readonly
+                   value="{% for doctor in doctors %}{% if selected_doctor_id == doctor.pk|stringformat:"s" %}{{ doctor.lname }} {{ doctor.fname }}{% endif %}{% endfor %}">
+            <input type="hidden" name="doctor" id="doctorId" value="{{ selected_doctor_id }}">
+            <div class="searchable-select-dropdown" id="doctorDropdown">
+              <div class="searchable-select-search">
+                <input type="text" placeholder="Поиск..." id="doctorSearch" autocomplete="off">
+              </div>
+              <div id="doctorOptions">
+                <div class="searchable-select-option" data-value="" data-text="Все врачи">Все врачи</div>
+                {% for doctor in doctors %}
+                <div class="searchable-select-option" data-value="{{ doctor.pk }}" 
+                     data-text="{{ doctor.lname }} {{ doctor.fname }}"
+                     {% if selected_doctor_id == doctor.pk|stringformat:"s" %}data-selected="true"{% endif %}>
+                  {{ doctor.lname }} {{ doctor.fname }}
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold">Кабинет</label>
+          <div class="searchable-select-wrapper">
+            <input type="text" class="form-control form-control-sm searchable-select-input" id="roomSelect" 
+                   placeholder="Все кабинеты" 
+                   autocomplete="off" readonly
+                   value="{% for room in rooms %}{% if selected_room_id == room.pk|stringformat:"s" %}Кабинет {{ room.room_number }}{% endif %}{% endfor %}">
+            <input type="hidden" name="room" id="roomId" value="{{ selected_room_id }}">
+            <div class="searchable-select-dropdown" id="roomDropdown">
+              <div class="searchable-select-search">
+                <input type="text" placeholder="Поиск..." id="roomSearch" autocomplete="off">
+              </div>
+              <div id="roomOptions">
+                <div class="searchable-select-option" data-value="" data-text="Все кабинеты">Все кабинеты</div>
+                {% for room in rooms %}
+                <div class="searchable-select-option" data-value="{{ room.pk }}" 
+                     data-text="Кабинет {{ room.room_number }}"
+                     {% if selected_room_id == room.pk|stringformat:"s" %}data-selected="true"{% endif %}>
+                  Кабинет {{ room.room_number }}
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold">Статус</label>
+          <select class="form-select form-select-sm" name="status">
+            <option value="">Все статусы</option>
+            {% for status_code, status_name in status_choices %}
+              <option value="{{ status_code }}" {% if selected_status == status_code %}selected{% endif %}>
+                {{ status_name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold">Пациент</label>
+          <input type="text" class="form-control form-control-sm" name="patient" 
+                 placeholder="ФИО или email" value="{{ patient_search }}">
+        </div>
+        
+        <div class="col-md-6 d-flex align-items-end gap-2">
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="bi bi-funnel"></i> Применить фильтры
+          </button>
+          <a href="{% url 'clinic_admin:clinic_schedule' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-x-circle"></i> Сбросить
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  
+  <div class="card">
+    <div class="card-body">
+      {% if schedule_page and schedule_page.object_list %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th style="width: 150px;">Дата</th>
+                <th>Врач</th>
+                <th>Приемы</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for day_data in schedule_page.object_list %}
+                {% for doctor_data in day_data.doctors %}
+                  <tr>
+                    {% if forloop.first %}
+                      <td rowspan="{{ day_data.doctors|length }}" class="align-middle">
+                        <div class="fw-bold">{{ day_data.date|date:"d.m.Y" }}</div>
+                        <small class="text-muted">{{ day_data.day_name_short }}</small>
+                      </td>
+                    {% endif %}
+                    <td>
+                      <div class="fw-bold">
+                        <a href="{% url 'clinic_admin:doctor_detail' doctor_data.doctor.pk %}" class="text-decoration-none">
+                          {% format_name_short doctor_data.doctor.lname doctor_data.doctor.fname doctor_data.doctor.tname %}
+                        </a>
+                      </div>
+                      <small class="text-muted">{{ doctor_data.doctor.specialization.name }}</small>
+                    </td>
+                    <td>
+                      <div class="d-flex flex-wrap gap-2 align-items-center">
+                        {% for slot in doctor_data.slots|slice:":2" %}
+                          {% if slot.appointment %}
+                            <div class="appointment-card badge p-2" 
+                                 style="cursor: pointer; background: {% if slot.appointment.status == 'completed' %}#6b7280{% elif slot.appointment.status == 'in_progress' %}#3b82f6{% else %}#eab308{% endif %}; color: white;"
+                                 onclick="showAppointmentModal('{{ slot.appointment.pk }}', '{% format_name_short slot.appointment.patient.lname slot.appointment.patient.fname slot.appointment.patient.tname %}', '{{ slot.time_from|date:"d.m.Y H:i" }}', '{% format_name_short slot.doctor.lname slot.doctor.fname slot.doctor.tname %}', '{{ slot.doctor.specialization.name|escapejs }}', '{% if slot.room %}Кабинет {{ slot.room.room_number }}{% else %}-{% endif %}', '{{ slot.appointment.get_status_display|escapejs }}', '{{ slot.appointment.patient.pk }}', '{{ slot.doctor.pk }}', '{{ slot.appointment.status }}')">
+                              <div class="fw-bold">{{ slot.time_from|time:"H:i" }}</div>
+                              <div class="small">{% format_name_short slot.appointment.patient.lname slot.appointment.patient.fname slot.appointment.patient.tname %}</div>
+                            </div>
+                          {% else %}
+                            <div class="appointment-card badge p-2" 
+                                 style="cursor: default; background: #22c55e; color: white;"
+                                 title="Свободно - {{ slot.time_from|time:"H:i" }}-{{ slot.time_to|time:"H:i" }}">
+                              <div class="fw-bold">{{ slot.time_from|time:"H:i" }}</div>
+                              <div class="small">Свободно</div>
+                            </div>
+                          {% endif %}
+                        {% endfor %}
+                        {% if doctor_data.total_count > 3 %}
+                          <button type="button" 
+                                  class="btn btn-sm btn-outline-secondary show-all-appointments-btn" 
+                                  data-date="{{ day_data.date_str }}"
+                                  data-doctor-id="{{ doctor_data.doctor.pk }}"
+                                  data-doctor-name="{% format_name_short doctor_data.doctor.lname doctor_data.doctor.fname doctor_data.doctor.tname %}"
+                                  data-total="{{ doctor_data.total_count }}">
+                            +{{ doctor_data.total_count|add:"-2" }} ...
+                          </button>
+                        {% endif %}
+                      </div>
+                    </td>
+                  </tr>
+                {% endfor %}
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        {% if schedule_page.has_other_pages %}
+        <nav>
+          <ul class="pagination justify-content-end mt-3 mb-0">
+            {% if schedule_page.has_previous %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ schedule_page.previous_page_number }}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.doctor %}&doctor={{ request.GET.doctor }}{% endif %}{% if request.GET.room %}&room={{ request.GET.room }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.patient %}&patient={{ request.GET.patient }}{% endif %}">Назад</a>
+              </li>
+            {% endif %}
+            <li class="page-item disabled">
+              <span class="page-link">Стр. {{ schedule_page.number }} из {{ schedule_page.paginator.num_pages }}</span>
+            </li>
+            {% if schedule_page.has_next %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ schedule_page.next_page_number }}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.doctor %}&doctor={{ request.GET.doctor }}{% endif %}{% if request.GET.room %}&room={{ request.GET.room }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.patient %}&patient={{ request.GET.patient }}{% endif %}">Вперёд</a>
+              </li>
+            {% endif %}
+          </ul>
+        </nav>
+        {% endif %}
+      {% else %}
+        <p class="text-muted mb-0 text-center py-4">Записи не найдены. Измените фильтры для поиска.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  
+  <div class="modal fade" id="allAppointmentsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Все приемы</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" id="allAppointmentsContent">
+          
+        </div>
+      </div>
+    </div>
+  </div>
+
+  
+  <div class="modal fade" id="appointmentModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Информация о приеме</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" id="appointmentContent">
+          
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+// Функция для показа модального окна с одним приемом
+function showAppointmentModal(apptId, patientName, dateTime, doctorName, specialization, room, status, patientId, doctorId, currentStatus) {
+  const patientUrl = '{% url "clinic_admin:patient_detail" 0 %}'.replace('0', patientId);
+  const doctorUrl = '{% url "clinic_admin:doctor_detail" 0 %}'.replace('0', doctorId);
+  
+  const statusColors = {
+    'booked': '#eab308',
+    'in_progress': '#3b82f6',
+    'completed': '#6b7280'
+  };
+  
+  const statusColor = statusColors[currentStatus] || '#6b7280';
+  
+  const content = `
+    <div class="mb-3">
+      <strong>Пациент:</strong><br>
+      <a href="${patientUrl}" class="text-decoration-none">${patientName}</a>
+    </div>
+    <div class="mb-3">
+      <strong>Врач:</strong><br>
+      <a href="${doctorUrl}" class="text-decoration-none">${doctorName}</a><br>
+      <small class="text-muted">${specialization}</small>
+    </div>
+    <div class="mb-3">
+      <strong>Дата и время:</strong><br>
+      ${dateTime}
+    </div>
+    <div class="mb-3">
+      <strong>Кабинет:</strong><br>
+      ${room}
+    </div>
+    <div class="mb-3">
+      <strong>Статус:</strong><br>
+      <span class="badge" style="background: ${statusColor}; color: white;">${status}</span>
+    </div>
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Изменить статус:</label>
+      <div class="d-flex flex-column gap-2">
+        <button class="btn btn-sm" style="background: #eab308; color: white;" onclick="updateAppointmentStatus(${apptId}, 'booked')">Записан</button>
+        <button class="btn btn-sm" style="background: #3b82f6; color: white;" onclick="updateAppointmentStatus(${apptId}, 'in_progress')">В процессе</button>
+        <button class="btn btn-sm" style="background: #6b7280; color: white;" onclick="updateAppointmentStatus(${apptId}, 'completed')">Завершен</button>
+      </div>
+    </div>
+  `;
+  
+  document.getElementById('appointmentContent').innerHTML = content;
+  
+  const modal = new bootstrap.Modal(document.getElementById('appointmentModal'));
+  modal.show();
+}
+
+function updateAppointmentStatus(appointmentId, newStatus) {
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = '{% url "clinic_admin:appointment_update_status" %}';
+  
+  const csrfToken = document.createElement('input');
+  csrfToken.type = 'hidden';
+  csrfToken.name = 'csrfmiddlewaretoken';
+  csrfToken.value = '{{ csrf_token }}';
+  form.appendChild(csrfToken);
+  
+  const appointmentIdInput = document.createElement('input');
+  appointmentIdInput.type = 'hidden';
+  appointmentIdInput.name = 'appointment_id';
+  appointmentIdInput.value = appointmentId;
+  form.appendChild(appointmentIdInput);
+  
+  const statusInput = document.createElement('input');
+  statusInput.type = 'hidden';
+  statusInput.name = 'status';
+  statusInput.value = newStatus;
+  form.appendChild(statusInput);
+  
+  document.body.appendChild(form);
+  form.submit();
+}
+
+// Функция для показа всех приемов врача за день
+function showAllAppointmentsModal(dateStr, doctorId, totalCount) {
+  // Загружаем данные через AJAX или используем уже загруженные данные
+  const content = document.getElementById('allAppointmentsContent');
+  content.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Загрузка...</span></div></div>';
+  
+  // Здесь можно сделать AJAX запрос или использовать данные из шаблона
+  // Для простоты используем данные из шаблона
+  const appointments = [];
+  {% for day_data in schedule_page.object_list %}
+    {% for doctor_data in day_data.doctors %}
+      {% if day_data.date_str == 'DATE_PLACEHOLDER' and doctor_data.doctor.pk == DOCTOR_PLACEHOLDER %}
+        {% for slot in doctor_data.slots %}
+          {% if slot.appointment %}
+            {% with appt=slot.appointment %}
+              appointments.push({
+                id: {{ appt.pk }},
+                patient: '{% format_name_short appt.patient.lname appt.patient.fname appt.patient.tname %}',
+                patientId: {{ appt.patient.pk }},
+                dateTime: '{{ slot.time_from|date:"d.m.Y H:i" }}',
+                doctor: '{% format_name_short slot.doctor.lname slot.doctor.fname slot.doctor.tname %}',
+                doctorId: {{ slot.doctor.pk }},
+                specialization: '{{ slot.doctor.specialization.name|escapejs }}',
+                room: '{% if slot.room %}Кабинет {{ slot.room.room_number }}{% else %}-{% endif %}',
+                status: '{{ appt.get_status_display|escapejs }}',
+                statusColor: '{% if appt.status == "completed" %}#6b7280{% elif appt.status == "in_progress" %}#3b82f6{% else %}#eab308{% endif %}'
+              });
+            {% endwith %}
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+    {% endfor %}
+  {% endfor %}
+  
+  // Генерируем HTML для карточек
+  let html = '<div class="row g-3">';
+  {% for day_data in schedule_page.object_list %}
+    {% for doctor_data in day_data.doctors %}
+      {% if day_data.date_str == dateStr and doctor_data.doctor.pk == doctorId %}
+        {% for slot in doctor_data.slots %}
+          {% if slot.appointment %}
+            {% with appt=slot.appointment %}
+              html += `
+                <div class="col-md-6">
+                  <div class="card h-100">
+                    <div class="card-body">
+                      <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge" style="background: {% if appt.status == 'completed' %}#6b7280{% elif appt.status == 'in_progress' %}#3b82f6{% else %}#eab308{% endif %}; color: white;">
+                          {{ appt.get_status_display }}
+                        </span>
+                        <small class="text-muted">{{ slot.time_from|time:"H:i" }}</small>
+                      </div>
+                      <h6 class="card-title">
+                        <a href="{% url 'clinic_admin:patient_detail' appt.patient.pk %}" class="text-decoration-none">
+                          {% format_name_short appt.patient.lname appt.patient.fname appt.patient.tname %}
+                        </a>
+                      </h6>
+                      <p class="card-text small mb-1">
+                        <strong>Врач:</strong> 
+                        <a href="{% url 'clinic_admin:doctor_detail' slot.doctor.pk %}" class="text-decoration-none">
+                          {% format_name_short slot.doctor.lname slot.doctor.fname slot.doctor.tname %}
+                        </a>
+                      </p>
+                      <p class="card-text small mb-1">
+                        <strong>Специализация:</strong> {{ slot.doctor.specialization.name }}
+                      </p>
+                      <p class="card-text small mb-0">
+                        <strong>Кабинет:</strong> {% if slot.room %}Кабинет {{ slot.room.room_number }}{% else %}-{% endif %}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              `;
+            {% endwith %}
+          {% else %}
+            html += `
+              <div class="col-md-6">
+                <div class="card h-100">
+                  <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                      <span class="badge" style="background: #22c55e; color: white;">Свободно</span>
+                      <small class="text-muted">{{ slot.time_from|time:"H:i" }}</small>
+                    </div>
+                    <h6 class="card-title text-muted">Свободное окно</h6>
+                    <p class="card-text small mb-1">
+                      <strong>Врач:</strong> 
+                      <a href="{% url 'clinic_admin:doctor_detail' slot.doctor.pk %}" class="text-decoration-none">
+                        {% format_name_short slot.doctor.lname slot.doctor.fname slot.doctor.tname %}
+                      </a>
+                    </p>
+                    <p class="card-text small mb-0">
+                      <strong>Кабинет:</strong> {% if slot.room %}Кабинет {{ slot.room.room_number }}{% else %}-{% endif %}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            `;
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+    {% endfor %}
+  {% endfor %}
+  html += '</div>';
+  
+  content.innerHTML = html || '<p class="text-muted">Приемы не найдены</p>';
+  
+  const modal = new bootstrap.Modal(document.getElementById('allAppointmentsModal'));
+  modal.show();
+}
+
+// Сохраняем данные о приемах для доступа через JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+  const appointmentsData = {};
+  {% for day_data in schedule_page.object_list %}
+    appointmentsData['{{ day_data.date_str }}'] = appointmentsData['{{ day_data.date_str }}'] || {};
+    {% for doctor_data in day_data.doctors %}
+      appointmentsData['{{ day_data.date_str }}'][{{ doctor_data.doctor.pk }}] = [
+        {% for slot in doctor_data.slots %}
+          {% if slot.appointment %}
+            {% with appt=slot.appointment %}
+              {
+                id: {{ appt.pk }},
+                patient: '{% format_name_short appt.patient.lname appt.patient.fname appt.patient.tname %}',
+                patientId: {{ appt.patient.pk }},
+                dateTime: '{{ slot.time_from|date:"d.m.Y H:i" }}',
+                doctor: '{% format_name_short slot.doctor.lname slot.doctor.fname slot.doctor.tname %}',
+                doctorId: {{ slot.doctor.pk }},
+                specialization: '{{ slot.doctor.specialization.name|escapejs }}',
+                room: '{% if slot.room %}Кабинет {{ slot.room.room_number }}{% else %}-{% endif %}',
+                status: '{{ appt.get_status_display|escapejs }}',
+                statusColor: '{% if appt.status == "completed" %}#6b7280{% elif appt.status == "in_progress" %}#3b82f6{% else %}#eab308{% endif %}',
+                currentStatus: '{{ appt.status }}'
+              }{% if not forloop.last %},{% endif %}
+            {% endwith %}
+          {% endif %}
+        {% endfor %}
+      ];
+    {% endfor %}
+  {% endfor %}
+  
+  // Обработчик для кнопок "показать все"
+  document.querySelectorAll('.show-all-appointments-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      const dateStr = this.getAttribute('data-date');
+      const doctorId = parseInt(this.getAttribute('data-doctor-id'));
+      const doctorName = this.getAttribute('data-doctor-name');
+      const total = parseInt(this.getAttribute('data-total'));
+      
+      const content = document.getElementById('allAppointmentsContent');
+      content.innerHTML = '<div class="text-center py-3"><div class="spinner-border" role="status"><span class="visually-hidden">Загрузка...</span></div></div>';
+      
+      setTimeout(function() {
+        const appointments = appointmentsData[dateStr] && appointmentsData[dateStr][doctorId] ? appointmentsData[dateStr][doctorId] : [];
+        
+        if (appointments.length === 0) {
+          content.innerHTML = '<p class="text-muted text-center py-3">Приемы не найдены</p>';
+        } else {
+          let html = `<h6 class="mb-3">${doctorName} - ${appointments.length} приемов</h6><div class="row g-3">`;
+          appointments.forEach(function(appt) {
+            const patientUrl = '{% url "clinic_admin:patient_detail" 0 %}'.replace('0', appt.patientId);
+            const doctorUrl = '{% url "clinic_admin:doctor_detail" 0 %}'.replace('0', appt.doctorId);
+            html += `
+              <div class="col-md-6">
+                <div class="card h-100">
+                  <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                      <span class="badge" style="background: ${appt.statusColor}; color: white;">${appt.status}</span>
+                      <small class="text-muted">${appt.dateTime.split(' ')[1]}</small>
+                    </div>
+                    <h6 class="card-title">
+                      <a href="${patientUrl}" class="text-decoration-none">${appt.patient}</a>
+                    </h6>
+                    <p class="card-text small mb-1">
+                      <strong>Врач:</strong> 
+                      <a href="${doctorUrl}" class="text-decoration-none">${appt.doctor}</a>
+                    </p>
+                    <p class="card-text small mb-1">
+                      <strong>Специализация:</strong> ${appt.specialization}
+                    </p>
+                    <p class="card-text small mb-0">
+                      <strong>Кабинет:</strong> ${appt.room}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            `;
+          });
+          html += '</div>';
+          content.innerHTML = html;
+        }
+        
+        const modal = new bootstrap.Modal(document.getElementById('allAppointmentsModal'));
+        modal.show();
+      }, 100);
+    });
+  });
+});
+</script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Функция для инициализации поиска с подсказками
+  function initSearchableSelect(selectInputId, hiddenInputId, dropdownId, searchInputId, optionsContainerId) {
+    const selectInput = document.getElementById(selectInputId);
+    const hiddenInput = document.getElementById(hiddenInputId);
+    const dropdown = document.getElementById(dropdownId);
+    const searchInput = document.getElementById(searchInputId);
+    const optionsContainer = document.getElementById(optionsContainerId);
+    
+    if (!selectInput || !hiddenInput || !dropdown || !searchInput || !optionsContainer) return;
+    
+    let allOptions = Array.from(optionsContainer.querySelectorAll('.searchable-select-option'));
+    
+    // Устанавливаем начальное значение
+    const selectedOption = allOptions.find(opt => opt.getAttribute('data-selected') === 'true');
+    if (selectedOption) {
+      const text = selectedOption.getAttribute('data-text');
+      const value = selectedOption.getAttribute('data-value');
+      selectInput.value = text;
+      hiddenInput.value = value;
+    } else if (!hiddenInput.value) {
+      // Если нет выбранного, показываем первую опцию (обычно "Все...")
+      const firstOption = allOptions[0];
+      if (firstOption) {
+        selectInput.value = firstOption.getAttribute('data-text');
+        hiddenInput.value = firstOption.getAttribute('data-value');
+      }
+    }
+    
+    function filterOptions(query) {
+      const lowerQuery = query.toLowerCase();
+      allOptions.forEach(option => {
+        const text = option.getAttribute('data-text').toLowerCase();
+        if (text.includes(lowerQuery)) {
+          option.style.display = 'block';
+        } else {
+          option.style.display = 'none';
+        }
+      });
+    }
+    
+    function selectOption(option) {
+      const value = option.getAttribute('data-value');
+      const text = option.getAttribute('data-text');
+      hiddenInput.value = value;
+      selectInput.value = text;
+      dropdown.classList.remove('show');
+      searchInput.value = '';
+      filterOptions('');
+      
+      allOptions.forEach(opt => opt.classList.remove('selected'));
+      option.classList.add('selected');
+    }
+    
+    selectInput.addEventListener('click', function(e) {
+      e.preventDefault();
+      if (dropdown.classList.contains('show')) {
+        dropdown.classList.remove('show');
+        searchInput.blur();
+      } else {
+        dropdown.classList.add('show');
+        searchInput.focus();
+      }
+    });
+    
+    searchInput.addEventListener('input', function() {
+      filterOptions(this.value);
+    });
+    
+    allOptions.forEach(option => {
+      option.addEventListener('click', function() {
+        selectOption(this);
+      });
+    });
+    
+    document.addEventListener('click', function(e) {
+      if (!selectInput.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.classList.remove('show');
+      }
+    });
+    
+    searchInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        dropdown.classList.remove('show');
+        selectInput.focus();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        const visibleOptions = allOptions.filter(opt => opt.style.display !== 'none');
+        if (visibleOptions.length > 0) {
+          selectOption(visibleOptions[0]);
+        }
+      }
+    });
+  }
+  
+  // Инициализируем поиск для врачей и кабинетов
+  initSearchableSelect('doctorSelect', 'doctorId', 'doctorDropdown', 'doctorSearch', 'doctorOptions');
+  initSearchableSelect('roomSelect', 'roomId', 'roomDropdown', 'roomSearch', 'roomOptions');
+  
+  // Датапикеры
+  var dateFromInput = document.getElementById('dateFrom');
+  var dateToInput = document.getElementById('dateTo');
+  var dateFromIcon = document.getElementById('dateFromIcon');
+  var dateToIcon = document.getElementById('dateToIcon');
+  
+  function formatDateForDisplay(dateStr) {
+    if (!dateStr) return '';
+    var parts = dateStr.split('-');
+    if (parts.length === 3) {
+      return parts[2] + '.' + parts[1] + '.' + parts[0];
+    }
+    return dateStr;
+  }
+  
+  function formatDateForSubmit(dateStr) {
+    if (!dateStr) return '';
+    var parts = dateStr.split('.');
+    if (parts.length === 3) {
+      return parts[2] + '-' + parts[1] + '-' + parts[0];
+    }
+    return dateStr;
+  }
+  
+  // Преобразуем начальные значения
+  if (dateFromInput.value && dateFromInput.value.includes('-')) {
+    dateFromInput.value = formatDateForDisplay(dateFromInput.value);
+  }
+  if (dateToInput.value && dateToInput.value.includes('-')) {
+    dateToInput.value = formatDateForDisplay(dateToInput.value);
+  }
+  
+  var flatpickrFrom = flatpickr(dateFromInput, {
+    dateFormat: 'd.m.Y',
+    locale: 'ru',
+    allowInput: false,
+    clickOpens: true,
+    onChange: function(selectedDates, dateStr, instance) {
+      dateFromInput.blur();
+    }
+  });
+  
+  var flatpickrTo = flatpickr(dateToInput, {
+    dateFormat: 'd.m.Y',
+    locale: 'ru',
+    allowInput: false,
+    clickOpens: true,
+    onChange: function(selectedDates, dateStr, instance) {
+      dateToInput.blur();
+    }
+  });
+  
+  if (dateFromIcon) {
+    dateFromIcon.addEventListener('click', function(e) {
+      e.preventDefault();
+      flatpickrFrom.open();
+    });
+  }
+  
+  if (dateToIcon) {
+    dateToIcon.addEventListener('click', function(e) {
+      e.preventDefault();
+      flatpickrTo.open();
+    });
+  }
+  
+  // Преобразуем даты перед отправкой формы
+  var filterForm = document.getElementById('filterForm');
+  if (filterForm) {
+    filterForm.addEventListener('submit', function(e) {
+      if (dateFromInput.value && dateFromInput.value.includes('.')) {
+        dateFromInput.value = formatDateForSubmit(dateFromInput.value);
+      }
+      if (dateToInput.value && dateToInput.value.includes('.')) {
+        dateToInput.value = formatDateForSubmit(dateToInput.value);
+      }
+    });
+  }
+});
+</script>
+{% endblock %}
+

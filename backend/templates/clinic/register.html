@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block title %}Регистрация | Clinic Sirius{% endblock %}
+
+{% block content %}
+<section class="container py-5" style="max-width: 960px;">
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <div class="card h-100">
+        <div class="card-body">
+          <h2 class="fw-bold mb-2">Быстрый старт для пациента</h2>
+          <p class="text-muted mb-4">Создайте учётную запись, чтобы управлять визитами, данными и семьёй.</p>
+          <form method="post" class="d-grid gap-3">
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Email</label>
+                <input type="email" name="email" class="form-control" placeholder="you@example.com" value="{% if email %}{{ email }}{% endif %}" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Имя пользователя</label>
+                <input type="text" name="username" class="form-control" placeholder="ivan_ivanov" required>
+              </div>
+            </div>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Пароль</label>
+                <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Повторите пароль</label>
+                <input type="password" name="password_confirm" class="form-control" placeholder="••••••••" required>
+              </div>
+            </div>
+            {% if error %}
+              <div class="alert alert-danger">{{ error }}</div>
+            {% endif %}
+            <button type="submit" class="btn btn-primary w-100">Создать аккаунт</button>
+          </form>
+          <p class="text-muted mt-3 mb-0">Уже есть аккаунт? <a href="{% url 'accounts:login' %}" class="text-primary fw-semibold">Войти</a></p>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-5">
+      <div class="gradient-card card h-100">
+        <div class="card-body">
+          <h5 class="fw-semibold mb-3">Преимущества личного кабинета</h5>
+          <ul class="focus-list">
+            <li>
+              <div class="fw-semibold">Запись без звонков</div>
+              <p class="text-muted mb-0">Выбирайте удобные слоты и врачей онлайн.</p>
+            </li>
+            <li>
+              <div class="fw-semibold">Рекомендации под рукой</div>
+              <p class="text-muted mb-0">Назначения, анализы и выписки хранятся в одном месте.</p>
+            </li>
+            <li>
+              <div class="fw-semibold">Семейный доступ</div>
+              <p class="text-muted mb-0">Ведите профили детей и близких из одного аккаунта.</p>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+

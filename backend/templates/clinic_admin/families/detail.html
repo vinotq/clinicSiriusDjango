@@ -1,0 +1,852 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Семья: {{ patient.lname }} {{ patient.fname }} | Clinic Sirius{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/main.css' %}">
+<style>
+.schedule-calendar {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.calendar-header {
+  background: linear-gradient(135deg, var(--brand-start) 0%, var(--brand-end) 100%);
+  color: white;
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.view-toggle {
+  display: flex;
+  gap: 0.5rem;
+  background: rgba(255,255,255,0.2);
+  border-radius: 8px;
+  padding: 0.25rem;
+}
+
+.view-toggle button, .view-toggle a button {
+  background: transparent;
+  border: none;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.view-toggle button.active, .view-toggle a.active button {
+  background: white;
+  color: var(--brand-start);
+}
+
+.view-toggle button:hover:not(.active), .view-toggle a:hover button:not(.active) {
+  background: rgba(255,255,255,0.1);
+}
+
+.week-navigation {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.week-navigation button, .week-navigation a button {
+  background: rgba(255,255,255,0.2);
+  border: none;
+  color: white;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+
+.week-navigation button:hover, .week-navigation a:hover button {
+  background: rgba(255,255,255,0.3);
+}
+
+.week-date {
+  font-size: 1.1rem;
+  font-weight: 600;
+  min-width: 200px;
+  text-align: center;
+}
+
+.today-btn {
+  background: rgba(255,255,255,0.2);
+  border: none;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.today-btn:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: 100px repeat(7, 1fr);
+  border-top: 1px solid #e5e7eb;
+}
+
+.calendar-grid.day-view {
+  grid-template-columns: 100px 1fr;
+}
+
+.time-column {
+  border-right: 1px solid #e5e7eb;
+  background: #f9fafb;
+  display: flex;
+  flex-direction: column;
+}
+
+.time-slot {
+  height: 30px;
+  min-height: 30px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  padding: 0 0.5rem;
+  font-size: 0.85rem;
+  color: #6b7280;
+  font-weight: 500;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.time-slot.major {
+  height: 30px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #374151;
+}
+
+.day-column {
+  border-right: 1px solid #e5e7eb;
+  position: relative;
+}
+
+.day-column:last-child {
+  border-right: none;
+}
+
+.day-header {
+  height: 100px;
+  border-bottom: 2px solid #e5e7eb;
+  padding: 1.25rem;
+  text-align: center;
+  background: #f9fafb;
+}
+
+.day-header.today {
+  background: linear-gradient(to bottom, rgba(48, 179, 84, 0.1), transparent);
+  border-bottom-color: var(--brand-start);
+}
+
+.day-name {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.day-date {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.day-date.today {
+  color: var(--brand-start);
+}
+
+.day-content {
+  position: relative;
+  height: 1440px;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 29px,
+    #e5e7eb 29px,
+    #e5e7eb 30px
+  );
+  box-sizing: border-box;
+}
+
+.appointment-block {
+  position: absolute;
+  left: 1%;
+  width: 98%;
+  border-radius: 6px;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  z-index: 1;
+  overflow: hidden;
+  min-height: 30px;
+  box-sizing: border-box;
+  margin: 0;
+  cursor: pointer;
+  color: white;
+}
+
+.appointment-block:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  z-index: 2;
+}
+
+.appointment-block.booked {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+}
+
+.appointment-block.booked * {
+  color: white !important;
+}
+
+.appointment-block.in-progress {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+}
+
+.appointment-block.in-progress * {
+  color: white !important;
+}
+
+.appointment-block.completed {
+  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+  color: white;
+}
+
+.appointment-block.completed * {
+  color: white !important;
+}
+
+.appointment-time {
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: white;
+}
+
+.appointment-room {
+  font-size: 0.75rem;
+  opacity: 0.95;
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: white;
+}
+
+.appointment-patient {
+  font-weight: 500;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: white;
+}
+
+.appointment-doctor {
+  font-size: 0.75rem;
+  opacity: 0.95;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: white;
+}
+
+/* Белый цвет шрифта в модальных окнах */
+.modal-content {
+  background-color: #5a6578;
+  color: white;
+}
+
+.modal-header {
+  border-bottom-color: rgba(255, 255, 255, 0.2);
+}
+
+.modal-footer {
+  border-top-color: rgba(255, 255, 255, 0.2);
+}
+
+.modal-content * {
+  color: white !important;
+}
+
+.modal-content .text-muted {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.modal-content .btn-secondary {
+  background-color: #6b7280;
+  border-color: #6b7280;
+  color: #fff !important;
+}
+
+.modal-content .btn-secondary:hover {
+  background-color: #7b8280;
+  border-color: #7b8280;
+}
+
+.modal-content .btn-danger {
+  color: #fff !important;
+}
+
+.modal-content .btn-primary {
+  color: #fff !important;
+}
+
+.modal-content .alert-warning {
+  background-color: rgba(245, 158, 11, 0.35);
+  border-color: rgba(245, 158, 11, 0.5);
+  color: white !important;
+}
+
+.modal-content strong {
+  color: white !important;
+}
+
+.modal-content p {
+  color: white !important;
+}
+
+.modal-content span {
+  color: white !important;
+}
+
+.modal-content a {
+  color: #a5d6ff !important;
+}
+
+.modal-content a:hover {
+  color: #cce7ff !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="container py-5">
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+    <div>
+      <h2 class="fw-bold mb-0">Семья: {{ patient.lname }} {{ patient.fname }}</h2>
+      <p class="text-muted mb-0">Управление семейными связями</p>
+    </div>
+    <a class="btn btn-outline-secondary" href="{% url 'clinic_admin:family_list' %}">
+      <i class="bi bi-arrow-left"></i> Назад
+    </a>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">Родители</h5>
+        </div>
+        <div class="card-body">
+          {% if parents %}
+            <div class="list-group list-group-flush">
+              {% for parent in parents %}
+                <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                  <a href="{% url 'clinic_admin:patient_detail' parent.pk %}" class="text-decoration-none {% if parent.pk == patient.pk %}fw-bold{% endif %}">
+                    {{ parent.lname }} {{ parent.fname }}{% if parent.pk == patient.pk %} <span class="text-muted small">(текущий)</span>{% endif %}
+                  </a>
+                  {% if parent.pk != patient.pk %}
+                  <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteMemberModal" 
+                          data-member-name="{{ parent.lname }} {{ parent.fname }}"
+                          data-member-type="parent"
+                          data-member-id="{{ parent.pk }}">
+                      <i class="bi bi-x"></i>
+                    </button>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="text-muted mb-0">Нет родителей</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Члены семьи</h5>
+          <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addMemberModal">
+            <i class="bi bi-plus"></i> Добавить
+          </button>
+        </div>
+        <div class="card-body">
+          {% if children %}
+            <div class="list-group list-group-flush">
+              {% for child in children %}
+                <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                  <a href="{% url 'clinic_admin:patient_detail' child.pk %}" class="text-decoration-none">
+                    {{ child.lname }} {{ child.fname }}
+                  </a>
+                  <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteMemberModal"
+                          data-member-name="{{ child.lname }} {{ child.fname }}"
+                          data-member-type="child"
+                          data-member-id="{{ child.pk }}">
+                      <i class="bi bi-x"></i>
+                    </button>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="text-muted mb-0">Нет детей</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  
+  <div class="mt-4">
+    <div class="schedule-calendar">
+      <div class="calendar-header">
+        <div class="view-toggle">
+          <a href="?view=day{% if view_type == 'day' %}&date={{ selected_date_str|default:today }}{% endif %}" class="{% if view_type == 'day' %}active{% endif %}">
+            <button type="button">День</button>
+          </a>
+          <a href="?view=week{% if view_type == 'week' %}&week={{ week_start|date:'Y-m-d' }}{% endif %}" class="{% if view_type == 'week' %}active{% endif %}">
+            <button type="button">Неделя</button>
+          </a>
+        </div>
+        
+        <div class="week-navigation">
+          {% if view_type == 'day' %}
+            <a href="?view=day&date={{ prev_day }}">
+              <button type="button">‹</button>
+            </a>
+            <div class="week-date">
+              {{ week_start|date:"d" }} {{ week_days.0.month_name }} {{ week_start|date:"Y" }}
+            </div>
+            <a href="?view=day&date={{ next_day }}">
+              <button type="button">›</button>
+            </a>
+          {% else %}
+            <a href="?view=week&week={{ prev_week }}">
+              <button type="button">‹</button>
+            </a>
+            <div class="week-date">
+              {{ week_start|date:"d" }} {{ week_days.0.month_name }} {{ week_start|date:"Y" }} - {{ week_end|date:"d" }} {{ week_end_month_name }} {{ week_end|date:"Y" }}
+    </div>
+            <a href="?view=week&week={{ next_week }}">
+              <button type="button">›</button>
+            </a>
+          {% endif %}
+        </div>
+        
+        <a href="?view={{ view_type|default:'week' }}{% if view_type == 'day' %}&date={{ today }}{% else %}&week={{ today }}{% endif %}">
+          <button class="today-btn">Сегодня</button>
+        </a>
+      </div>
+
+      <div class="calendar-grid {% if view_type == 'day' %}day-view{% endif %}">
+        
+        <div class="time-column">
+          <div style="height: 100px; border-bottom: 2px solid #e5e7eb;"></div>
+          {% for hour in "6789012345678901234567"|make_list %}
+            {% if forloop.counter >= 1 and forloop.counter <= 17 %}
+              {% with h=forloop.counter|add:5 %}
+                <div class="time-slot major">{{ h }}:00</div>
+                <div class="time-slot">{{ h }}:20</div>
+                <div class="time-slot">{{ h }}:40</div>
+              {% endwith %}
+            {% endif %}
+          {% endfor %}
+        </div>
+
+        
+        {% for day in week_days %}
+          <div class="day-column">
+            <div class="day-header {% if day.is_today %}today{% endif %}">
+              <div class="day-name">{{ day.day_name }}</div>
+              <div class="day-date {% if day.is_today %}today{% endif %}">{{ day.day_num }}</div>
+            </div>
+            
+            <div class="day-content">
+              {% for appt_data in day.appointments %}
+                {% with appt=appt_data.appointment appt_height=appt_data.height %}
+                  <div class="appointment-block {% if appt.status == 'in_progress' %}in-progress{% elif appt.status == 'completed' %}completed{% else %}booked{% endif %}"
+                       style="top: {{ appt_data.top }}px; height: {{ appt_height }}px;{% if appt_data.left is not None %} left: {{ appt_data.left }}%; width: {{ appt_data.width }}%;{% endif %}"
+                       onclick="showAppointmentModal({{ appt.pk }}, '{{ appt.patient.lname }} {{ appt.patient.fname }}', '{{ appt.date|date:"d.m.Y H:i" }}', '{{ appt.doctor.lname }} {{ appt.doctor.fname }}', '{{ appt.doctor.specialization.name|escapejs }}', '{% if appt.slot and appt.slot.room %}Кабинет {{ appt.slot.room.room_number }}{% else %}-{% endif %}', '{{ appt.get_status_display|escapejs }}', {{ appt.patient.pk }}, {{ appt.doctor.pk }}, '{{ appt.status }}', {% if appt.status == 'completed' or appt.recipe %}true{% else %}false{% endif %})"
+                       title="{{ appt.patient.lname }} {{ appt.patient.fname }} - {{ appt.doctor.lname }} {{ appt.doctor.fname }} - {{ appt.date|time:'H:i' }}">
+                    {% if appt_height >= 60 %}
+                      <div class="appointment-time">
+                        {% if appt.slot %}
+                          {{ appt.slot.time_from|time:"H:i" }} - {{ appt.slot.time_to|time:"H:i" }}
+                        {% else %}
+                          {{ appt.date|time:"H:i" }}
+                        {% endif %}
+                      </div>
+                      {% if appt_height >= 90 %}
+                        <div class="appointment-patient">{{ appt.patient.lname }} {{ appt.patient.fname }}</div>
+                        <div class="appointment-doctor">{{ appt.doctor.lname }} {{ appt.doctor.fname|first }}.</div>
+                        {% if appt.slot and appt.slot.room and appt_height >= 120 %}
+                          <div class="appointment-room">Каб. {{ appt.slot.room.room_number }}</div>
+                        {% endif %}
+                      {% endif %}
+                    {% else %}
+                      <div class="appointment-time" style="margin: 0; line-height: 1.2; font-size: 0.75rem; color: white;">
+                        {% if appt.slot %}
+                          {{ appt.slot.time_from|time:"H:i" }}-{{ appt.slot.time_to|time:"H:i" }}
+                        {% else %}
+                          {{ appt.date|time:"H:i" }}
+                        {% endif %}
+                      </div>
+                    {% endif %}
+                  </div>
+                {% endwith %}
+              {% endfor %}
+            </div>
+          </div>
+        {% endfor %}
+        </div>
+    </div>
+  </div>
+</section>
+
+
+<div class="modal fade" id="appointmentModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Информация о приеме</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="appointmentContent">
+        
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div class="modal fade" id="deleteMemberModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Удаление связи</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="{% url 'clinic_admin:family_remove_member' patient.pk %}" id="deleteMemberForm">
+        {% csrf_token %}
+        <input type="hidden" name="parent_id" id="deleteParentId" value="">
+        <input type="hidden" name="child_id" id="deleteChildId" value="">
+        <div class="modal-body">
+          <p>Вы действительно хотите удалить связь с <strong id="deleteMemberName"></strong>?</p>
+          <p class="text-muted small mb-0">Это действие нельзя отменить.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+          <button type="submit" class="btn btn-danger">Удалить связь</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+<div class="modal fade" id="addMemberModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Добавить члена семьи</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="{% url 'clinic_admin:family_add_member' patient.pk %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Выберите пациента</label>
+            <div class="searchable-select-wrapper">
+              <input type="text" class="form-control searchable-select-input" id="patientSelect" 
+                     placeholder="Начните вводить ФИО пациента..." 
+                     autocomplete="off" readonly>
+              <input type="hidden" name="child_id" id="patientId" required>
+              <div class="searchable-select-dropdown" id="patientDropdown">
+                <div class="searchable-select-search">
+                  <input type="text" placeholder="Поиск по ФИО или дате рождения..." id="patientSearch" autocomplete="off">
+                </div>
+                <div id="patientOptions">
+                  {% for p in all_patients %}
+                    {% if p.pk != patient.pk and p not in children and p not in parents %}
+                      <div class="searchable-select-option" data-value="{{ p.pk }}" 
+                           data-text="{{ p.lname }} {{ p.fname }} {% if p.tname %}{{ p.tname }} {% endif %}{{ p.bdate|date:'d.m.Y' }}">
+                        <div>{{ p.lname }} {{ p.fname }}{% if p.tname %} {{ p.tname }}{% endif %}</div>
+                        <small class="text-muted d-block">{{ p.bdate|date:"d.m.Y" }}</small>
+                      </div>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+          <button type="submit" class="btn btn-primary">Добавить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+// Функция для показа модального окна с информацией о приеме
+function showAppointmentModal(apptId, patientName, dateTime, doctorName, specialization, room, status, patientId, doctorId, currentStatus, hasResults) {
+  const patientUrl = '{% url "clinic_admin:patient_detail" 0 %}'.replace('0', patientId);
+  const doctorUrl = '{% url "clinic_admin:doctor_detail" 0 %}'.replace('0', doctorId);
+  const resultsUrl = hasResults ? '{% url "clinic_admin:appointment_results" 0 %}'.replace('0', apptId) : null;
+  
+  const statusColors = {
+    'booked': '#f59e0b',
+    'in_progress': '#3b82f6',
+    'completed': '#6b7280'
+  };
+  
+  const statusColor = statusColors[currentStatus] || '#6b7280';
+  
+  let resultsButton = '';
+  if (hasResults && resultsUrl) {
+    resultsButton = `
+      <div class="mt-3 pt-3 border-top">
+        <a href="${resultsUrl}" class="btn btn-primary w-100">
+          <i class="bi bi-file-medical"></i> Посмотреть результаты приема
+        </a>
+      </div>
+    `;
+  }
+  
+  const content = `
+    <div class="mb-3">
+      <strong><i class="bi bi-person"></i> Пациент:</strong><br>
+      <a href="${patientUrl}" class="text-decoration-none fs-5">${patientName}</a>
+    </div>
+    <div class="mb-3">
+      <strong><i class="bi bi-person-badge"></i> Врач:</strong><br>
+      <a href="${doctorUrl}" class="text-decoration-none fs-5">${doctorName}</a><br>
+      <small class="text-muted">${specialization}</small>
+    </div>
+    <div class="mb-3">
+      <strong><i class="bi bi-clock"></i> Дата и время:</strong><br>
+      <span class="fs-5">${dateTime}</span>
+    </div>
+    <div class="mb-3">
+      <strong><i class="bi bi-door-open"></i> Кабинет:</strong><br>
+      ${room}
+    </div>
+    <div class="mb-3">
+      <strong><i class="bi bi-info-circle"></i> Статус:</strong><br>
+      <span class="badge fs-6" style="background: ${statusColor}; color: white;">${status}</span>
+    </div>
+    ${resultsButton}
+  `;
+  
+  document.getElementById('appointmentContent').innerHTML = content;
+  
+  const modal = new bootstrap.Modal(document.getElementById('appointmentModal'));
+  modal.show();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Проверка и корректировка позиционирования блоков для предотвращения перекрытий
+  const dayColumns = document.querySelectorAll('.day-column');
+  
+  dayColumns.forEach(function(column) {
+    const appointmentBlocks = column.querySelectorAll('.appointment-block');
+    const blocks = Array.from(appointmentBlocks).map(function(block) {
+      const top = parseInt(block.style.top) || 0;
+      const height = parseInt(block.style.height) || 40;
+      const left = parseFloat(block.style.left) || 1;
+      const width = parseFloat(block.style.width) || 98;
+      
+      return {
+        element: block,
+        top: top,
+        height: height,
+        end: top + height,
+        left: left,
+        width: width,
+        endLeft: left + width
+      };
+    });
+    
+    // Сортируем по позиции сверху
+    blocks.sort(function(a, b) {
+      return a.top - b.top;
+    });
+    
+    // Проверяем и корректируем перекрытия
+    for (let i = 0; i < blocks.length; i++) {
+      const current = blocks[i];
+      
+      // Проверка границ дня (0-1440px для 6-22 часов)
+      if (current.top < 0) {
+        current.element.style.top = '0px';
+        current.top = 0;
+      }
+      if (current.end > 1440) {
+        const newHeight = 1440 - current.top;
+        current.element.style.height = newHeight + 'px';
+        current.height = newHeight;
+        current.end = current.top + newHeight;
+      }
+      
+      // Минимальная высота для читаемости
+      if (current.height < 30) {
+        current.element.style.minHeight = '30px';
+        current.element.style.overflow = 'visible';
+      }
+      
+      // Если блок слишком маленький, уменьшаем padding и убеждаемся, что цвет текста белый
+      if (current.height < 60) {
+        current.element.style.padding = '0.2rem 0.4rem';
+        current.element.style.fontSize = '0.75rem';
+        const textElements = current.element.querySelectorAll('.appointment-time, .appointment-room, .appointment-patient, .appointment-doctor');
+        textElements.forEach(function(el) {
+          el.style.color = 'white';
+        });
+      }
+    }
+  });
+  
+  // Обработка модального окна удаления члена семьи
+  const deleteMemberModal = document.getElementById('deleteMemberModal');
+  if (deleteMemberModal) {
+    deleteMemberModal.addEventListener('show.bs.modal', function(event) {
+      const button = event.relatedTarget;
+      const memberName = button.getAttribute('data-member-name');
+      const memberType = button.getAttribute('data-member-type');
+      const memberId = button.getAttribute('data-member-id');
+      
+      const modalBody = deleteMemberModal.querySelector('#deleteMemberName');
+      modalBody.textContent = memberName;
+      
+      const parentIdInput = document.getElementById('deleteParentId');
+      const childIdInput = document.getElementById('deleteChildId');
+      
+      if (memberType === 'parent') {
+        parentIdInput.value = memberId;
+        childIdInput.value = '';
+      } else {
+        childIdInput.value = memberId;
+        parentIdInput.value = '';
+      }
+    });
+  }
+  
+  const selectInput = document.getElementById('patientSelect');
+  const hiddenInput = document.getElementById('patientId');
+  const dropdown = document.getElementById('patientDropdown');
+  const searchInput = document.getElementById('patientSearch');
+  const optionsContainer = document.getElementById('patientOptions');
+  let allOptions = Array.from(optionsContainer.querySelectorAll('.searchable-select-option'));
+  
+  function filterOptions(query) {
+    const lowerQuery = query.toLowerCase();
+    allOptions.forEach(option => {
+      const text = option.getAttribute('data-text').toLowerCase();
+      if (text.includes(lowerQuery)) {
+        option.style.display = 'block';
+      } else {
+        option.style.display = 'none';
+      }
+    });
+  }
+  
+  function selectOption(option) {
+    const value = option.getAttribute('data-value');
+    hiddenInput.value = value;
+    // Берем только ФИО из первого div внутри опции
+    const nameDiv = option.querySelector('div');
+    const displayText = nameDiv ? nameDiv.textContent.trim() : option.textContent.trim().split('\n')[0].trim();
+    selectInput.value = displayText;
+    dropdown.classList.remove('show');
+    searchInput.value = '';
+    filterOptions('');
+    
+    allOptions.forEach(opt => opt.classList.remove('selected'));
+    option.classList.add('selected');
+  }
+  
+  selectInput.addEventListener('click', function(e) {
+    e.preventDefault();
+    if (dropdown.classList.contains('show')) {
+      dropdown.classList.remove('show');
+      searchInput.blur();
+    } else {
+      dropdown.classList.add('show');
+      searchInput.focus();
+    }
+  });
+  
+  searchInput.addEventListener('input', function() {
+    filterOptions(this.value);
+  });
+  
+  allOptions.forEach(option => {
+    option.addEventListener('click', function() {
+      selectOption(this);
+    });
+  });
+  
+  document.addEventListener('click', function(e) {
+    if (!selectInput.contains(e.target) && !dropdown.contains(e.target)) {
+      dropdown.classList.remove('show');
+    }
+  });
+  
+  searchInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      dropdown.classList.remove('show');
+      selectInput.focus();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const visibleOptions = allOptions.filter(opt => opt.style.display !== 'none');
+      if (visibleOptions.length > 0) {
+        selectOption(visibleOptions[0]);
+      }
+    }
+  });
+});
+</script>
+{% endblock %}
+

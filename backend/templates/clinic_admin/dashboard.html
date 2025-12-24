@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Панель администратора | Clinic Sirius{% endblock %}
+
+{% block extra_head %}
+<style>
+.hero-section {
+  background: linear-gradient(135deg, var(--brand-start) 0%, var(--brand-end) 100%);
+  color: white;
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 12px rgba(48, 179, 84, 0.2);
+}
+
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.quick-action-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.3s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  border: 2px solid transparent;
+}
+
+.quick-action-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+  border-color: var(--brand-start);
+  text-decoration: none;
+  color: inherit;
+}
+
+.quick-action-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, var(--brand-start) 0%, var(--brand-end) 100%);
+  color: white;
+}
+
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="container py-5">
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+  
+  <div class="hero-section">
+    <h1 class="mb-2">Панель администратора</h1>
+    <p class="mb-0">Добро пожаловать, {{ user.username }}!</p>
+  </div>
+
+  <div class="quick-actions">
+    <a href="{% url 'clinic_admin:patient_list' %}" class="quick-action-card">
+      <div class="quick-action-icon">
+        <i class="bi bi-people"></i>
+      </div>
+      <div class="quick-action-title fw-bold">Пациенты</div>
+      <div class="quick-action-desc">Управление пациентами</div>
+    </a>
+    <a href="{% url 'clinic_admin:family_list' %}" class="quick-action-card">
+      <div class="quick-action-icon">
+        <i class="bi bi-house-heart"></i>
+      </div>
+      <div class="quick-action-title fw-bold">Семьи</div>
+      <div class="quick-action-desc">Управление семьями</div>
+    </a>
+    <a href="{% url 'clinic_admin:doctor_list' %}" class="quick-action-card">
+      <div class="quick-action-icon">
+        <i class="bi bi-person-badge"></i>
+      </div>
+      <div class="quick-action-title fw-bold">Врачи</div>
+      <div class="quick-action-desc">Управление врачами</div>
+    </a>
+    <a href="{% url 'clinic_admin:clinic_schedule' %}" class="quick-action-card">
+      <div class="quick-action-icon">
+        <i class="bi bi-calendar3"></i>
+      </div>
+      <div class="quick-action-title fw-bold">Расписание</div>
+      <div class="quick-action-desc">Расписание клиники</div>
+    </a>
+    <a href="{% url 'clinic_admin:analytics' %}" class="quick-action-card">
+      <div class="quick-action-icon">
+        <i class="bi bi-graph-up"></i>
+      </div>
+      <div class="quick-action-title fw-bold">Аналитика</div>
+      <div class="quick-action-desc">Статистика и графики</div>
+    </a>
+  </div>
+</section>
+{% endblock %}
+

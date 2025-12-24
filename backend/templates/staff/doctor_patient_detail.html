@@ -1,0 +1,300 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ patient.lname }} {{ patient.fname }} | Clinic Sirius{% endblock %}
+
+{% block content %}
+<section class="container py-5">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+    <div>
+      <h2 class="fw-bold mb-0">{{ patient.lname }} {{ patient.fname }} {{ patient.tname|default:"" }}</h2>
+      <p class="text-muted mb-0">Карточка пациента</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary" href="{% url 'staff:doctor_patients' %}">
+        <i class="bi bi-arrow-left"></i> Назад к списку
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">Личные данные</h5>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <strong>Дата рождения:</strong><br>
+            {{ patient.bdate|date:"d.m.Y" }}
+          </div>
+          <div class="mb-3">
+            <strong>Телефон:</strong><br>
+            {{ patient.phone_number|default:"-" }}
+          </div>
+          <div class="mb-3">
+            <strong>Email:</strong><br>
+            {{ patient.email|default:"-" }}
+          </div>
+          <div class="mb-3">
+            <strong>СНИЛС:</strong><br>
+            {{ patient.snils }}
+          </div>
+          <div>
+            <strong>Полис ОМС:</strong><br>
+            {{ patient.oms }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">Статистика</h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <div class="text-center p-3 bg-light rounded">
+                <div class="h3 mb-1 text-primary">{{ total_appointments|default:0 }}</div>
+                <small class="text-muted">Всего приёмов</small>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="text-center p-3 bg-light rounded">
+                <div class="h3 mb-1 text-success">{{ upcoming_appointments|default:0 }}</div>
+                <small class="text-muted">Предстоящих</small>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="text-center p-3 bg-light rounded">
+                <div class="h3 mb-1 text-info">{{ completed_appointments|default:0 }}</div>
+                <small class="text-muted">Завершённых</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  
+  <div class="card">
+    <div class="card-header">
+      <h5 class="mb-0">Все приёмы ({{ appointments_count }})</h5>
+    </div>
+    <div class="card-body">
+      {% if appointments %}
+        <div class="table-responsive">
+          <table class="table align-middle">
+            <thead>
+              <tr>
+                <th>Дата и время</th>
+                <th>Статус</th>
+                <th class="text-end">Действия</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for appt in appointments %}
+                <tr>
+                  <td>
+                    <div class="fw-semibold">{{ appt.date|date:"d.m.Y" }}</div>
+                    <div class="text-muted small">
+                      {% if appt.slot %}
+                        {{ appt.slot.time_from|time:"H:i" }} - {{ appt.slot.time_to|time:"H:i" }}
+                      {% else %}
+                        {{ appt.date|time:"H:i" }}
+                      {% endif %}
+                    </div>
+                  </td>
+                  <td>
+                    {% if appt.status == 'booked' %}
+                      <span class="badge" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white;">Записан</span>
+                    {% elif appt.status == 'in_progress' %}
+                      <span class="badge" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white;">В процессе</span>
+                    {% elif appt.status == 'completed' %}
+                      <span class="badge" style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); color: white;">Завершён</span>
+                    {% elif appt.status == 'cancelled' %}
+                      <span class="badge bg-danger">Отменён</span>
+                    {% else %}
+                      <span class="badge bg-secondary">{{ appt.status }}</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-end">
+                    <button type="button" class="btn btn-sm btn-outline-primary view-appointment-btn" 
+                            data-appointment-id="{{ appt.pk }}" title="Просмотр результатов">
+                      <i class="bi bi-eye"></i> Просмотр
+                    </button>
+                    <a href="{% url 'scheduling:appointment_detail' appt.pk %}" class="btn btn-sm btn-outline-success ms-1" title="Редактировать">
+                      <i class="bi bi-pencil"></i> Изменить
+                    </a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-muted mb-0">Нет записей на приём</p>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+
+<div class="modal fade" id="appointmentModal" tabindex="-1" aria-labelledby="appointmentModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="appointmentModalLabel">Результаты приёма</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="appointmentModalBody">
+        <div class="text-center py-4">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Загрузка...</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+        <a href="#" id="editAppointmentBtn" class="btn btn-primary" style="display: none;">Редактировать</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const modal = new bootstrap.Modal(document.getElementById('appointmentModal'));
+  const modalBody = document.getElementById('appointmentModalBody');
+  const editBtn = document.getElementById('editAppointmentBtn');
+  const modalTitle = document.getElementById('appointmentModalLabel');
+  
+  document.querySelectorAll('.view-appointment-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const appointmentId = this.getAttribute('data-appointment-id');
+      loadAppointmentData(appointmentId);
+    });
+  });
+  
+  function loadAppointmentData(appointmentId) {
+    modalBody.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Загрузка...</span></div></div>';
+    editBtn.style.display = 'none';
+    modal.show();
+    
+    fetch(`{% url 'scheduling:appointment_info' 0 %}`.replace('0', appointmentId) + '?format=json', {
+      headers: {
+        'Accept': 'application/json'
+      }
+    })
+    .then(response => {
+      if (!response.ok) {
+        if (response.status === 403) {
+          throw new Error('Доступ запрещён. Вы можете просматривать только свои приёмы.');
+        }
+        throw new Error('Ошибка загрузки данных');
+      }
+      return response.json();
+    })
+    .then(data => {
+      let html = `
+        <div class="mb-4">
+          <h6 class="text-muted mb-2">Информация о приёме</h6>
+          <div class="card bg-light">
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-6 mb-2">
+                  <strong>Дата и время:</strong><br>
+                  ${data.date}
+                </div>
+                <div class="col-md-6 mb-2">
+                  <strong>Статус:</strong><br>
+                  <span class="badge bg-${getStatusColor(data.status)}">${data.status_display}</span>
+                </div>
+                ${data.room ? `<div class="col-md-6 mb-2"><strong>Кабинет:</strong><br>Каб. ${data.room}</div>` : ''}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      if (data.recipe) {
+        html += `
+          <div class="mb-4">
+            <h6 class="text-muted mb-2">Результаты приёма</h6>
+            <div class="card">
+              <div class="card-body">
+                ${data.recipe.diagnosis ? `
+                  <div class="mb-3">
+                    <strong>Диагноз:</strong><br>
+                    ${data.recipe.diagnosis.name}
+                  </div>
+                ` : ''}
+                ${data.recipe.complaints ? `
+                  <div class="mb-3">
+                    <strong>Жалобы пациента:</strong><br>
+                    <div class="text-muted" style="white-space: pre-wrap;">${data.recipe.complaints}</div>
+                  </div>
+                ` : ''}
+                ${data.recipe.recommendations ? `
+                  <div class="mb-3">
+                    <strong>Рекомендации:</strong><br>
+                    <div class="text-muted" style="white-space: pre-wrap;">${data.recipe.recommendations}</div>
+                  </div>
+                ` : ''}
+                ${data.recipe.next_appointment ? `
+                  <div class="mb-3">
+                    <strong>Следующий приём:</strong><br>
+                    ${data.recipe.next_appointment.date}${data.recipe.next_appointment.room ? ` (Каб. ${data.recipe.next_appointment.room})` : ''}
+                  </div>
+                ` : ''}
+                ${data.recipe.referral_doctor ? `
+                  <div class="mb-3">
+                    <strong>Направление к врачу:</strong><br>
+                    ${data.recipe.referral_doctor.name}${data.recipe.referral_doctor.specialization ? ` (${data.recipe.referral_doctor.specialization})` : ''}
+                    ${data.recipe.referral_slot ? `<br><small class="text-muted">${data.recipe.referral_slot.date}${data.recipe.referral_slot.room ? ` (Каб. ${data.recipe.referral_slot.room})` : ''}</small>` : ''}
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      } else {
+        html += `
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> Результаты приёма ещё не заполнены.
+          </div>
+        `;
+      }
+      
+      modalBody.innerHTML = html;
+      
+      // Показываем кнопку редактирования, если это приём этого доктора
+      if (data.doctor && data.doctor.id == {{ doctor.id }}) {
+        editBtn.href = `{% url 'scheduling:appointment_detail' 0 %}`.replace('0', appointmentId);
+        editBtn.style.display = 'inline-block';
+      }
+    })
+    .catch(error => {
+      modalBody.innerHTML = `
+        <div class="alert alert-danger">
+          <i class="bi bi-exclamation-triangle"></i> Ошибка загрузки данных: ${error.message}
+        </div>
+      `;
+    });
+  }
+  
+  function getStatusColor(status) {
+    const colors = {
+      'booked': 'warning',
+      'in_progress': 'info',
+      'completed': 'success',
+      'cancelled': 'danger'
+    };
+    return colors[status] || 'secondary';
+  }
+});
+</script>
+{% endblock %}
+
