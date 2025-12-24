@@ -1,4 +1,6 @@
 # ClinicSirius - Система управления клиникой
+## Проект студента К0709-23/3 Ефимова Артёма
+
 
 ClinicSirius - это веб-система управления медицинской клиникой, разработанная на Django. Система предназначена как для внутреннего контроля и управления (врачи, администраторы), так и внешнего взаимодействия с системой (пациенты, их семьи) для записи на прием, получения результатов анализов и тд.
 
@@ -128,78 +130,174 @@ ClinicSirius - это веб-система управления медицин�
    ```
    Далее следуйте инструкциям
 
-8. **Загрузка начальных данных (опционально)**
+8. **Загрузка начальных данных**
    
-   Если у вас есть SQL файл с начальными данными:
+   Загрузите начальные данные:
    ```bash
    psql -U postgres -d clinic_sirius -f ../database_init.sql
    ```
 
+   или запустите готовый скрипт (обязательно к выполнению в любом случае, читайте `--help`):
+   ```bash
+   python manage_db.py --full --confirm
+   ```
+
 9. **Запуск сервера разработки**
     ```bash
-    python manage.py runserver
+    python manage.py runserver 3248
     ```
     
-    Сервер будет доступен по адресу: `http://127.0.0.1:8000/`
+    Сервер будет доступен по адресу: `http://127.0.0.1:3248/`
 
-### Доступ к приложению
+## Архитектура
 
-- **Главная страница**: `http://127.0.0.1:8000/`
-- **Административная панель клиники**: `http://127.0.0.1:8000/admin-panel/`
+ClinicSirius построен на классической архитектуре **MTV** (Model-Template-View) Django
 
-### Тестовые данные
+### Компоненты системы
 
-После инициализации базы данных (загрузки `database_init.sql` и создания пользователей) доступны следующие тестовые учетные записи. **Для всех пользователей используется общий пароль: `Pass123$`**
+#### 1. Клиентский уровень 
+- HTML5, CSS3, JavaScript
+- Django Templates для рендеринга
+- Отправка HTTP запросов к серверу
+- Обработка форм
 
-#### Администраторы (2)
+#### 2. Серверный уровень (Django бэкенд)
 
-1. **Волков Дмитрий**
-   - Email: `dmitry.volkov@clinic.ru`
-   - Username: `dmitry.volkov`
+**URL Router** - маршрутизация HTTP запросов к соответствующим View
 
-2. **Козлова Елена**
-   - Email: `elena.kozlova@clinic.ru`
-   - Username: `elena.kozlova`
+**Middleware Stack** (в порядке обработки):
+1. SecurityMiddleware - обработка HTTPS редиректов
+2. CorsMiddleware - настройка CORS заголовков для API
+3. SessionMiddleware - управление сессиями
+4. CommonMiddleware - общие функции
+5. CsrfViewMiddleware - защита от CSRF атак
+6. AuthenticationMiddleware - добавление user в request
+7. MessageMiddleware - система сообщений
 
-#### Врачи (5)
+**Views Layer:**
+- Template Views - рендеринг HTML шаблонов (ListView, DetailView, FormView)
+- API Views/ViewSets - REST API (DRF ViewSets)
+- Mixins - проверка прав доступа (PatientRequiredMixin, DoctorRequiredMixin, AdminRequiredMixin)
 
-1. **Семенов Игорь Павлович** (Терапевт)
-   - Email: `igor.semenov@clinic.ru`
+**Разрешения:**
+- Session Authentication (для веб-интерфейса)
+- JWT Authentication (для API)
+- Custom User Model (accounts.User)
+- Permissions: IsAuthenticated, IsOwnerOrStaff, IsDoctorOrStaff
 
-2. **Сидорова Евгения Александровна** (Хирург)
-   - Email: `evgenia.sidorova@clinic.ru`
+**Сериализация:**
+- ModelSerializer - автоматическая сериализация моделей
+- Валидация данных
+- Поддержка вложенных объектов
 
-3. **Козлов Валерий Сергеевич** (Офтальмолог)
-   - Email: `valery.kozlov@clinic.ru`
+**Models (ORM):**
+- Django ORM для работы с базой данных
+- Миграции базы данных
 
-4. **Савина Марина Олеговна** (Кардиолог)
-   - Email: `marina.savina@clinic.ru`
+#### 3. Уровень данных (БД)
+- **PostgreSQL** - база данных
 
-5. **Рыбаков Олег Иванович** (Невролог)
-   - Email: `oleg.rybakov@clinic.ru`
+### Архитектурная диаграмма
 
-#### Пациенты (7)
+```mermaid
+graph TB
+    subgraph "Client Layer"
+        Browser[Browser<br/>HTML/CSS/JS]
+        API_Client[API Client<br/>HTTP/JSON]
+    end
+    
+    subgraph "Django Backend"
+        subgraph "Request Layer"
+            Router[URL Router]
+            Middleware[Middleware Stack<br/>CORS, CSRF, Auth, Session]
+        end
+        
+        subgraph "Application Layer"
+            TemplateViews[Template Views<br/>HTML Rendering]
+            APIViews[API Views/ViewSets<br/>REST API]
+            Mixins[Custom Mixins<br/>Permissions]
+        end
+        
+        subgraph "Business Logic"
+            Serializers[Serializers<br/>Data Transformation]
+            Permissions[Permissions<br/>Access Control]
+            Auth[JWT/Session Auth]
+        end
+        
+        subgraph "Data Layer"
+            Models[Models/ORM<br/>Django ORM]
+            Managers[Query Managers<br/>Optimization]
+        end
+    end
+    
+    subgraph "Database"
+        PostgreSQL[(PostgreSQL<br/>Relational Database)]
+    end
+    
+    Browser -->|HTTP Request| Middleware
+    API_Client -->|HTTP + JWT| Middleware
+    
+    Middleware --> Router
+    Router --> TemplateViews
+    Router --> APIViews
+    
+    TemplateViews --> Mixins
+    APIViews --> Mixins
+    
+    Mixins --> Permissions
+    Permissions --> Auth
+    
+    TemplateViews --> Models
+    APIViews --> Serializers
+    Serializers --> Models
+    
+    Models --> Managers
+    Managers --> PostgreSQL
+    
+    PostgreSQL -->|SQL Results| Models
+    Models -->|Python Objects| Serializers
+    Models -->|Context| TemplateViews
+    
+    Serializers -->|JSON| APIViews
+    TemplateViews -->|HTML| Browser
+    APIViews -->|JSON| API_Client
+```
 
-1. **Иванова Анна Сергеевна**
-   - Email: `anna.ivanova@mail.ru`
 
-2. **Иванов Иван Алексеевич**
-   - Email: `ivan.petrov@mail.ru`
+### Модульная структура
 
-3. **Смирнова Елена Игоревна**
-   - Email: `elena.smirnova@mail.ru`
+**Приложения Django:**
 
-4. **Кузнецов Олег Владимирович**
-   - Email: `oleg.kuznetsov@mail.ru`
+1. **accounts** - Управление пользователями
+   - Аутентификация (login, register, logout)
+   - Профили пользователей
+   - Управление аккаунтом
 
-5. **Иванова Мария Ивановна**
-   - Email: `maria.sokolova@mail.ru`
+2. **patients** - Управление пациентами
+   - CRUD операции с пациентами
+   - Семейные связи
+   - Пригласительные коды
 
-6. **Попов Сергей Петрович**
-   - Email: `sergey.popov@mail.ru`
+3. **staff** - Управление врачами
+   - Профили врачей
+   - Специализации
+   - Личные кабинеты врачей
 
-7. **Лебедева Ирина Олеговна**
-   - Email: `irina.lebedeva@mail.ru`
+4. **scheduling** - Система записи
+   - Расписание врачей
+   - Бронирование приёмов
+   - Рецепты и диагнозы
+
+5. **clinic_admin** - Административная панель
+   - Управление всеми сущностями
+   - Аналитика и статистика
+
+6. **core** - Общие утилиты
+   - Mixins для проверки прав
+   - Общие view
+   - Обработчики ошибок (400, 403, 404, 500, 503)
+   - Главная страница приложения
+
 
 ## User-flow
 
@@ -443,164 +541,225 @@ classDiagram
     Diagnosis  --> Recipe
 ```
 
-## Архитектура
+### API Эндпоинты
 
-ClinicSirius построен на классической архитектуре **MTV** (Model-Template-View) Django.
+Система предоставляет как веб-интерфейс (HTML шаблоны), так и REST API для программного доступа к функциональности.
 
-### Компоненты системы
+#### Аутентификация и управление аккаунтом (`/accounts/`)
 
-#### 1. Клиентский уровень 
-- HTML5, CSS3, JavaScript
-- Django Templates для рендеринга
-- Отправка HTTP запросов к серверу
-- Обработка форм
+- `GET/POST /accounts/register/` - Регистрация нового пользователя
+- `GET/POST /accounts/login/` - Вход в систему
+- `GET/POST /accounts/logout/` - Выход из системы
+- `GET /accounts/profile/` - Просмотр профиля пользователя
+- `GET/POST /accounts/settings/` - Настройки аккаунта
+- `POST /accounts/change-login/` - Изменение логина
+- `POST /accounts/delete-account/` - Удаление аккаунта
+- `GET/POST /accounts/edit-family-member/<id>/` - Редактирование члена семьи
 
-#### 2. Серверный уровень (Django бэкенд)
+#### Управление пациентами (`/patients/`)
 
-**URL Router** - маршрутизация HTTP запросов к соответствующим View
+**REST API:**
+- `GET /patients/api/` - Список пациентов (требуется аутентификация)
+- `POST /patients/api/` - Создание профиля пациента
+- `GET /patients/api/<id>/` - Детали пациента
+- `PUT/PATCH /patients/api/<id>/` - Обновление данных пациента
+- `DELETE /patients/api/<id>/` - Удаление пациента
 
-**Middleware Stack** (в порядке обработки):
-1. SecurityMiddleware - обработка HTTPS редиректов
-2. CorsMiddleware - настройка CORS заголовков для API
-3. SessionMiddleware - управление сессиями
-4. CommonMiddleware - общие функции
-5. CsrfViewMiddleware - защита от CSRF атак
-6. AuthenticationMiddleware - добавление user в request
-7. MessageMiddleware - система сообщений
+**Веб-интерфейс:**
+- `GET/POST /patients/create_html/` - Создание профиля пациента (HTML форма)
+- `GET /patients/manage_html/` - Управление семьёй
+- `POST /patients/family/invite/` - Создание пригласительного кода
+- `POST /patients/family/redeem/` - Активация пригласительного кода
+- `POST /patients/family/remove/` - Удаление члена семьи
 
-**Views Layer:**
-- Template Views - рендеринг HTML шаблонов (ListView, DetailView, FormView)
-- API Views/ViewSets - REST API (DRF ViewSets)
-- Mixins - проверка прав доступа (PatientRequiredMixin, DoctorRequiredMixin, AdminRequiredMixin)
+#### Управление врачами (`/staff/`)
 
-**Разрешения:**
-- Session Authentication (для веб-интерфейса)
-- JWT Authentication (для API)
-- Custom User Model (accounts.User)
-- Permissions: IsAuthenticated, IsOwnerOrStaff, IsDoctorOrStaff
+**REST API:**
+- `GET /staff/api/doctors/` - Список врачей
+- `POST /staff/api/doctors/` - Создание профиля врача
+- `GET /staff/api/doctors/<id>/` - Детали врача
+- `PUT/PATCH /staff/api/doctors/<id>/` - Обновление данных врача
+- `DELETE /staff/api/doctors/<id>/` - Удаление врача
+- `GET /staff/api/specializations/` - Список специализаций
+- `POST /staff/api/specializations/` - Создание специализации
 
-**Сериализация:**
-- ModelSerializer - автоматическая сериализация моделей
-- Валидация данных
-- Поддержка вложенных объектов
+**Веб-интерфейс:**
+- `GET /staff/home/` - Личный кабинет врача
+- `GET /staff/profile/` - Профиль врача
+- `GET /staff/patients/` - Список пациентов врача
+- `GET /staff/patients/<id>/` - Детали пациента
+- `GET /staff/doctors/` - Список всех врачей
+- `GET /staff/doctors/<id>/` - Детали врача
 
-**Models (ORM):**
-- Django ORM для работы с базой данных
-- Миграции базы данных
+#### Система записи на приёмы (`/scheduling/`)
 
-#### 3. Уровень данных (БД)
-- **PostgreSQL** - база данных
+- `GET/POST /scheduling/book/` - Запись на приём
+- `GET /scheduling/doctor/<id>/` - Расписание врача
+- `POST /scheduling/doctor/<id>/add-timeslot/` - Добавление временного слота (врач)
+- `GET/POST /scheduling/book-for-other/` - Запись на приём для другого пациента
+- `POST /scheduling/appointment/<id>/status/` - Изменение статуса приёма
+- `GET /scheduling/appointment/<id>/` - Детали приёма
+- `GET /scheduling/referral-slots/<doctor_id>/` - Получение слотов для направления
+- `GET/POST /scheduling/appointment/<id>/offer-account/` - Предложение создания аккаунта
+- `GET /scheduling/appointment/<id>/info/` - Информация о приёме
+- `POST /scheduling/appointment/<id>/cancel/` - Отмена приёма
+- `POST /scheduling/appointment/<id>/update-patient/` - Обновление пациента в приёме
+- `POST /scheduling/slot/<slot_id>/book/` - Бронирование слота
+- `POST /scheduling/appointment/<appointment_id>/change-patient/` - Изменение пациента в забронированном приёме
 
-### Архитектурная диаграмма
+#### Административная панель (`/admin-panel/`)
 
-```mermaid
-graph TB
-    subgraph "Client Layer"
-        Browser[Browser<br/>HTML/CSS/JS]
-        API_Client[API Client<br/>HTTP/JSON]
-    end
-    
-    subgraph "Django Backend"
-        subgraph "Request Layer"
-            Router[URL Router]
-            Middleware[Middleware Stack<br/>CORS, CSRF, Auth, Session]
-        end
-        
-        subgraph "Application Layer"
-            TemplateViews[Template Views<br/>HTML Rendering]
-            APIViews[API Views/ViewSets<br/>REST API]
-            Mixins[Custom Mixins<br/>Permissions]
-        end
-        
-        subgraph "Business Logic"
-            Serializers[Serializers<br/>Data Transformation]
-            Permissions[Permissions<br/>Access Control]
-            Auth[JWT/Session Auth]
-        end
-        
-        subgraph "Data Layer"
-            Models[Models/ORM<br/>Django ORM]
-            Managers[Query Managers<br/>Optimization]
-        end
-    end
-    
-    subgraph "Database"
-        PostgreSQL[(PostgreSQL<br/>Relational Database)]
-    end
-    
-    Browser -->|HTTP Request| Middleware
-    API_Client -->|HTTP + JWT| Middleware
-    
-    Middleware --> Router
-    Router --> TemplateViews
-    Router --> APIViews
-    
-    TemplateViews --> Mixins
-    APIViews --> Mixins
-    
-    Mixins --> Permissions
-    Permissions --> Auth
-    
-    TemplateViews --> Models
-    APIViews --> Serializers
-    Serializers --> Models
-    
-    Models --> Managers
-    Managers --> PostgreSQL
-    
-    PostgreSQL -->|SQL Results| Models
-    Models -->|Python Objects| Serializers
-    Models -->|Context| TemplateViews
-    
-    Serializers -->|JSON| APIViews
-    TemplateViews -->|HTML| Browser
-    APIViews -->|JSON| API_Client
-```
+**Управление пациентами:**
+- `GET /admin-panel/patients/` - Список всех пациентов
+- `GET/POST /admin-panel/patients/create/` - Создание пациента
+- `GET /admin-panel/patients/<id>/` - Детали пациента
+- `GET/POST /admin-panel/patients/<id>/edit/` - Редактирование пациента
+- `POST /admin-panel/patients/<id>/delete/` - Удаление пациента
+- `GET/POST /admin-panel/patients/<id>/book/` - Запись пациента на приём
 
-### Потоки данных
+**Управление семьями:**
+- `GET /admin-panel/families/` - Список семей
+- `GET/POST /admin-panel/families/create/` - Создание семьи
+- `GET /admin-panel/families/<id>/` - Детали семьи
+- `POST /admin-panel/families/<id>/add-member/` - Добавление члена семьи
+- `POST /admin-panel/families/<id>/remove-member/` - Удаление члена семьи
 
-**Веб-запрос (HTML страница):**
-1. Браузер → HTTP Request
-2. Django Middleware → Обработка запроса
-3. URL Router → Определение View
-4. View → Проверка прав доступа
-5. View → Запрос к Models 
-6. Models → SQL запрос к PostgreSQL
-7. PostgreSQL → Возврат данных
-8. Models → Преобразование в Python объекты
-9. View → Подготовка контекста
-10. Template Engine → Рендеринг HTML
-11. View → HTTP Response
-12. Браузер → Отображение страницы
+**Управление врачами:**
+- `GET /admin-panel/doctors/` - Список врачей
+- `GET/POST /admin-panel/doctors/create/` - Создание врача
+- `GET /admin-panel/doctors/<id>/` - Детали врача
+- `GET/POST /admin-panel/doctors/<id>/edit/` - Редактирование врача
+- `POST /admin-panel/doctors/<id>/delete/` - Удаление врача
 
-### Модульная структура
+**Расписание и приёмы:**
+- `GET /admin-panel/schedule/` - Расписание клиники
+- `POST /admin-panel/appointments/update-status/` - Обновление статуса приёма
+- `GET/POST /admin-panel/appointments/<id>/results/` - Результаты приёма (рецепт, диагноз)
 
-**Приложения Django:**
+**Аналитика:**
+- `GET /admin-panel/` - Главная панель администратора
+- `GET /admin-panel/analytics/` - Аналитика и статистика
 
-1. **accounts** - Управление пользователями
-   - Аутентификация (login, register, logout)
-   - Профили пользователей
-   - Управление аккаунтом
 
-2. **patients** - Управление пациентами
-   - CRUD операции с пациентами
-   - Семейные связи
-   - Пригласительные коды
+### Демонстрация функционала     
 
-3. **staff** - Управление врачами
-   - Профили врачей
-   - Специализации
-   - Личные кабинеты врачей
+Ниже представлены скриншоты основных возможностей системы ClinicSirius:
 
-4. **scheduling** - Система записи
-   - Расписание врачей
-   - Бронирование приёмов
-   - Рецепты и диагнозы
+#### Главная страница и авторизация
 
-5. **clinic_admin** - Административная панель
-   - Управление всеми сущностями
-   - Аналитика и статистика
+![Главная страница](pictures/Screenshot_20251224_205318.png)
+*Главная страница системы ClinicSirius с информацией о клинике и возможностью входа в систему*
 
-6. **core** - Общие утилиты
-   - Mixins для проверки прав
-   - Общие view
+![Страница входа](pictures/Screenshot_20251224_205354.png)
+*Страница авторизации пользователей с полями для ввода email и пароля*
+
+#### Функциональность пациента
+
+![Дэшборд пациента](pictures/Screenshot_20251224_205401.png)
+*Дэшборд пациента*
+
+![Пункт выбора специализации при записи на прием](pictures/Screenshot_20251224_205416.png)
+*Пункт выбора специализации при записи на прием*
+
+![Возможности удобного выбора даты и окна](pictures/Screenshot_20251224_205432.png)
+*Возможности удобного выбора даты и окна*
+
+![Управление семьёй](pictures/Screenshot_20251224_205449.png)
+*Интерфейс управления семейными связями: создание пригласительных кодов и добавление членов семьи*
+
+#### Функциональность доктора
+
+![Дэшборд доктора](pictures/Screenshot_20251224_205546.png)
+*Дэшборд доктора*
+
+![Добавление окон в рассписание врачом](pictures/Screenshot_20251224_205601.png)
+*Добавление окон в рассписание*
+
+![Календарь приемов](pictures/Screenshot_20251224_205617.png)
+*Календарь-рассписание врача*
+
+![Пациенты врача](pictures/Screenshot_20251224_205628.png)
+*Список пациентов, которые хоть раз были у него (с историей посещения)*
+
+#### Функциональность администратора
+
+![Дэшборд админа](pictures/Screenshot_20251224_205644.png)
+*Дэшборд админа*
+
+![Просмотр пациентов + CRUD](pictures/Screenshot_20251224_205648.png)
+*Просмотр пациентов + их CRUD*
+
+![Просмотр семей + CRUD](pictures/Screenshot_20251224_205652.png)
+*Просмотр семей + их CRUD*
+
+![Просмотр врачей + их CRUD](pictures/Screenshot_20251224_205655.png)
+*Просмотр врачей + их CRUD*
+
+![Просмотр рассписания клиники](pictures/Screenshot_20251224_205658.png)
+*Просмотр рассписания клиники*
+
+![Статистика и аналитика](pictures/Screenshot_20251224_205706.png)
+*Статистика и аналитика*
+
+![График посещения приемов](pictures/Screenshot_20251224_205725.png)
+*График посещения приемов*
+
+![ТОП-10 врачей по приемам](pictures/Screenshot_20251224_205748.png)
+*ТОП-10 врачей по приемам*
+
+![Анализ пиковых часов](pictures/Screenshot_20251224_205755.png)
+*Анализ пиковых часов*
+
+### Тестовые данные
+
+После инициализации базы данных (загрузки `database_init.sql` и создания пользователей) доступны следующие тестовые учетные записи. **Для всех пользователей используется общий пароль: `Pass123$`**
+
+#### Администраторы (2)
+
+1. **Волков Дмитрий**
+   - Email: `dmitry.volkov@clinic.ru`
+   - Username: `dmitry.volkov`
+
+2. **Козлова Елена**
+   - Email: `elena.kozlova@clinic.ru`
+   - Username: `elena.kozlova`
+
+#### Врачи (5)
+
+1. **Семенов Игорь Павлович** (Терапевт)
+   - Email: `igor.semenov@clinic.ru`
+
+2. **Сидорова Евгения Александровна** (Хирург)
+   - Email: `evgenia.sidorova@clinic.ru`
+
+3. **Козлов Валерий Сергеевич** (Офтальмолог)
+   - Email: `valery.kozlov@clinic.ru`
+
+4. **Савина Марина Олеговна** (Кардиолог)
+   - Email: `marina.savina@clinic.ru`
+
+5. **Рыбаков Олег Иванович** (Невролог)
+   - Email: `oleg.rybakov@clinic.ru`
+
+#### Пациенты (7)
+
+1. **Иванова Анна Сергеевна**
+   - Email: `anna.ivanova@mail.ru`
+
+2. **Иванов Иван Алексеевич**
+   - Email: `ivan.petrov@mail.ru`
+
+3. **Смирнова Елена Игоревна**
+   - Email: `elena.smirnova@mail.ru`
+
+4. **Кузнецов Олег Владимирович**
+   - Email: `oleg.kuznetsov@mail.ru`
+
+5. **Иванова Мария Ивановна**
+   - Email: `maria.sokolova@mail.ru`
+
+6. **Попов Сергей Петрович**
+   - Email: `sergey.popov@mail.ru`
+
+7. **Лебедева Ирина Олеговна**
+   - Email: `irina.lebedeva@mail.ru`
